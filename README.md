@@ -144,7 +144,7 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [3] https://github.com/schmiph2/pysepm \
 [4] https://github.com/ludlows/PESQ \
 [5] https://github.com/mpariente/pystoi \
-[6] https://github.com/jfsantos/SRMRpy \ 
+[6] https://github.com/jfsantos/SRMRpy \
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
 
 ### Licence
