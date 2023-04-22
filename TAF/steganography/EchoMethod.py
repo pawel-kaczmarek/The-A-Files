@@ -6,7 +6,7 @@ from scipy.fft import fft, ifft
 from scipy.signal import lfilter
 
 from TAF.models.SteganographyMethod import SteganographyMethod
-from TAF.stganography.common.mixer import mixer
+from TAF.steganography.common.mixer import mixer
 
 
 class EchoMethod(SteganographyMethod):

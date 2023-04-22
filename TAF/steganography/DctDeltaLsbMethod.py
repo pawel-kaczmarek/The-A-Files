@@ -4,7 +4,7 @@ import numpy as np
 from scipy.fft import dct, idct
 
 from TAF.models.SteganographyMethod import SteganographyMethod
-from TAF.stganography.common.split import to_frames, to_samples
+from TAF.steganography.common.split import to_frames, to_samples
 
 
 class DctDeltaLsbMethod(SteganographyMethod):
