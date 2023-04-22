@@ -4,7 +4,7 @@ import numpy as np
 from loguru import logger
 
 from TAF.models.SteganographyMethod import SteganographyMethod
-from TAF.stganography.common.mixer import mixer
+from TAF.steganography.common.mixer import mixer
 
 
 class DsssMethod(SteganographyMethod):

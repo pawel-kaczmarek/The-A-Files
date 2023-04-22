@@ -5,7 +5,7 @@ import pywt
 from scipy.fft import dct, idct
 
 from TAF.models.SteganographyMethod import SteganographyMethod
-from TAF.stganography.common.split import to_frames
+from TAF.steganography.common.split import to_frames
 
 
 class NormSpaceMethod(SteganographyMethod):
