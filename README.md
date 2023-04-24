@@ -11,6 +11,7 @@
 ```
 
 Implementations of audio watermarking methods and speech quality metrics in different domains. \
+
 <font size="1">
 Powered by some great [GitHub repositories](#links)
 </font>
@@ -79,7 +80,7 @@ class SteganographyMethod(ABC):
 - Weighted Spectral Slope (WSS) [[7]](#articles)
 - Perceptual Evaluation of Speech Quality (PESQ) [[8]](#articles)
 
-Each method extend abstract class  ```Metric```
+Each metric extend abstract class  ```Metric```
 
 ```python
 from abc import ABC, abstractmethod
@@ -103,6 +104,7 @@ class Metric(ABC):
     def name(self) -> str:
         ...
 ```
+
 ## References
 
 #### Articles
@@ -148,5 +150,8 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
 
 ### Licence
-
 The A-Files is an open source software under GPLv3 license.
+
+### Authors
+- Paweł Kaczmarek ([@pawelkaczmarek12](https://github.com/pawelkaczmarek12)) - Military University of Technology, Faculty of Electronics
+- Zbigniew Piotrowski - Military University of Technology, Faculty of Electronics
