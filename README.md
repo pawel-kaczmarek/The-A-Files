@@ -16,8 +16,6 @@ Implementations of audio watermarking methods and speech quality metrics in diff
 Powered by some great [GitHub repositories](#links)
 </font>
 
-<img src="./Documentation/diagram.svg" alt="The A-Files diagram">
-
 ## Steganography algorithms
 
 List of implemented methods:
@@ -107,6 +105,11 @@ class Metric(ABC):
         ...
 ```
 
+
+## Diagram
+
+<img src="./Documentation/diagram.svg" alt="The A-Files diagram">
+
 ## References
 
 #### Articles
@@ -152,8 +155,11 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
 
 ### Licence
+
 The A-Files is an open source software under GPLv3 license.
 
 ### Authors
-- Paweł Kaczmarek ([@pawelkaczmarek12](https://github.com/pawelkaczmarek12)) - Military University of Technology, Faculty of Electronics
+
+- Paweł Kaczmarek ([@pawelkaczmarek12](https://github.com/pawelkaczmarek12)) - Military University of Technology,
+  Faculty of Electronics
 - Zbigniew Piotrowski - Military University of Technology, Faculty of Electronics
