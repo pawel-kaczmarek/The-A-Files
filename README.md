@@ -10,11 +10,13 @@
                                                                     
 ```
 
-Implementations of audio watermarking methods and speech quality metrics in different domains. \
+Implementations of audio watermarking methods and speech quality metrics in different domains.
 
 <font size="1">
 Powered by some great [GitHub repositories](#links)
 </font>
+
+<img src="./Documentation/diagram.svg" alt="The A-Files diagram">
 
 ## Steganography algorithms
 
