@@ -3,7 +3,6 @@ from typing import List
 
 import numpy as np
 from scipy.fft import dct, idct
-from loguru import logger
 
 from TAF.models.SteganographyMethod import SteganographyMethod
 
@@ -30,7 +29,6 @@ class DctB1Method(SteganographyMethod):
 
         bits_per_frame = self.lG1
         if len(message) != num_frames * bits_per_frame:
-            logger.debug('Message is being zero padded...')
             message = (message + num_frames * bits_per_frame * [0])[:num_frames * bits_per_frame]
 
         frames = np.array_split(data[:(num_frames * lf)], num_frames)

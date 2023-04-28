@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-from loguru import logger
 
 from TAF.models.SteganographyMethod import SteganographyMethod
 from TAF.steganography_methods.common.mixer import mixer
@@ -21,10 +20,8 @@ class DsssMethod(SteganographyMethod):
 
         bit = message
         if len(bit) > N:
-            logger.debug('Message is too long, being cropped!')
             bits = bit[:N]
         else:
-            logger.debug('Message is being zero padded...')
             bits = (bit + N * [0])[:N]
 
         r = np.ones((L, 1))  # r = prng('password', L);
