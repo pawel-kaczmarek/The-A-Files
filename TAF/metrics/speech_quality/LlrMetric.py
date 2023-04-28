@@ -3,8 +3,8 @@ from numbers import Number
 import numpy as np
 from scipy.linalg import toeplitz
 
-from TAF.models.Metric import Metric
 from TAF.metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff
+from TAF.models.Metric import Metric
 
 
 class LlrMetric(Metric):
@@ -45,7 +45,8 @@ class LlrMetric(Metric):
         frac[frac <= 0] = 1000
         distortion = np.log(frac)
         if not used_for_composite:
-            distortion[distortion > 2] = 2  # this line is not in composite measure but in llr matlab implementation of loizou
+            distortion[
+                distortion > 2] = 2  # this line is not in composite measure but in llr matlab implementation of loizou
         distortion = np.sort(distortion)
         distortion = distortion[:int(round(len(distortion) * alpha))]
         return np.mean(distortion)

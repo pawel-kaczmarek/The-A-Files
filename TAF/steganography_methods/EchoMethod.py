@@ -1,7 +1,6 @@
 from typing import List
 
 import numpy as np
-from loguru import logger
 from scipy.fft import fft, ifft
 from scipy.signal import lfilter
 
@@ -21,10 +20,8 @@ class EchoMethod(SteganographyMethod):
         nframe = np.floor(data.shape[0] / L)
         N = int(nframe - np.mod(nframe, 8))  # Number of frames( for 8 bit)
         if len(bit) > N:
-            logger.debug('Message is too long, being cropped!')
             bits = bit[:N]
         else:
-            logger.debug('Message is being zero padded...')
             bits = (bit + N * [0])[:N]
 
         k0 = np.append(np.zeros(d0), 1) * alpha  # Echo kernel for bit0

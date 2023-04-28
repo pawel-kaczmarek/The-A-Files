@@ -10,11 +10,13 @@
                                                                     
 ```
 
-Implementations of audio watermarking methods and speech quality metrics in different domains.
+Implementations of audio watermarking methods and speech quality metrics in different domains. \
+<sup>
+Powered by some great [GitHub repositories](#Links)
+</sup>
 
-<font size="1">
-Powered by some great [GitHub repositories](#links)
-</font>
+
+<img src="./Documentation/functions.svg" alt="The A-Files functions">
 
 ## Steganography algorithms
 
@@ -104,7 +106,6 @@ class Metric(ABC):
     def name(self) -> str:
         ...
 ```
-
 
 ## Diagram
 
