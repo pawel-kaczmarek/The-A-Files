@@ -10,13 +10,70 @@
                                                                     
 ```
 
-Implementations of audio watermarking methods and speech quality metrics in different domains. \
+> ***The A-Files is a powerful audio steganography software that allows users to embed secret data within an
+audio signal, measure speech quality metrics, and test the audio signal's robustness against different types of attacks.
+<br><br>With The A-Files, users can ensure that their sensitive information remains private and protected.***
+
+## Table of contents
+
+* [About](#about)
+* [Steganography algorithms](#steganography-algorithms)
+* [Metrics](#metrics)
+    * [Speech Reverberation](#speech-reverberation)
+    * [Speech Intelligibility](#speech-intelligibility)
+    * [Speech Quality](#speech-quality)
+* [Attacks](#attacks)
+* [Diagram](#diagram)
+* [References](#references)
+* [Licence](#licence)
+* [Authors](#authors)
+
+## About
+
+The A-Files project contains:
+
+* Audio watermarking methods
+* Speech quality metrics
+* Audio attacks
+
+###### Loading
+
+The A-Files is an audio steganography software that allows users to hide secret data within an audio signal.
+To do this, users can load both the audio file and the data they want to hide into the software. The A-Files supports
+several types
+of audio files, such as WAV or FLAC. Once the audio file and the secret data are loaded, the software can embed the data
+within the audio signal.
+
+###### Capacity
+
+The A-Files offers several techniques for embedding secret data within an audio signal, such as LSB (Least Significant
+Bit) insertion, phase coding, and echo hiding. Each technique has its own strengths and weaknesses, and users can choose
+the technique that best fits their application's requirements.
+
+###### Transparency
+
+The A-Files includes tools for measuring speech quality metrics, such as PESQ (Perceptual Evaluation of Speech
+Quality), SNR (Signal-to-Noise Ratio) and STOI (Short-time objective intelligibility) metric. By measuring these
+metrics, users can ensure that the audio signal has not been degraded during the process of embedding secret data.
+
+###### Robustness
+
+The A-Files provides tools for testing the audio signal's robustness against different types of attacks. Attackers may
+attempt to remove the hidden data or alter the audio signal to render the hidden data useless. The A-Files includes
+tools for testing the audio signal's robustness against various types of attacks, such as noising, frequency cutting,
+and filtering. By testing the audio signal's robustness, users can determine the effectiveness of the audio
+steganography
+technique and make any necessary adjustments to improve the technique's strength and resilience.
+
+
 <sup>
 Powered by some great [GitHub repositories](#Links)
 </sup>
+<br>
+<br>
 
 
-<img src="./Documentation/functions.svg" alt="The A-Files functions">
+<img src="./Documentation/functions.svg" alt="The A-Files functions"> 
 
 ## Steganography algorithms
 
@@ -106,6 +163,20 @@ class Metric(ABC):
     def name(self) -> str:
         ...
 ```
+
+## Attacks
+
+List of attack on audio samples:
+
+* Low pass filter
+* Additive noise
+* Frequency filter
+* Flip random samples
+* Cut random samples
+* Resample (downsampling, upsampling)
+* Amplitude scaling
+* Pitch shift
+* Time stretch
 
 ## Diagram
 
