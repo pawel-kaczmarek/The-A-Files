@@ -36,6 +36,8 @@ The A-Files project contains:
 * Speech quality metrics
 * Audio attacks
 
+<img src="./Documentation/functions.svg" alt="The A-Files functions"> 
+
 ###### Loading
 
 The A-Files is an audio steganography software that allows users to hide secret data within an audio signal.
@@ -65,15 +67,7 @@ and filtering. By testing the audio signal's robustness, users can determine the
 steganography
 technique and make any necessary adjustments to improve the technique's strength and resilience.
 
-
-<sup>
-Powered by some great [GitHub repositories](#Links)
-</sup>
-<br>
-<br>
-
-
-<img src="./Documentation/functions.svg" alt="The A-Files functions"> 
+*Powered by some great [GitHub repositories](#links)*
 
 ## Steganography algorithms
 
