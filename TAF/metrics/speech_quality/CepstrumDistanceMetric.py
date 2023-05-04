@@ -11,8 +11,8 @@ class CepstrumDistanceMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
 
         clean_length = len(samples_original)
         processed_length = len(samples_processed)

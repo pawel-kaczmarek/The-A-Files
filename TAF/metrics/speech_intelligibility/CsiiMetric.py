@@ -12,8 +12,8 @@ class CsiiMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         sampleLen = min(len(samples_original), len(samples_processed))
         samples_original = samples_original[0: sampleLen]
         samples_processed = samples_processed[0: sampleLen]

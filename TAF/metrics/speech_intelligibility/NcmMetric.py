@@ -13,8 +13,8 @@ class NcmMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         if fs != 8000 and fs != 16000:
             raise ValueError('fs must be either 8 kHz or 16 kHz')
 

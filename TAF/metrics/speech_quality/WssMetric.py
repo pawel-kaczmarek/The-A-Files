@@ -11,8 +11,8 @@ class WssMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         Kmax = 20  # value suggested by Klatt, pg 1280
         Klocmax = 1  # value suggested by Klatt, pg 1280
         alpha = 0.95

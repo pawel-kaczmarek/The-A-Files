@@ -11,8 +11,8 @@ class PesqMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         if fs == 8000:
             mos_lqo = pypesq.pesq(fs, samples_original, samples_processed, 'nb')
             # 0.999 + ( 4.999-0.999 ) / ( 1+np.exp(-1.4945*pesq_mos+4.6607) )

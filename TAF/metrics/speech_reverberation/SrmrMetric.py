@@ -11,8 +11,8 @@ class SrmrMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         ratio, energy = srmr(samples_original, fs)
         ratio_processed, energy_processed = srmr(samples_processed, fs)
         # The outputs are ratio, which is the SRMR scorez
