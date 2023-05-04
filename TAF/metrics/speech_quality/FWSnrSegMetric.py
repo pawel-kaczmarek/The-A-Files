@@ -11,8 +11,8 @@ class FWSnrSegMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         if samples_original.shape != samples_processed.shape:
             raise ValueError('The two signals do not match!')
         eps = np.finfo(np.float64).eps

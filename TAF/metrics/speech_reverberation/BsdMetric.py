@@ -12,8 +12,8 @@ class BsdMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         pre_emphasis_coeff = 0.95
         b = np.array([1])
         a = np.array([1, pre_emphasis_coeff])

@@ -12,8 +12,8 @@ class LlrMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         used_for_composite = False  # TODO as param!
         eps = np.finfo(np.float64).eps
         alpha = 0.95

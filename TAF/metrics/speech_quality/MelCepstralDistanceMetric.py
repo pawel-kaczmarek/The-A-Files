@@ -13,8 +13,8 @@ class MelCepstralDistanceMetric(Metric):
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,
                   fs: int,
-                  frame_len: float,
-                  overlap: float) -> Number | np.ndarray:
+                  frame_len: float = 0.03,
+                  overlap: float = 0.75) -> Number | np.ndarray:
         hop_length: int = 256
         n_fft: int = 1024
         window: str = 'hamming'
