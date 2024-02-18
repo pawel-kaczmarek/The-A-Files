@@ -28,3 +28,6 @@ class MetricType(Enum):
     STOI_METRIC = auto()
     CSII_METRIC = auto()
     NCM_METRIC = auto()
+    CBAK_METRIC = auto()
+    CSIG_METRIC = auto()
+    COVL_METRIC = auto()

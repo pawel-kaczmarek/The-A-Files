@@ -11,6 +11,9 @@ from TAF.metrics.speech_quality.PesqMetric import PesqMetric
 from TAF.metrics.speech_quality.SnrMetric import SnrMetric
 from TAF.metrics.speech_quality.SnrSegMetric import SnrSegMetric
 from TAF.metrics.speech_quality.WssMetric import WssMetric
+from TAF.metrics.speech_quality.composite.CbakMetric import CbakMetric
+from TAF.metrics.speech_quality.composite.CovlMetric import CovlMetric
+from TAF.metrics.speech_quality.composite.CsigMetric import CsgiMetric
 from TAF.metrics.speech_reverberation.BsdMetric import BsdMetric
 from TAF.metrics.speech_reverberation.SrmrMetric import SrmrMetric
 from TAF.models.Metric import Metric
@@ -23,11 +26,9 @@ class MetricFactory:
     def get(metricType: MetricType) -> Metric:
         return MetricFactory._all_methods().get(metricType)
 
-
     @staticmethod
     def get_all() -> List[Metric]:
         return [value for _, value in MetricFactory._all_methods().items()]
-
 
     @staticmethod
     def _all_methods() -> Dict[MetricType, Metric]:
@@ -44,5 +45,8 @@ class MetricFactory:
             MetricType.NCM_METRIC: NcmMetric(),
             MetricType.STOI_METRIC: StoiMetric(),
             MetricType.SRMR_METRIC: SrmrMetric(),
-            MetricType.BSD_METRIC: BsdMetric()
+            MetricType.BSD_METRIC: BsdMetric(),
+            MetricType.CBAK_METRIC: CbakMetric(),
+            MetricType.CSIG_METRIC: CsgiMetric(),
+            MetricType.COVL_METRIC: CovlMetric()
         }

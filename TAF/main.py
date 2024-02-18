@@ -57,5 +57,6 @@ if __name__ == '__main__':
                 decoded_message_after_attacks = method.decode(corrupted_wav_file.samples, len(secret_msg))
                 logger.info("{} : {}", np.array_equal(secret_msg, decoded_message_after_attacks), method.type())
 
-            except:
-                logger.error("Err : {}", method.type())
+                logger.info("-" * 100)
+            except Exception as e:
+                logger.opt(exception=e).error("Err : {}", method.type())

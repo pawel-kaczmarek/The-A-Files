@@ -124,6 +124,11 @@ class SteganographyMethod(ABC):
 
 #### Speech Quality
 
+[main.py](TAF%2Fmain.py)
+[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCsigMetric.py)
+[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCovlMetric.py)
+[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCbakMetric.py)
+
 - Signal - to - Noise Ratio (SNR) [[12]](#articles)
 - Mel-cepstral distance measure for objective speech quality assessment [[11]](#articles)
 - Segmental Signal-to-Noise Ratio (SNRseg) [[7]](#articles)
@@ -132,6 +137,7 @@ class SteganographyMethod(ABC):
 - Log - likelihood Ratio (LLR) [[7]](#articles)
 - Weighted Spectral Slope (WSS) [[7]](#articles)
 - Perceptual Evaluation of Speech Quality (PESQ) [[8]](#articles)
+- Speech Enhancement Metrics (Csig, Covl, Cbak, Composite) [[13]](#articles)
 
 Each metric extend abstract class  ```Metric```
 
@@ -205,10 +211,12 @@ Weighted Noisy Speech', ICASSP 2010, Texas, Dallas. https://doi.org/10.1109/ICAS
 [10] Tiago H. Falk, Chenxi Zheng, and Way-Yip Chan. A Non-Intrusive Quality and Intelligibility Measure of Reverberant
 and Dereverberated Speech, IEEE Trans Audio Speech Lang Process, Vol. 18, No. 7, pp. 1766-1774,
 Sept.2010. https://doi.org/10.1109/TASL.2010.2052247 \
-[11] R. Kubichek, "Mel-cepstral distance measure for objective speech quality assessment," Proceedings of IEEE Pacific
+[11] R. Kubichek, "Mel-cepstral distance measure for objective speech quality assessment", Proceedings of IEEE Pacific
 Rim Conference on Communications Computers and Signal Processing, Victoria, BC, Canada, 1993, pp. 125-128
 vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio
+[13] Yi Hu and Philipos C. Loizou, "Evaluation of Objective Quality Measures for Speech Enhancement", IEEE TRANSACTIONS
+ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, JANUARY 2008 229
 
 #### Links
 
@@ -219,6 +227,7 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [5] https://github.com/mpariente/pystoi \
 [6] https://github.com/jfsantos/SRMRpy \
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
+[8] https://github.com/nglehuy/semetrics
 
 ### Licence
 

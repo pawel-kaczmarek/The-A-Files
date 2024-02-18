@@ -60,7 +60,6 @@ def resample_matlab_like(x_orig, p, q):
     return y
 
 
-@jit
 def lpcoeff(speech_frame, model_order):
     eps = np.finfo(np.float64).eps
     # ----------------------------------------------------------
