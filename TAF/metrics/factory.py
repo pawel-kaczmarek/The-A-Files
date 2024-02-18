@@ -2,7 +2,9 @@ from typing import Dict, List
 
 from TAF.metrics.speech_intelligibility.CsiiMetric import CsiiMetric
 from TAF.metrics.speech_intelligibility.NcmMetric import NcmMetric
+from TAF.metrics.speech_intelligibility.StgiMetric import StgiMetric
 from TAF.metrics.speech_intelligibility.StoiMetric import StoiMetric
+from TAF.metrics.speech_intelligibility.WstmiMetric import WstmiMetric
 from TAF.metrics.speech_quality.CepstrumDistanceMetric import CepstrumDistanceMetric
 from TAF.metrics.speech_quality.FWSnrSegMetric import FWSnrSegMetric
 from TAF.metrics.speech_quality.LlrMetric import LlrMetric
@@ -48,5 +50,7 @@ class MetricFactory:
             MetricType.BSD_METRIC: BsdMetric(),
             MetricType.CBAK_METRIC: CbakMetric(),
             MetricType.CSIG_METRIC: CsgiMetric(),
-            MetricType.COVL_METRIC: CovlMetric()
+            MetricType.COVL_METRIC: CovlMetric(),
+            MetricType.STGI_METRIC: StgiMetric(),
+            MetricType.WSTMI_METRIC: WstmiMetric()
         }

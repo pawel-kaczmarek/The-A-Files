@@ -138,6 +138,8 @@ class SteganographyMethod(ABC):
 - Weighted Spectral Slope (WSS) [[7]](#articles)
 - Perceptual Evaluation of Speech Quality (PESQ) [[8]](#articles)
 - Speech Enhancement Metrics (Csig, Covl, Cbak, Composite) [[13]](#articles)
+- Weighted Spectro-Temporal Modulation Index (wSTMI) [[14]](#articles)
+- Spectro-Temporal Glimpsing Index (STGI) [[15]](#articles)
 
 Each metric extend abstract class  ```Metric```
 
@@ -217,6 +219,10 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio
 [13] Yi Hu and Philipos C. Loizou, "Evaluation of Objective Quality Measures for Speech Enhancement", IEEE TRANSACTIONS
 ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, JANUARY 2008 229
+[14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “Speech Intelligibility Prediction Using Spectro-Temporal Modulation
+Analysis,” IEEE/ACM Trans. Audio, Speech, & Language Processing, vol. 29, pp. 210-225, 2021.
+[15] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “A Spectro-Temporal Glimpsing Index (STGI) for Speech
+Intelligibility Prediction," Proc. Interspeech, 5 pages, Aug 2021.
 
 #### Links
 
@@ -228,6 +234,7 @@ ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, JANUARY 2008 229
 [6] https://github.com/jfsantos/SRMRpy \
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
 [8] https://github.com/nglehuy/semetrics
+[9] https://github.com/aminEdraki/py-intelligibility
 
 ### Licence
 

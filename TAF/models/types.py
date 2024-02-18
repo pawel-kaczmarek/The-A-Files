@@ -31,3 +31,5 @@ class MetricType(Enum):
     CBAK_METRIC = auto()
     CSIG_METRIC = auto()
     COVL_METRIC = auto()
+    STGI_METRIC = auto()
+    WSTMI_METRIC = auto()
