@@ -139,6 +139,7 @@ class SteganographyMethod(ABC):
 - Speech Enhancement Metrics (Csig, Covl, Cbak, Composite) [[13]](#articles)
 - Weighted Spectro-Temporal Modulation Index (wSTMI) [[14]](#articles)
 - Spectro-Temporal Glimpsing Index (STGI) [[15]](#articles)
+- Scale-invariant SDR(SISDR) [[17]](#articles)
 
 Each metric extend abstract class  ```Metric```
 
@@ -226,6 +227,9 @@ Intelligibility Prediction," Proc. Interspeech, 5 pages, Aug 2021.
 [16] Lo, Chen-Chou and Fu, Szu-Wei and Huang, Wen-Chin and Wang, Xin and Yamagishi, Junichi and Tsao, Yu and Wang,
 Hsin-Min, "MOSNet: Deep Learning based Objective Assessment for Voice Conversion", arXiv preprint arXiv:1904.08352,
 2019, https://arxiv.org/abs/1904.08352
+[17] Roux, Jonathan Le and Wisdom, Scott and Erdogan, Hakan and Hershey, John R, "SDR – Half-baked or Well Done?",
+ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
+2019, https://dx.doi.org/10.1109/ICASSP.2019.8683855
 
 #### Links
 
