@@ -11,6 +11,7 @@ from TAF.metrics.speech_quality.FWSnrSegMetric import FWSnrSegMetric
 from TAF.metrics.speech_quality.LlrMetric import LlrMetric
 from TAF.metrics.speech_quality.MelCepstralDistanceMetric import MelCepstralDistanceMetric
 from TAF.metrics.speech_quality.PesqMetric import PesqMetric
+from TAF.metrics.speech_quality.SisdrMetric import SisdrMetric
 from TAF.metrics.speech_quality.SnrMetric import SnrMetric
 from TAF.metrics.speech_quality.SnrSegMetric import SnrSegMetric
 from TAF.metrics.speech_quality.WssMetric import WssMetric
@@ -54,5 +55,6 @@ class MetricFactory:
             MetricType.COVL_METRIC: CovlMetric(),
             MetricType.STGI_METRIC: StgiMetric(),
             MetricType.WSTMI_METRIC: WstmiMetric(),
+            MetricType.SISDR_METRIC: SisdrMetric(),
             MetricType.AI_MOSNET_METRIC: MosNetMetric()
         }
