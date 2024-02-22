@@ -111,6 +111,10 @@ class SteganographyMethod(ABC):
 
 ## Metrics
 
+#### AI Based
+
+- MOSNet: Deep Learning based Objective Assessment for Voice Conversion [[16]](#articles)
+
 #### Speech Reverberation
 
 - Bark spectral distortion (BSD) [[7]](#articles)
@@ -123,11 +127,6 @@ class SteganographyMethod(ABC):
 - Short-time objective intelligibility (STOI) [[9]](#articles)
 
 #### Speech Quality
-
-[main.py](TAF%2Fmain.py)
-[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCsigMetric.py)
-[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCovlMetric.py)
-[Metric.py](TAF%2Fmetrics%2Fspeech_quality%2Fcomposite%2FCbakMetric.py)
 
 - Signal - to - Noise Ratio (SNR) [[12]](#articles)
 - Mel-cepstral distance measure for objective speech quality assessment [[11]](#articles)
@@ -219,10 +218,14 @@ vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio
 [13] Yi Hu and Philipos C. Loizou, "Evaluation of Objective Quality Measures for Speech Enhancement", IEEE TRANSACTIONS
 ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, JANUARY 2008 229
-[14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “Speech Intelligibility Prediction Using Spectro-Temporal Modulation
+[14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “Speech Intelligibility Prediction Using Spectro-Temporal
+Modulation
 Analysis,” IEEE/ACM Trans. Audio, Speech, & Language Processing, vol. 29, pp. 210-225, 2021.
 [15] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “A Spectro-Temporal Glimpsing Index (STGI) for Speech
 Intelligibility Prediction," Proc. Interspeech, 5 pages, Aug 2021.
+[16] Lo, Chen-Chou and Fu, Szu-Wei and Huang, Wen-Chin and Wang, Xin and Yamagishi, Junichi and Tsao, Yu and Wang,
+Hsin-Min, "MOSNet: Deep Learning based Objective Assessment for Voice Conversion", arXiv preprint arXiv:1904.08352,
+2019, https://arxiv.org/abs/1904.08352
 
 #### Links
 
@@ -235,6 +238,7 @@ Intelligibility Prediction," Proc. Interspeech, 5 pages, Aug 2021.
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance
 [8] https://github.com/nglehuy/semetrics
 [9] https://github.com/aminEdraki/py-intelligibility
+[10] https://github.com/aliutkus/speechmetrics
 
 ### Licence
 

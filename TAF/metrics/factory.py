@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from TAF.metrics.ai_based.mosnet.MosNetMetric import MosNetMetric
 from TAF.metrics.speech_intelligibility.CsiiMetric import CsiiMetric
 from TAF.metrics.speech_intelligibility.NcmMetric import NcmMetric
 from TAF.metrics.speech_intelligibility.StgiMetric import StgiMetric
@@ -52,5 +53,6 @@ class MetricFactory:
             MetricType.CSIG_METRIC: CsgiMetric(),
             MetricType.COVL_METRIC: CovlMetric(),
             MetricType.STGI_METRIC: StgiMetric(),
-            MetricType.WSTMI_METRIC: WstmiMetric()
+            MetricType.WSTMI_METRIC: WstmiMetric(),
+            MetricType.AI_MOSNET_METRIC: MosNetMetric()
         }

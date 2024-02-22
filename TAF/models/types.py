@@ -33,3 +33,4 @@ class MetricType(Enum):
     COVL_METRIC = auto()
     STGI_METRIC = auto()
     WSTMI_METRIC = auto()
+    AI_MOSNET_METRIC = auto()
