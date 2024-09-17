@@ -140,6 +140,7 @@ class SteganographyMethod(ABC):
 - Weighted Spectro-Temporal Modulation Index (wSTMI) [[14]](#articles)
 - Spectro-Temporal Glimpsing Index (STGI) [[15]](#articles)
 - Scale-invariant SDR(SISDR) [[17]](#articles)
+- BSSEval v4 [[18]](#articles)
 
 Each metric extend abstract class  ```Metric```
 
@@ -185,7 +186,8 @@ List of attack on audio samples:
 #### Articles
 
 [1] Alsabhany, Ahmed A., Ahmed Hussain Ali, Farida Ridzuan, A. H. Azni, and Mohd Rosmadi Mokhtar. **Digital Audio
-Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art.** Computer Science Review
+Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art.** Computer Science
+Review
 38 (2020): 100316. https://doi.org/10.1016/j.cosrev.2020.100316 \
 [2] Hu, Hwai Tsu, and Ling Yuan Hsu. **Robust, Transparent and High-Capacity Audio Watermarking in DCT Domain.** Signal
 Processing 109 (2015): 226–35. https://doi.org/10.1016/j.sigpro.2014.11.011 \
@@ -213,7 +215,8 @@ Sept.2010. https://doi.org/10.1109/TASL.2010.2052247 \
 Rim Conference on Communications Computers and Signal Processing, Victoria, BC, Canada, 1993, pp. 125-128
 vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
 [12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio \
-[13] Yi Hu and Philipos C. Loizou, **Evaluation of Objective Quality Measures for Speech Enhancement**, IEEE TRANSACTIONS
+[13] Yi Hu and Philipos C. Loizou, **Evaluation of Objective Quality Measures for Speech Enhancement**, IEEE
+TRANSACTIONS
 ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, 229, JANUARY 2008, https://doi.org/10.1109/TASL.2007.911054 \
 [14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, **Speech Intelligibility Prediction Using Spectro-Temporal
 Modulation Analysis**. IEEE/ACM Trans. Audio, Speech, & Language Processing, vol. 29, pp. 210-225,
@@ -225,7 +228,10 @@ Hsin-Min, **MOSNet: Deep Learning based Objective Assessment for Voice Conversio
 2019, https://arxiv.org/abs/1904.08352 \
 [17] Roux, Jonathan Le and Wisdom, Scott and Erdogan, Hakan and Hershey, John R, **SDR – Half-baked or Well Done?**,
 ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
-2019, https://dx.doi.org/10.1109/ICASSP.2019.8683855
+2019, https://dx.doi.org/10.1109/ICASSP.2019.8683855 \
+[18] Stöter, Fabian-Robert and Liutkus, Antoine and Ito, Nobutaka, **The 2018 Signal Separation Evaluation Campaign**,
+Latent Variable Analysis and Signal Separation: 14th International Conference, LVA/ICA 2018, Surrey, UK, 2018, pp.
+293–305, https://doi.org/10.5281/zenodo.3376621
 
 #### Links
 
@@ -238,11 +244,16 @@ ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal
 [7] https://github.com/jasminsternkopf/mel_cepstral_distance \
 [8] https://github.com/nglehuy/semetrics \
 [9] https://github.com/aminEdraki/py-intelligibility \
-[10] https://github.com/aliutkus/speechmetrics
+[10] https://github.com/aliutkus/speechmetrics \
+[11] https://github.com/sigsep/sigsep-mus-eval
 
 ### Licence
 
 The A-Files is an open source software under GPLv3 license.
+
+### Dependencies
+
+Sometimes you will need: https://ffmpeg.org/
 
 ### Authors
 

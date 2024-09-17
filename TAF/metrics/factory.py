@@ -6,6 +6,7 @@ from TAF.metrics.speech_intelligibility.NcmMetric import NcmMetric
 from TAF.metrics.speech_intelligibility.StgiMetric import StgiMetric
 from TAF.metrics.speech_intelligibility.StoiMetric import StoiMetric
 from TAF.metrics.speech_intelligibility.WstmiMetric import WstmiMetric
+from TAF.metrics.speech_quality.BSSEvalMetric import BSSEvalMetric
 from TAF.metrics.speech_quality.CepstrumDistanceMetric import CepstrumDistanceMetric
 from TAF.metrics.speech_quality.FWSnrSegMetric import FWSnrSegMetric
 from TAF.metrics.speech_quality.LlrMetric import LlrMetric
@@ -56,5 +57,6 @@ class MetricFactory:
             MetricType.STGI_METRIC: StgiMetric(),
             MetricType.WSTMI_METRIC: WstmiMetric(),
             MetricType.SISDR_METRIC: SisdrMetric(),
+            MetricType.BSS_EVAL_METRIC: BSSEvalMetric(),
             MetricType.AI_MOSNET_METRIC: MosNetMetric()
         }
