@@ -180,54 +180,50 @@ List of attack on audio samples:
 * Pitch shift
 * Time stretch
 
-## Diagram
-
-<img src="./Documentation/diagram.svg" alt="The A-Files diagram">
-
 ## References
 
 #### Articles
 
-[1] Alsabhany, Ahmed A., Ahmed Hussain Ali, Farida Ridzuan, A. H. Azni, and Mohd Rosmadi Mokhtar. “Digital Audio
-Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art.” Computer Science Review
+[1] Alsabhany, Ahmed A., Ahmed Hussain Ali, Farida Ridzuan, A. H. Azni, and Mohd Rosmadi Mokhtar. **Digital Audio
+Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art.** Computer Science Review
 38 (2020): 100316. https://doi.org/10.1016/j.cosrev.2020.100316 \
-[2] Hu, Hwai Tsu, and Ling Yuan Hsu. “Robust, Transparent and High-Capacity Audio Watermarking in DCT Domain.” Signal
+[2] Hu, Hwai Tsu, and Ling Yuan Hsu. **Robust, Transparent and High-Capacity Audio Watermarking in DCT Domain.** Signal
 Processing 109 (2015): 226–35. https://doi.org/10.1016/j.sigpro.2014.11.011 \
-[3] Natgunanathan, Iynkaran, Yong Xiang, Guang Hua, Gleb Beliakov, and John Yearwood. “Patchwork-Based Multilayer Audio
-Watermarking.” IEEE/ACM Transactions on Audio Speech and Language Processing 25, no. 11 (2017):
+[3] Natgunanathan, Iynkaran, Yong Xiang, Guang Hua, Gleb Beliakov, and John Yearwood. **Patchwork-Based Multilayer Audio
+Watermarking.** IEEE/ACM Transactions on Audio Speech and Language Processing 25, no. 11 (2017):
 2176–87. https://doi.org/10.1109/TASLP.2017.2749001 \
-[4] Saadi, Slami, Ahmed Merrad, and Ali Benziane. “Novel Secured Scheme for Blind Audio/Speech Norm-Space Watermarking
-by Arnold Algorithm.” Signal Processing 154 (2019): 74–86. https://doi.org/10.1016/j.sigpro.2018.08.011 \
-[5] Zhao, Juan, Tianrui Zong, Yong Xiang, Longxiang Gao, Wanlei Zhou, and Gleb Beliakov. “Desynchronization Attacks
-Resilient Watermarking Method Based on Frequency Singular Value Coefficient Modification.” IEEE/ACM Transactions on
+[4] Saadi, Slami, Ahmed Merrad, and Ali Benziane. **Novel Secured Scheme for Blind Audio/Speech Norm-Space Watermarking
+by Arnold Algorithm.** Signal Processing 154 (2019): 74–86. https://doi.org/10.1016/j.sigpro.2018.08.011 \
+[5] Zhao, Juan, Tianrui Zong, Yong Xiang, Longxiang Gao, Wanlei Zhou, and Gleb Beliakov. **Desynchronization Attacks
+Resilient Watermarking Method Based on Frequency Singular Value Coefficient Modification.** IEEE/ACM Transactions on
 Audio Speech and Language Processing 29 (2021): 2282–95. https://doi.org/10.1109/TASLP.2021.3092555 \
-[6] Nugraha, Rizky M. “Implementation of Direct Sequence Spread Spectrum Steganography on Audio Data.” Proceedings of
+[6] Nugraha, Rizky M. **Implementation of Direct Sequence Spread Spectrum Steganography on Audio Data.** Proceedings of
 the 2011 International Conference on Electrical Engineering and Informatics, ICEEI 2011, no. July (
 2011). https://doi.org/10.1109/ICEEI.2011.6021662 \
-[7] Philipos C. Loizou. “Speech Enhancement. Theory and Practice, Second Edition” CRC Press (
+[7] Philipos C. Loizou. **Speech Enhancement. Theory and Practice, Second Edition** CRC Press (
 2013). https://doi.org/10.1201/b14529 \
-[8] Miao Wang, Christoph Boeddeker, Rafael G. Dantas and ananda seelan. “PESQ (Perceptual Evaluation of Speech Quality)
-Wrapper for Python Users” Zenodo 2022. https://doi.org/10.5281/zenodo.6549559 \
-[9] C.H.Taal, R.C.Hendriks, R.Heusdens, J.Jensen 'A Short-Time Objective Intelligibility Measure for Time-Frequency
-Weighted Noisy Speech', ICASSP 2010, Texas, Dallas. https://doi.org/10.1109/ICASSP.2010.5495701 \
-[10] Tiago H. Falk, Chenxi Zheng, and Way-Yip Chan. A Non-Intrusive Quality and Intelligibility Measure of Reverberant
-and Dereverberated Speech, IEEE Trans Audio Speech Lang Process, Vol. 18, No. 7, pp. 1766-1774,
+[8] Miao Wang, Christoph Boeddeker, Rafael G. Dantas and ananda seelan. **PESQ (Perceptual Evaluation of Speech Quality)
+Wrapper for Python Users** Zenodo 2022. https://doi.org/10.5281/zenodo.6549559 \
+[9] C.H.Taal, R.C.Hendriks, R.Heusdens, J.Jensen **A Short-Time Objective Intelligibility Measure for Time-Frequency
+Weighted Noisy Speech**, ICASSP 2010, Texas, Dallas. https://doi.org/10.1109/ICASSP.2010.5495701 \
+[10] Tiago H. Falk, Chenxi Zheng, and Way-Yip Chan. **A Non-Intrusive Quality and Intelligibility Measure of Reverberant
+and Dereverberated Speech**, IEEE Trans Audio Speech Lang Process, Vol. 18, No. 7, pp. 1766-1774,
 Sept.2010. https://doi.org/10.1109/TASL.2010.2052247 \
-[11] R. Kubichek, "Mel-cepstral distance measure for objective speech quality assessment", Proceedings of IEEE Pacific
+[11] R. Kubichek, **Mel-cepstral distance measure for objective speech quality assessment**, Proceedings of IEEE Pacific
 Rim Conference on Communications Computers and Signal Processing, Victoria, BC, Canada, 1993, pp. 125-128
 vol.1, https://doi.org/10.1109/PACRIM.1993.407206. \
-[12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio
-[13] Yi Hu and Philipos C. Loizou, "Evaluation of Objective Quality Measures for Speech Enhancement", IEEE TRANSACTIONS
-ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, JANUARY 2008 229
-[14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “Speech Intelligibility Prediction Using Spectro-Temporal
-Modulation
-Analysis,” IEEE/ACM Trans. Audio, Speech, & Language Processing, vol. 29, pp. 210-225, 2021.
-[15] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, “A Spectro-Temporal Glimpsing Index (STGI) for Speech
-Intelligibility Prediction," Proc. Interspeech, 5 pages, Aug 2021.
+[12] https://en.wikipedia.org/wiki/Signal-to-noise_ratio \
+[13] Yi Hu and Philipos C. Loizou, **Evaluation of Objective Quality Measures for Speech Enhancement**, IEEE TRANSACTIONS
+ON AUDIO, SPEECH, AND LANGUAGE PROCESSING, VOL. 16, NO. 1, 229, JANUARY 2008, https://doi.org/10.1109/TASL.2007.911054 \
+[14] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, **Speech Intelligibility Prediction Using Spectro-Temporal
+Modulation Analysis**. IEEE/ACM Trans. Audio, Speech, & Language Processing, vol. 29, pp. 210-225,
+2021, https://doi.org/10.1109/taslp.2020.3039929 \
+[15] A. Edraki, W.-Y. Chan, J. Jensen, & D. Fogerty, **A Spectro-Temporal Glimpsing Index (STGI) for Speech
+Intelligibility Prediction,** Proc. Interspeech, 5 pages, Aug 2021, http://dx.doi.org/10.21437/Interspeech.2021-605 \
 [16] Lo, Chen-Chou and Fu, Szu-Wei and Huang, Wen-Chin and Wang, Xin and Yamagishi, Junichi and Tsao, Yu and Wang,
-Hsin-Min, "MOSNet: Deep Learning based Objective Assessment for Voice Conversion", arXiv preprint arXiv:1904.08352,
-2019, https://arxiv.org/abs/1904.08352
-[17] Roux, Jonathan Le and Wisdom, Scott and Erdogan, Hakan and Hershey, John R, "SDR – Half-baked or Well Done?",
+Hsin-Min, **MOSNet: Deep Learning based Objective Assessment for Voice Conversion**, arXiv preprint arXiv:1904.08352,
+2019, https://arxiv.org/abs/1904.08352 \
+[17] Roux, Jonathan Le and Wisdom, Scott and Erdogan, Hakan and Hershey, John R, **SDR – Half-baked or Well Done?**,
 ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP),
 2019, https://dx.doi.org/10.1109/ICASSP.2019.8683855
 
@@ -239,9 +235,9 @@ ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal
 [4] https://github.com/ludlows/PESQ \
 [5] https://github.com/mpariente/pystoi \
 [6] https://github.com/jfsantos/SRMRpy \
-[7] https://github.com/jasminsternkopf/mel_cepstral_distance
-[8] https://github.com/nglehuy/semetrics
-[9] https://github.com/aminEdraki/py-intelligibility
+[7] https://github.com/jasminsternkopf/mel_cepstral_distance \
+[8] https://github.com/nglehuy/semetrics \
+[9] https://github.com/aminEdraki/py-intelligibility \
 [10] https://github.com/aliutkus/speechmetrics
 
 ### Licence
@@ -250,6 +246,6 @@ The A-Files is an open source software under GPLv3 license.
 
 ### Authors
 
-- Paweł Kaczmarek ([@pawelkaczmarek12](https://github.com/pawelkaczmarek12)) - Military University of Technology,
+- Paweł Kaczmarek ([@pawel-kaczmarek](https://github.com/pawel-kaczmarek)) - Military University of Technology,
   Faculty of Electronics
 - Zbigniew Piotrowski - Military University of Technology, Faculty of Electronics
