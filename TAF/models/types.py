@@ -34,4 +34,5 @@ class MetricType(Enum):
     STGI_METRIC = auto()
     WSTMI_METRIC = auto()
     SISDR_METRIC = auto()
+    BSS_EVAL_METRIC = auto()
     AI_MOSNET_METRIC = auto()
