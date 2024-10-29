@@ -8,6 +8,7 @@ from TAF.steganography_methods.DsssMethod import DsssMethod
 from TAF.steganography_methods.DwtLsbMethod import DwtLsbMethod
 from TAF.steganography_methods.EchoMethod import EchoMethod
 from TAF.steganography_methods.FsvcMethod import FsvcMethod
+from TAF.steganography_methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from TAF.steganography_methods.LsbMethod import LsbMethod
 from TAF.steganography_methods.NormSpaceMethod import NormSpaceMethod
 from TAF.steganography_methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
@@ -27,6 +28,7 @@ class SteganographyMethodFactory:
     @staticmethod
     def _all_methods(sr: int) -> Dict[MethodType, SteganographyMethod]:
         return {
+            MethodType.IMPROVED_PHASE_CODING_METHOD: ImprovedPhaseCodingMethod(),
             MethodType.PHASE_CODING_METHOD: PhaseCodingMethod(),
             MethodType.DSSS_METHOD: DsssMethod(),
             MethodType.LSB_METHOD: LsbMethod(),
