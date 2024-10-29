@@ -6,6 +6,7 @@ class MethodType(Enum):
     DCT_B1_METHOD = auto()
     NORM_SPACE_METHOD = auto()
     PHASE_CODING_METHOD = auto()
+    IMPROVED_PHASE_CODING_METHOD = auto()
     DCT_DELTA_LSB_METHOD = auto()
     ECHO_METHOD = auto()
     DWT_LSB_METHOD = auto()

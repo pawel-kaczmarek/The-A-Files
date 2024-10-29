@@ -78,6 +78,7 @@ List of implemented methods:
 |                 ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                      |
 |                ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)            |
 |         ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                   |
+| ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                         |
 |         ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                            |
 |              ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                            |
 |               ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                  |
@@ -231,7 +232,9 @@ ICASSP 2019 - 2019 IEEE International Conference on Acoustics, Speech and Signal
 2019, https://dx.doi.org/10.1109/ICASSP.2019.8683855 \
 [18] Stöter, Fabian-Robert and Liutkus, Antoine and Ito, Nobutaka, **The 2018 Signal Separation Evaluation Campaign**,
 Latent Variable Analysis and Signal Separation: 14th International Conference, LVA/ICA 2018, Surrey, UK, 2018, pp.
-293–305, https://doi.org/10.5281/zenodo.3376621
+293–305, https://doi.org/10.5281/zenodo.3376621 \
+[19] Yang, Guang, **An Improved Phase Coding Audio Steganography Algorithm**,*arXiv preprint* arXiv:2408.13277,
+2024, https://doi.org/10.48550/arXiv.2408.13277
 
 #### Links
 
