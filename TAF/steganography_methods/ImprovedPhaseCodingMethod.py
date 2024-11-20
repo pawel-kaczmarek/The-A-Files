@@ -10,8 +10,10 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         # Calculate message length in bits
         msg_len = len(message)
+
         # Calculate segment length, ensuring it's a power of 2
         seg_len = int(2 * 2 ** np.ceil(np.log2(2 * msg_len)))
+
         # Calculate the number of segments needed
         seg_num = int(np.ceil(len(data) / seg_len))
 
@@ -20,10 +22,11 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
 
         # Convert message to binary representation
         msg_bin = np.ravel(message)
-        # Convert binary to phase shifts (-pi/8 for 1, pi/8 for 0)
+
+        # Convert binary to phase shifts (-π/8 for 1, π/8 for 0)
         msg_pi = msg_bin.copy()
         msg_pi[msg_pi == 0] = -1
-        msg_pi = msg_pi * -np.pi / 2  # Use smaller phase to improve audio quality 1/8 may cause low BER, so change back to 1/2
+        msg_pi = msg_pi * -np.pi / 2  # 1/2 for phase shift to improve audio quality
 
         # Reshape audio into segments and perform FFT
         segs = data.reshape((seg_num, seg_len))

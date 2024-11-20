@@ -1,5 +1,4 @@
 from typing import List
-
 import numpy as np
 import pywt
 from scipy.fft import dct, idct
