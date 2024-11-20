@@ -43,9 +43,9 @@ if __name__ == '__main__':
         for method in SteganographyMethodFactory.get_all(file.samplerate):
             try:
                 secret_data = method.encode(data=file.samples, message=secret_msg)
-                # for metric in MetricFactory.get_all():
-                #     m = metric.calculate(file.samples, secret_data, file.samplerate, 0.03, 0.75)
-                #     logger.info("{} : {}", metric.name(), m)
+                for metric in MetricFactory.get_all():
+                    m = metric.calculate(file.samples, secret_data, file.samplerate, 0.03, 0.75)
+                    logger.info("{} : {}", metric.name(), m)
 
                 decoded_message = method.decode(secret_data, len(secret_msg))
                 logger.info("{} : {}", np.array_equal(secret_msg, decoded_message), method.type())
@@ -53,9 +53,9 @@ if __name__ == '__main__':
                 file.samples = secret_data
 
                 corrupted_wav_file = apply_all_attacks(file)
-                #
-                # decoded_message_after_attacks = method.decode(corrupted_wav_file.samples, len(secret_msg))
-                # logger.info("{} : {}", np.array_equal(secret_msg, decoded_message_after_attacks), method.type())
+
+                decoded_message_after_attacks = method.decode(corrupted_wav_file.samples, len(secret_msg))
+                logger.info("{} : {}", np.array_equal(secret_msg, decoded_message_after_attacks), method.type())
 
                 logger.info("-" * 100)
             except Exception as e:
