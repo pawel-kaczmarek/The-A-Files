@@ -13,6 +13,7 @@ class MethodType(Enum):
     DSSS_METHOD = auto()
     PATCHWORK_MULTILAYER_METHOD = auto()
     FSVC_METHOD = auto()
+    BLIND_SVD_METHOD = auto()
 
 
 class MetricType(Enum):
