@@ -1,57 +1,88 @@
 from typing import List
-
 import numpy as np
 from scipy.fft import fft, ifft
 from scipy.signal import lfilter
-
 from TAF.models.SteganographyMethod import SteganographyMethod
 from TAF.steganography_methods.common.mixer import mixer
 
 
 class EchoMethod(SteganographyMethod):
+    """
+    Implements the Echo Hiding watermarking technique using single echo kernels.
+    This method embeds watermark bits by applying echoes with different delays to an audio signal.
+    """
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
-        d0 = 150  # Delay rate
-        d1 = 200  # Delay rate for bit
-        alpha = 0.5  # Echo amplitude
-        L = 8 * 1024  # Length of frames
+        """
+        Embed a watermark message into an audio signal using echo hiding.
 
-        bit = message
+        Args:
+            data (np.ndarray): Input audio signal.
+            message (List[int]): Watermark message bits to embed.
+
+        Returns:
+            np.ndarray: Watermarked audio signal.
+        """
+        d0, d1 = 150, 200  # Echo delays for bits 0 and 1
+        alpha = 0.5        # Echo amplitude
+        L = 8 * 1024       # Frame length
+
         nframe = np.floor(data.shape[0] / L)
-        N = int(nframe - np.mod(nframe, 8))  # Number of frames( for 8 bit)
-        if len(bit) > N:
-            bits = bit[:N]
-        else:
-            bits = (bit + N * [0])[:N]
+        N = int(nframe - np.mod(nframe, 8))  # Number of usable frames for embedding
 
-        k0 = np.append(np.zeros(d0), 1) * alpha  # Echo kernel for bit0
-        k1 = np.append(np.zeros(d1), 1) * alpha  # Echo kernel for bit1
+        # Adjust or truncate the message length to fit into the available frames
+        bits = (message + N * [0])[:N] if len(message) < N else message[:N]
 
-        echo_zro = lfilter(k0, 1, data)
+        # Create echo kernels for bits 0 and 1
+        k0 = np.append(np.zeros(d0), [1]) * alpha
+        k1 = np.append(np.zeros(d1), [1]) * alpha
+
+        # Apply echoes to the signal
+        echo_zero = lfilter(k0, 1, data)
         echo_one = lfilter(k1, 1, data)
-        window = mixer(L, bits, 0, 1, 256)[0]
-        out = data[0: N * L] + echo_zro[0: N * L] * np.abs(window - 1) + echo_one[0: N * L] * window
-        out = np.append(out, data[N * L: len(data)])
 
-        return out
+        # Generate mixing window for embedding
+        window = mixer(L, bits, 0, 1, 256)[0]
+
+        # Embed watermark into the signal
+        watermarked = (
+            data[:N * L]
+            + echo_zero[:N * L] * np.abs(window - 1)
+            + echo_one[:N * L] * window
+        )
+
+        # Append the untouched part of the signal
+        return np.append(watermarked, data[N * L:])
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
-        d0 = 150  # Delay rate
-        d1 = 200  # Delay rate for bit
-        alpha = 0.5  # Echo amplitude
-        L = 8 * 1024  # Length of frames
+        """
+        Extract a watermark message from a watermarked audio signal.
+
+        Args:
+            data_with_watermark (np.ndarray): Watermarked audio signal.
+            watermark_length (int): Number of watermark bits to extract.
+
+        Returns:
+            List[int]: Extracted watermark bits.
+        """
+        d0, d1 = 150, 200  # Echo delays for bits 0 and 1
+        L = 8 * 1024       # Frame length
+
         N = int(np.floor(len(data_with_watermark) / L))
-        xsig = np.reshape(np.transpose(data_with_watermark[0:N * L]), (L, N), order='F')
-        data = np.empty(N)
+        xsig = np.reshape(data_with_watermark[:N * L], (N, L)).T
 
+        extracted_bits = []
         for k in range(N):
-            rceps = ifft(np.log(np.abs(fft(xsig[:, k]))))
-            if rceps[d0] >= rceps[d1]:
-                data[k] = 0
-            else:
-                data[k] = 1
+            rceps = np.real(ifft(np.log(np.abs(fft(xsig[:, k]) + 1e-10))))  # Add small constant to avoid log(0)
+            extracted_bits.append(0 if rceps[d0] >= rceps[d1] else 1)
 
-        return np.asarray(data, dtype=np.int)[:watermark_length]
+        return extracted_bits[:watermark_length]
 
     def type(self) -> str:
+        """
+        Return the type of the watermarking method.
+
+        Returns:
+            str: Method description.
+        """
         return "Echo Hiding technique with single echo kernel"
