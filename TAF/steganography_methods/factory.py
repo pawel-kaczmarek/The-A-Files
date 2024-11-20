@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from TAF.models.SteganographyMethod import SteganographyMethod
 from TAF.models.types import MethodType
+from TAF.steganography_methods.BlindSvdMethod import BlindSvdMethod
 from TAF.steganography_methods.DctB1Method import DctB1Method
 from TAF.steganography_methods.DctDeltaLsbMethod import DctDeltaLsbMethod
 from TAF.steganography_methods.DsssMethod import DsssMethod
@@ -28,6 +29,7 @@ class SteganographyMethodFactory:
     @staticmethod
     def _all_methods(sr: int) -> Dict[MethodType, SteganographyMethod]:
         return {
+            MethodType.BLIND_SVD_METHOD: BlindSvdMethod(),
             MethodType.IMPROVED_PHASE_CODING_METHOD: ImprovedPhaseCodingMethod(),
             MethodType.PHASE_CODING_METHOD: PhaseCodingMethod(),
             MethodType.DSSS_METHOD: DsssMethod(),
