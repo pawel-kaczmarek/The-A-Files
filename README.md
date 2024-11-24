@@ -73,20 +73,21 @@ technique and make any necessary adjustments to improve the technique's strength
 
 List of implemented methods:
 
-|                         Class name | Description [Reference]                                                             |
-|-----------------------------------:|-------------------------------------------------------------------------------------|
-|                 ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                                |
-|                ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)                      |
-|         ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                             |
-| ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                                   |
-|         ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                                      |
-|              ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                                      |
-|               ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                            |
-| ```PatchworkMultilayerMethod.py``` | Patchwork-Based multilayer [[3]](#articles)                                         |
-|           ```NormSpaceMethod.py``` | Norm space method [[4]](#articles)                                                  |
-|                ```FsvcMethod.py``` | Frequency Singular Value Coefficient Modification (FSVC) [[5]](#articles)           |
-|                ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
-|            ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
+|                             Class name | Description [Reference]                                                             |
+|---------------------------------------:|-------------------------------------------------------------------------------------|
+|                     ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                                |
+|                    ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)                      |
+|             ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                             |
+|     ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                                   |
+|             ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                                      |
+|                  ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                                      |
+|                   ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                            |
+|     ```PatchworkMultilayerMethod.py``` | Patchwork-Based multilayer [[3]](#articles)                                         |
+|               ```NormSpaceMethod.py``` | Norm space method [[4]](#articles)                                                  |
+|                    ```FsvcMethod.py``` | Frequency Singular Value Coefficient Modification (FSVC) [[5]](#articles)           |
+|                    ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
+|                ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
+| ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
 
 Each method extend abstract class  ```SteganographyMethod```
 
@@ -238,7 +239,10 @@ Latent Variable Analysis and Signal Separation: 14th International Conference, L
 2024, https://doi.org/10.48550/arXiv.2408.13277 \
 [20] Dhar, Pranab Kumar, and Shimamura, Tetsuya, Blind SVD-based audio watermarking using entropy and log-polar
 transformation, Journal of Information Security and Applications, Volume 20, 2015, Pages
-74-83, https://doi.org/10.1016/j.jisa.2014.10.007.
+74-83, https://doi.org/10.1016/j.jisa.2014.10.007. \
+[21] Adhiyaksa, F. A., Ahmad, T., Shiddiqi, A. M., Jati Santoso, B., Studiawan, H., & Pratomo, B. A. (2022). Reversible
+Audio Steganography using Least Prime Factor and Audio Interpolation. In 2021 International Seminar on Machine Learning,
+Optimization, and Data Science (ISMODE) (pp. 97–102). IEEE. https://doi.org/10.1109/ISMODE53584.2022.9743066
 
 #### Links
 

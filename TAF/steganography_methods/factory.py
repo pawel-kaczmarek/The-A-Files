@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from TAF.models.SteganographyMethod import SteganographyMethod
 from TAF.models.types import MethodType
+from TAF.steganography_methods.PrimeFactorInterpolatedMethod import AudioSteganography, PrimeFactorInterpolatedMethod
 from TAF.steganography_methods.BlindSvdMethod import BlindSvdMethod
 from TAF.steganography_methods.DctB1Method import DctB1Method
 from TAF.steganography_methods.DctDeltaLsbMethod import DctDeltaLsbMethod
@@ -41,4 +42,5 @@ class SteganographyMethodFactory:
             MethodType.DCT_DELTA_LSB_METHOD: DctDeltaLsbMethod(sr=sr),
             MethodType.PATCHWORK_MULTILAYER_METHOD: PatchworkMultilayerMethod(sr=sr),
             MethodType.NORM_SPACE_METHOD: NormSpaceMethod(sr=sr),
+            MethodType.PRIME_FACTOR_INTERPOLATE: PrimeFactorInterpolatedMethod(),
         }
