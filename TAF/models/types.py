@@ -14,6 +14,7 @@ class MethodType(Enum):
     PATCHWORK_MULTILAYER_METHOD = auto()
     FSVC_METHOD = auto()
     BLIND_SVD_METHOD = auto()
+    PRIME_FACTOR_INTERPOLATE = auto()
 
 
 class MetricType(Enum):
