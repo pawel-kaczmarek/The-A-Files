@@ -242,7 +242,10 @@ transformation, Journal of Information Security and Applications, Volume 20, 201
 74-83, https://doi.org/10.1016/j.jisa.2014.10.007. \
 [21] Adhiyaksa, F. A., Ahmad, T., Shiddiqi, A. M., Jati Santoso, B., Studiawan, H., & Pratomo, B. A. (2022). Reversible
 Audio Steganography using Least Prime Factor and Audio Interpolation. In 2021 International Seminar on Machine Learning,
-Optimization, and Data Science (ISMODE) (pp. 97–102). IEEE. https://doi.org/10.1109/ISMODE53584.2022.9743066
+Optimization, and Data Science (ISMODE) (pp. 97–102). IEEE. https://doi.org/10.1109/ISMODE53584.2022.9743066 \
+[22] Mushtaq, S., Mehraj, S., & Parah, S. A. (2024). Blind and Robust Watermarking Framework for Audio Signals. In 2024
+11th International Conference on Reliability, Infocom Technologies and Optimization (Trends and Future Directions) (
+ICRITO) (pp. 1–5). IEEE. https://doi.org/10.1109/ICRITO61523.2024.10522195
 
 #### Links
 
