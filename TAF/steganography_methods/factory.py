@@ -2,7 +2,6 @@ from typing import Dict, List
 
 from TAF.models.SteganographyMethod import SteganographyMethod
 from TAF.models.types import MethodType
-from TAF.steganography_methods.PrimeFactorInterpolatedMethod import AudioSteganography, PrimeFactorInterpolatedMethod
 from TAF.steganography_methods.BlindSvdMethod import BlindSvdMethod
 from TAF.steganography_methods.DctB1Method import DctB1Method
 from TAF.steganography_methods.DctDeltaLsbMethod import DctDeltaLsbMethod
@@ -12,9 +11,11 @@ from TAF.steganography_methods.EchoMethod import EchoMethod
 from TAF.steganography_methods.FsvcMethod import FsvcMethod
 from TAF.steganography_methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from TAF.steganography_methods.LsbMethod import LsbMethod
+from TAF.steganography_methods.LwtMethod import LwtMethod
 from TAF.steganography_methods.NormSpaceMethod import NormSpaceMethod
 from TAF.steganography_methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
 from TAF.steganography_methods.PhaseCodingMethod import PhaseCodingMethod
+from TAF.steganography_methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
 
 
 class SteganographyMethodFactory:
@@ -43,4 +44,5 @@ class SteganographyMethodFactory:
             MethodType.PATCHWORK_MULTILAYER_METHOD: PatchworkMultilayerMethod(sr=sr),
             MethodType.NORM_SPACE_METHOD: NormSpaceMethod(sr=sr),
             MethodType.PRIME_FACTOR_INTERPOLATE: PrimeFactorInterpolatedMethod(),
+            MethodType.LWT_METHOD: LwtMethod(),
         }
