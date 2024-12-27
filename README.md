@@ -88,6 +88,7 @@ List of implemented methods:
 |                    ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
 |                ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
 | ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
+|                     ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
 
 Each method extend abstract class  ```SteganographyMethod```
 
