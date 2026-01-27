@@ -268,7 +268,11 @@ The A-Files is an open source software under GPLv3 license.
 
 ### Dependencies
 
-Sometimes you will need: https://ffmpeg.org/
+PESQ requires Microsoft Visual C++ 14.0 or later. You can install it via Microsoft C++ Build Tools:
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
+
+In some cases, you may also need FFmpeg:
+https://ffmpeg.org/
 
 ### Authors
 
