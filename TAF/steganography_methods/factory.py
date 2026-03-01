@@ -8,6 +8,7 @@ from TAF.steganography_methods.DctDeltaLsbMethod import DctDeltaLsbMethod
 from TAF.steganography_methods.DsssMethod import DsssMethod
 from TAF.steganography_methods.DwtLsbMethod import DwtLsbMethod
 from TAF.steganography_methods.EchoMethod import EchoMethod
+from TAF.steganography_methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
 from TAF.steganography_methods.FsvcMethod import FsvcMethod
 from TAF.steganography_methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from TAF.steganography_methods.LsbMethod import LsbMethod
@@ -45,4 +46,5 @@ class SteganographyMethodFactory:
             MethodType.NORM_SPACE_METHOD: NormSpaceMethod(sr=sr),
             MethodType.PRIME_FACTOR_INTERPOLATE: PrimeFactorInterpolatedMethod(),
             MethodType.LWT_METHOD: LwtMethod(),
+            MethodType.FBSMethod: ForegroundBackgroundSegmentationMethod(sr=sr),
         }

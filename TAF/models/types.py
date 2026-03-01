@@ -16,6 +16,7 @@ class MethodType(Enum):
     BLIND_SVD_METHOD = auto()
     PRIME_FACTOR_INTERPOLATE = auto()
     LWT_METHOD = auto()
+    FBSMethod = auto()
 
 
 class MetricType(Enum):
