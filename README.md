@@ -73,22 +73,23 @@ technique and make any necessary adjustments to improve the technique's strength
 
 List of implemented methods:
 
-|                             Class name | Description [Reference]                                                             |
-|---------------------------------------:|-------------------------------------------------------------------------------------|
-|                     ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                                |
-|                    ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)                      |
-|             ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                             |
-|     ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                                   |
-|             ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                                      |
-|                  ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                                      |
-|                   ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                            |
-|     ```PatchworkMultilayerMethod.py``` | Patchwork-Based multilayer [[3]](#articles)                                         |
-|               ```NormSpaceMethod.py``` | Norm space method [[4]](#articles)                                                  |
-|                    ```FsvcMethod.py``` | Frequency Singular Value Coefficient Modification (FSVC) [[5]](#articles)           |
-|                    ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
-|                ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
-| ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
-|                     ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
+|                                      Class name | Description [Reference]                                                             |
+|------------------------------------------------:|-------------------------------------------------------------------------------------|
+|                              ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                                |
+|                             ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)                      |
+|                      ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                             |
+|              ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                                   |
+|                      ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                                      |
+|                           ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                                      |
+|                            ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                            |
+|              ```PatchworkMultilayerMethod.py``` | Patchwork-Based multilayer [[3]](#articles)                                         |
+|                        ```NormSpaceMethod.py``` | Norm space method [[4]](#articles)                                                  |
+|                             ```FsvcMethod.py``` | Frequency Singular Value Coefficient Modification (FSVC) [[5]](#articles)           |
+|                             ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
+|                         ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
+|          ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
+|                              ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
+| ```ForegroundBackgroundSegmentationMethod.py``` | Foreground-Background Segmentation LSB (FBS-LSB) [[23]](#articles)                  |
 
 Each method extend abstract class  ```SteganographyMethod```
 
@@ -246,7 +247,9 @@ Audio Steganography using Least Prime Factor and Audio Interpolation. In 2021 In
 Optimization, and Data Science (ISMODE) (pp. 97–102). IEEE. https://doi.org/10.1109/ISMODE53584.2022.9743066 \
 [22] Mushtaq, S., Mehraj, S., & Parah, S. A. (2024). Blind and Robust Watermarking Framework for Audio Signals. In 2024
 11th International Conference on Reliability, Infocom Technologies and Optimization (Trends and Future Directions) (
-ICRITO) (pp. 1–5). IEEE. https://doi.org/10.1109/ICRITO61523.2024.10522195
+ICRITO) (pp. 1–5). IEEE. https://doi.org/10.1109/ICRITO61523.2024.10522195 \
+[23] Wang, J., & Wang, K. (2025). A novel audio steganography based on the segmentation of the foreground and background
+of audio. Computers & Electrical Engineering, 117, 109247. https://doi.org/10.1016/j.compeleceng.2024.109247
 
 #### Links
 
