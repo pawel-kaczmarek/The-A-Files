@@ -1,0 +1,1 @@
+"""Packaged example audio resources."""
