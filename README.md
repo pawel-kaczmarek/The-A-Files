@@ -17,6 +17,8 @@ audio signal, measure speech quality metrics, and test the audio signal's robust
 ## Table of contents
 
 * [About](#about)
+* [Package structure](#package-structure)
+* [Migration note](#migration-note)
 * [Steganography algorithms](#steganography-algorithms)
 * [Metrics](#metrics)
     * [Speech Reverberation](#speech-reverberation)
@@ -68,6 +70,62 @@ steganography
 technique and make any necessary adjustments to improve the technique's strength and resilience.
 
 *Powered by some great [GitHub repositories](#links)*
+
+## Package structure
+
+The canonical Python package now lives under `src/taf/`.
+
+Repository layout:
+
+* `src/taf/` contains the importable library code.
+* `src/taf/resources/` contains packaged resources such as example audio, bundled sample datasets, and shipped model files.
+* `scripts/` contains runnable repository scripts such as `scripts/smoke_workflow.py`.
+* `tests/` contains import- and behavior-level tests.
+* `Documentation/` remains outside the package as a project asset.
+
+For local development, install the package in editable mode:
+
+```bash
+python -m pip install -e .[dev]
+```
+
+Then run the smoke workflow with:
+
+```bash
+python scripts/smoke_workflow.py
+```
+
+## Packaged resources
+
+Runtime assets that must work from source, tests, editable installs, and built distributions live under `src/taf/resources/`.
+
+Use this layout:
+
+* `src/taf/resources/audio/` for standalone example WAV files.
+* `src/taf/resources/datasets/` for the bundled `VCTK` and `LibriSpeech` sample corpora used by the smoke workflow.
+* `src/taf/resources/models/` for packaged model weights such as `.h5`.
+
+Example usage:
+
+```python
+from taf.models.WavFile import WavFile
+from taf.resources import example_wav_path, mosnet_model_path, packaged_dataset_audio_paths
+
+with example_wav_path() as wav_path:
+    wav_file = WavFile.load(wav_path)
+
+with mosnet_model_path() as model_path:
+    print(model_path)
+
+with packaged_dataset_audio_paths() as dataset_paths:
+    print(len(dataset_paths["vctk"]))
+```
+
+## Migration note
+
+The main packaging change is the introduction of a `src/` layout so the core library is imported as `taf` instead of relying on the repository root being on `PYTHONPATH`.
+
+The implementation modules were copied into `src/taf/` with their existing internal layout preserved to avoid algorithm changes. The legacy top-level `TAF/` tree was left in place for now because a direct filesystem move was blocked on this checkout, so the new canonical code lives in `src/taf/` and future work should target that package.
 
 ## Steganography algorithms
 
