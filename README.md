@@ -79,7 +79,6 @@ Repository layout:
 
 * `src/taf/` contains the importable library code.
 * `src/taf/resources/` contains packaged resources such as example audio, bundled sample datasets, and shipped model files.
-* `scripts/` contains runnable repository scripts such as `scripts/smoke_workflow.py`.
 * `tests/` contains import- and behavior-level tests.
 * `Documentation/` remains outside the package as a project asset.
 
@@ -87,12 +86,6 @@ For local development, install the package in editable mode:
 
 ```bash
 python -m pip install -e .[dev]
-```
-
-Then run the smoke workflow with:
-
-```bash
-python scripts/smoke_workflow.py
 ```
 
 ## Packaged resources
