@@ -38,7 +38,7 @@ The A-Files project contains:
 * Speech quality metrics
 * Audio attacks
 
-<img src="./Documentation/functions.svg" alt="The A-Files functions"> 
+<img src="docs/functions.svg" alt="The A-Files functions"> 
 
 ###### Loading
 
