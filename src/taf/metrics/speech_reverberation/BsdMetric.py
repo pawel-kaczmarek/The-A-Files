@@ -4,7 +4,7 @@ import numpy as np
 from scipy.signal import stft, lfilter
 from scipy.signal.windows import hann
 
-from taf.models.Metric import Metric
+from models.Metric import Metric
 
 
 class BsdMetric(Metric):

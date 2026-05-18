@@ -2,7 +2,7 @@ from numbers import Number
 
 import numpy as np
 
-from taf.models.Metric import Metric
+from models.Metric import Metric
 
 
 class SnrMetric(Metric):

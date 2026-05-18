@@ -7,7 +7,7 @@ import numpy as np
 from scipy.fft import fftfreq
 from scipy.signal import butter, sosfilt
 
-from taf.models.WavFile import WavFile
+from models.WavFile import WavFile
 
 
 @dataclass

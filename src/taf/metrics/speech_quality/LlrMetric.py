@@ -3,8 +3,8 @@ from numbers import Number
 import numpy as np
 from scipy.linalg import toeplitz
 
-from taf.metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff
-from taf.models.Metric import Metric
+from metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff
+from models.Metric import Metric
 
 
 class LlrMetric(Metric):

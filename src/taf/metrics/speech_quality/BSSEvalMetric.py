@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 from museval import metrics  # https://github.com/sigsep/sigsep-mus-eval
 
-from taf.models.Metric import Metric
+from models.Metric import Metric
 
 
 class BSSEvalMetric(Metric):

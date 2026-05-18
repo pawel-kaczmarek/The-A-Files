@@ -4,8 +4,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import butter, lfilter, hilbert
 
-from taf.models.Metric import Metric
-from taf.metrics.common.metrics_helper import resample_matlab_like
+from models.Metric import Metric
+from metrics.common.metrics_helper import resample_matlab_like
 
 
 class NcmMetric(Metric):

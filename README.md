@@ -101,8 +101,8 @@ Use this layout:
 Example usage:
 
 ```python
-from taf.models.WavFile import WavFile
-from taf.resources import example_wav_path, mosnet_model_path, packaged_dataset_audio_paths
+from models.WavFile import WavFile
+from resources.paths import example_wav_path, mosnet_model_path, packaged_dataset_audio_paths
 
 with example_wav_path() as wav_path:
     wav_file = WavFile.load(wav_path)

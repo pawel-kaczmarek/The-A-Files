@@ -10,8 +10,8 @@ from tensorflow.keras.constraints import max_norm
 from tensorflow.keras.layers import Dense, Dropout, Conv2D
 from tensorflow.keras.layers import LSTM, TimeDistributed, Bidirectional
 
-from taf.models.Metric import Metric
-from taf.resources import mosnet_model_path
+from models.Metric import Metric
+from resources.paths import mosnet_model_path
 
 # prevent TF warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'

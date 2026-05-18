@@ -1,1 +1,0 @@
-"""Packaged demo dataset resources."""
