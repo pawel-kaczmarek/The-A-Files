@@ -1,1 +1,0 @@
-"""MOSNet packaged model weights."""

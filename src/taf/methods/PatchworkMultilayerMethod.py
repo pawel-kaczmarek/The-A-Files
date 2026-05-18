@@ -2,7 +2,7 @@ from typing import List
 import numpy as np
 from scipy.fft import dct, idct
 
-from taf.models.SteganographyMethod import SteganographyMethod
+from models.SteganographyMethod import SteganographyMethod
 
 
 class PatchworkMultilayerMethod(SteganographyMethod):

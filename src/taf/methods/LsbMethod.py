@@ -1,7 +1,7 @@
 from typing import List
 import bitstring
 import numpy as np
-from taf.models.SteganographyMethod import SteganographyMethod
+from models.SteganographyMethod import SteganographyMethod
 
 
 class LsbMethod(SteganographyMethod):

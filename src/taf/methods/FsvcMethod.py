@@ -4,7 +4,7 @@ import numpy as np
 from numpy.linalg import svd
 from scipy.fft import dct, idct
 
-from taf.models.SteganographyMethod import SteganographyMethod
+from models.SteganographyMethod import SteganographyMethod
 
 
 def modify_svd_pair(alpha, l1, l2, watermark_bit):

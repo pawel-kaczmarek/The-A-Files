@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from taf.models.WavFile import WavFile
+from models.WavFile import WavFile
 
 
 class WavFileLoader:

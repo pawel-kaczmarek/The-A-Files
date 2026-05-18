@@ -3,8 +3,8 @@ from typing import List
 import bitstring
 import numpy as np
 
-from taf.models.SteganographyMethod import SteganographyMethod
-from taf.methods.common.background_separator import separate_fg_bg_full
+from models.SteganographyMethod import SteganographyMethod
+from methods.common.background_separator import separate_fg_bg_full
 
 
 class ForegroundBackgroundSegmentationMethod(SteganographyMethod):

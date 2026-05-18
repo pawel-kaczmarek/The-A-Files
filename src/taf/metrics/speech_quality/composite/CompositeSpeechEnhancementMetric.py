@@ -5,7 +5,7 @@ from librosa import lpc
 from scipy.linalg import toeplitz
 from scipy.signal import lfilter
 
-from taf.models.Metric import Metric
+from models.Metric import Metric
 
 
 class BaseSpeechEnhancementMetric(Metric, ABC):

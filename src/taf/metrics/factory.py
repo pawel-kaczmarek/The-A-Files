@@ -1,28 +1,28 @@
 from typing import Dict, List
 
-from taf.metrics.ai_based.mosnet.MosNetMetric import MosNetMetric
-from taf.metrics.speech_intelligibility.CsiiMetric import CsiiMetric
-from taf.metrics.speech_intelligibility.NcmMetric import NcmMetric
-from taf.metrics.speech_intelligibility.StgiMetric import StgiMetric
-from taf.metrics.speech_intelligibility.StoiMetric import StoiMetric
-from taf.metrics.speech_intelligibility.WstmiMetric import WstmiMetric
-from taf.metrics.speech_quality.BSSEvalMetric import BSSEvalMetric
-from taf.metrics.speech_quality.CepstrumDistanceMetric import CepstrumDistanceMetric
-from taf.metrics.speech_quality.FWSnrSegMetric import FWSnrSegMetric
-from taf.metrics.speech_quality.LlrMetric import LlrMetric
-from taf.metrics.speech_quality.MelCepstralDistanceMetric import MelCepstralDistanceMetric
-from taf.metrics.speech_quality.PesqMetric import PesqMetric
-from taf.metrics.speech_quality.SisdrMetric import SisdrMetric
-from taf.metrics.speech_quality.SnrMetric import SnrMetric
-from taf.metrics.speech_quality.SnrSegMetric import SnrSegMetric
-from taf.metrics.speech_quality.WssMetric import WssMetric
-from taf.metrics.speech_quality.composite.CbakMetric import CbakMetric
-from taf.metrics.speech_quality.composite.CovlMetric import CovlMetric
-from taf.metrics.speech_quality.composite.CsigMetric import CsgiMetric
-from taf.metrics.speech_reverberation.BsdMetric import BsdMetric
-from taf.metrics.speech_reverberation.SrmrMetric import SrmrMetric
-from taf.models.Metric import Metric
-from taf.models.types import MetricType
+from metrics.ai_based.mosnet.MosNetMetric import MosNetMetric
+from metrics.speech_intelligibility.CsiiMetric import CsiiMetric
+from metrics.speech_intelligibility.NcmMetric import NcmMetric
+from metrics.speech_intelligibility.StgiMetric import StgiMetric
+from metrics.speech_intelligibility.StoiMetric import StoiMetric
+from metrics.speech_intelligibility.WstmiMetric import WstmiMetric
+from metrics.speech_quality.BSSEvalMetric import BSSEvalMetric
+from metrics.speech_quality.CepstrumDistanceMetric import CepstrumDistanceMetric
+from metrics.speech_quality.FWSnrSegMetric import FWSnrSegMetric
+from metrics.speech_quality.LlrMetric import LlrMetric
+from metrics.speech_quality.MelCepstralDistanceMetric import MelCepstralDistanceMetric
+from metrics.speech_quality.PesqMetric import PesqMetric
+from metrics.speech_quality.SisdrMetric import SisdrMetric
+from metrics.speech_quality.SnrMetric import SnrMetric
+from metrics.speech_quality.SnrSegMetric import SnrSegMetric
+from metrics.speech_quality.WssMetric import WssMetric
+from metrics.speech_quality.composite.CbakMetric import CbakMetric
+from metrics.speech_quality.composite.CovlMetric import CovlMetric
+from metrics.speech_quality.composite.CsigMetric import CsgiMetric
+from metrics.speech_reverberation.BsdMetric import BsdMetric
+from metrics.speech_reverberation.SrmrMetric import SrmrMetric
+from models.Metric import Metric
+from models.types import MetricType
 
 
 class MetricFactory:

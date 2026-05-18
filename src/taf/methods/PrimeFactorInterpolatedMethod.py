@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from taf.models.SteganographyMethod import SteganographyMethod
+from models.SteganographyMethod import SteganographyMethod
 
 
 def _interpolate_samples(samples: np.ndarray) -> List[int]:

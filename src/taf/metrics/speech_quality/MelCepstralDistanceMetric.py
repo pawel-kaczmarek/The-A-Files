@@ -4,7 +4,7 @@ import numpy as np
 from librosa.feature import melspectrogram
 from mel_cepstral_distance import get_metrics_mels
 
-from taf.models.Metric import Metric
+from models.Metric import Metric
 
 
 # https://ieeexplore.ieee.org/document/407206

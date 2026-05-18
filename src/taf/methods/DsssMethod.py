@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
-from taf.models.SteganographyMethod import SteganographyMethod
-from taf.methods.common.mixer import mixer
+from models.SteganographyMethod import SteganographyMethod
+from methods.common.mixer import mixer
 
 
 class DsssMethod(SteganographyMethod):
