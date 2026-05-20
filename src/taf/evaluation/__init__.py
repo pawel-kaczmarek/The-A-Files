@@ -7,6 +7,12 @@ from taf.evaluation.workflow import (
     load_files,
     load_resource_files,
 )
+from taf.evaluation.yaml_loader import (
+    config_from_mapping,
+    config_to_mapping,
+    dump_config,
+    load_config,
+)
 
 __all__ = [
     "EvaluationConfig",
@@ -15,8 +21,12 @@ __all__ = [
     "EvaluationRow",
     "FailurePolicy",
     "RandomMessageSpec",
+    "config_from_mapping",
+    "config_to_mapping",
+    "dump_config",
     "evaluate_files",
     "evaluate_files_async",
+    "load_config",
     "load_files",
     "load_resource_files",
 ]

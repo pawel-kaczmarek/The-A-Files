@@ -20,6 +20,7 @@ dependencies = [
     "pesq==0.0.4",
     "pystoi==0.3.3",
     "PyWavelets==1.4.1",
+    "PyYAML>=6.0",
     "scipy==1.9.3",
     "soundfile==0.11.0",
     "SRMRpy @ git+https://github.com/jfsantos/SRMRpy@5d3c134f775215556e813698d9352bc248718c0e",

@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 from loguru import logger
 
-from taf.audio.formats import AudioFileFormat, DecodeTarget, is_direct_target
+from taf.audio.formats import AudioFileFormat, DecodeTarget
 from taf.audio.io import load_audio, save_audio
 from taf.evaluation.config import EvaluationConfig, FailurePolicy
 from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec
@@ -68,25 +68,25 @@ async def evaluate_files_async(
     messages = _materialize_messages(resolved_config)
     method_specs = _method_specs(resolved_config)
     metric_specs = _metric_specs(resolved_config)
-    targets = _normalize_targets(resolved_config.formats)
+    targets = _resolve_targets(resolved_config)
     semaphore = asyncio.Semaphore(max(1, resolved_config.max_workers))
 
     total_tasks = len(files_list) * len(method_specs) * len(messages)
     logger.info(
-        "Evaluating {} file(s) x {} method(s) x {} message(s) -> {} task(s) over {} target(s); "
-        "max_workers={} failure_policy={} output_dir={}",
+        "Evaluating {} file(s) x {} method(s) x {} message(s) -> {} task(s); "
+        "target={} formats={} max_workers={} failure_policy={} output_dir={}",
         len(files_list),
         len(method_specs),
         len(messages),
         total_tasks,
-        len(targets),
+        resolved_config.target.value,
+        [_format_value(t) or _decode_mode(t) for t in targets],
         resolved_config.max_workers,
         resolved_config.failure_policy.value,
         resolved_config.output_dir,
     )
     logger.debug("Methods: {}", [spec.label for spec in method_specs])
     logger.debug("Metrics: {}", [spec.label for spec in metric_specs])
-    logger.debug("Targets: {}", [_format_value(t) or _decode_mode(t) for t in targets])
     logger.debug("Messages: {}", [(m.name, m.length) for m in messages])
 
     async def guarded_job(wav_file: WavFile, method_spec: _MethodSpec, message: EvaluationMessage):
@@ -420,21 +420,29 @@ def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
     return _MetricSpec(label=metric_type.name, create=create)
 
 
-def _normalize_targets(
-    formats: Sequence[AudioFileFormat | DecodeTarget | str],
-) -> list[AudioFileFormat | DecodeTarget]:
-    if not formats:
+def _resolve_targets(config: EvaluationConfig) -> list[AudioFileFormat | DecodeTarget]:
+    """Translate the (target, formats) pair on a config into concrete iteration targets.
+
+    DIRECT mode produces a single in-memory target and ignores ``formats``.
+    FILES mode requires ``formats`` to be a non-empty list of concrete audio
+    containers; each one becomes its own row per (file, method, message).
+    """
+    if config.target == DecodeTarget.DIRECT:
         return [DecodeTarget.DIRECT]
 
-    targets: list[AudioFileFormat | DecodeTarget] = []
-    for value in formats:
-        if is_direct_target(value):
-            target: AudioFileFormat | DecodeTarget = DecodeTarget.DIRECT
-        else:
-            target = AudioFileFormat.from_value(value)
-        if target not in targets:
-            targets.append(target)
-    return targets
+    if config.target == DecodeTarget.FILES:
+        if not config.formats:
+            raise ValueError(
+                "EvaluationConfig.formats must be a non-empty sequence when target=FILES."
+            )
+        resolved: list[AudioFileFormat | DecodeTarget] = []
+        for value in config.formats:
+            fmt = AudioFileFormat.from_value(value)
+            if fmt not in resolved:
+                resolved.append(fmt)
+        return resolved
+
+    raise ValueError(f"Unsupported decode target: {config.target!r}")
 
 
 def _output_path(

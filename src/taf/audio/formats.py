@@ -5,6 +5,7 @@ from enum import Enum
 
 class DecodeTarget(str, Enum):
     DIRECT = "direct"
+    FILES = "files"
 
 
 class AudioFileFormat(str, Enum):
@@ -33,9 +34,3 @@ class AudioFileFormat(str, Enum):
         return cls(value.lower().lstrip("."))
 
 
-def is_direct_target(value: AudioFileFormat | DecodeTarget | str) -> bool:
-    if isinstance(value, DecodeTarget):
-        return value == DecodeTarget.DIRECT
-    if isinstance(value, AudioFileFormat):
-        return False
-    return value.lower().lstrip(".") == DecodeTarget.DIRECT.value
