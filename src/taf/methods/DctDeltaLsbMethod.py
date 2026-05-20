@@ -91,6 +91,8 @@ class DctDeltaLsbMethod(SteganographyMethod):
             np.ndarray: Watermarked audio signal.
         """
         frames, last_frame = to_frames(data, self.sr, self.frame_length_in_ms)
+        # librosa.util.frame returns a read-only view; we need a writeable buffer.
+        frames = np.array(frames, copy=True)
 
         for i, bit in enumerate(message):
             coeffs = dct(frames[i], type=2, norm='ortho')

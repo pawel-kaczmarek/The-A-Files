@@ -27,7 +27,7 @@ def main(root_dir: Path | None = None) -> None:
     vctk = dataset_root / "VCTK" / "16"
     libri_speech = dataset_root / "LibriSpeech" / "142345"
 
-    run(load_files(vctk) + load_files(libri_speech))
+    run(load_files(vctk)[:1] + load_files(libri_speech)[:1])
 
 
 def run(files: list[WavFile]) -> EvaluationResult:

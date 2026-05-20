@@ -162,5 +162,7 @@ class DctB1Method(SteganographyMethod):
 
     def _embed_bits_in_frame(self, C: np.ndarray, watermark_bits: List[int]) -> Tuple[np.ndarray, np.ndarray]:
         band1 = C[:self.band_size]
-        C_hat, G1_ind1 = self._embed_bits_in_band(band1, watermark_bits, lv=1, band_index=0)
+        band1_hat, G1_ind1 = self._embed_bits_in_band(band1, watermark_bits, lv=1, band_index=0)
+        C_hat = C.copy()
+        C_hat[:self.band_size] = band1_hat
         return C_hat, G1_ind1
