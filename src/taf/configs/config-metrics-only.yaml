@@ -1,0 +1,25 @@
+# Scenario: metric comparison — minimal stego work, every metric.
+#
+# Use when you want to characterize the metrics themselves. We embed with a
+# single trivial method (LSB, which always recovers bits) so the decoded
+# signal stays as close as possible to the original; all metrics then run on
+# the (original, processed) pair. Good for tuning metric thresholds or
+# spotting numerical-stability issues across the metric registry.
+
+methods:
+  - LSB_METHOD
+
+# metrics omitted -> all metrics enabled
+
+target: DIRECT         # in-memory; no save/load overhead between encode and decode
+
+output_dir: artifacts/metrics-only
+keep_files: false
+overwrite: true
+max_workers: 1         # metrics are mostly numpy/CPU bound; parallelism gives little here
+
+random_seed: 20260520
+random_message_lengths: [16]
+random_messages_per_length: 1
+
+failure_policy: record

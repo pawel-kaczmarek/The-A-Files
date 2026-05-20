@@ -12,25 +12,49 @@ if __package__ in {None, ""}:
 os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
 
 from taf import __version__
+from taf.configs import SCENARIO_NAMES, config_path as builtin_config_path, is_scenario
 from taf.evaluation.config import EvaluationConfig
 from taf.evaluation.workflow import EvaluationResult, evaluate_files, load_files, load_resource_files
 from taf.models.WavFile import WavFile
 from taf.resources.paths import packaged_dataset_audio_paths
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "examples" / "config.yaml"
+DEFAULT_SCENARIO = "direct-no-metrics"
 
 
 def _load_config(config_path: str | Path | None) -> EvaluationConfig:
-    """Resolve the EvaluationConfig: explicit path > examples/config.yaml > dataclass defaults."""
+    """Resolve the EvaluationConfig.
+
+    Resolution order:
+    1. An explicit built-in scenario name (e.g. ``"full"``) → packaged YAML.
+    2. An explicit filesystem path or ``Path``                → that file.
+    3. ``None``                                                → built-in default.
+    4. Built-in default missing (unusual)                      → ``EvaluationConfig()``.
+    """
     if config_path is not None:
+        as_str = str(config_path)
+        if is_scenario(as_str):
+            with builtin_config_path(as_str) as path:
+                logger.info("Loading built-in config '{}' from {}", as_str, path)
+                return EvaluationConfig.from_yaml(path)
         path = Path(config_path)
         logger.info("Loading evaluation config from {}", path)
         return EvaluationConfig.from_yaml(path)
-    if DEFAULT_CONFIG_PATH.is_file():
-        logger.info("Loading evaluation config from default example {}", DEFAULT_CONFIG_PATH)
-        return EvaluationConfig.from_yaml(DEFAULT_CONFIG_PATH)
-    logger.info("No config file found — using EvaluationConfig() defaults")
-    return EvaluationConfig()
+
+    try:
+        with builtin_config_path(DEFAULT_SCENARIO) as path:
+            logger.info(
+                "Loading default built-in config '{}' from {}",
+                DEFAULT_SCENARIO,
+                path,
+            )
+            return EvaluationConfig.from_yaml(path)
+    except FileNotFoundError:
+        logger.info(
+            "Built-in config '{}' missing (known scenarios: {}). Using EvaluationConfig() defaults.",
+            DEFAULT_SCENARIO,
+            SCENARIO_NAMES,
+        )
+        return EvaluationConfig()
 
 
 def main(root_dir: Path | None = None, config_path: str | Path | None = None) -> None:

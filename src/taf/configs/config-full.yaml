@@ -1,0 +1,26 @@
+# Scenario: full run — every method, every metric, file roundtrip.
+#
+# Use when you want the comprehensive evaluation matrix: all 15 steganography
+# methods x all 21 metrics, with the encoded signal saved as WAV and FLAC and
+# decoded back from disk. Expensive but the most thorough.
+
+# methods / metrics omitted -> defaults to the entire registry
+target: FILES
+formats:
+  - wav
+  - flac
+
+output_dir: artifacts/full
+keep_files: true
+overwrite: true
+max_workers: 4
+
+random_seed: 20260520
+random_message_lengths: [8, 16, 32]
+random_messages_per_length: 1
+
+codec_options:
+  flac:
+    subtype: PCM_24
+
+failure_policy: record

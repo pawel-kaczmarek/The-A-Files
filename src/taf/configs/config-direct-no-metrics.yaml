@@ -1,0 +1,22 @@
+# Scenario: fastest smoke run — every method, no metrics, in-memory only.
+#
+# Use when you want a quick "does anything crash?" pass: each method encodes
+# into memory and decodes from the same buffer (no disk I/O, no metrics).
+# Catches encoder/decoder regressions without any of the surrounding
+# infrastructure cost.
+
+# methods omitted -> all methods enabled
+metrics: []            # no metrics calculated
+
+target: DIRECT         # in-memory roundtrip; `formats` is ignored
+
+output_dir: artifacts/direct-no-metrics
+keep_files: false
+overwrite: true
+max_workers: 4
+
+random_seed: 20260520
+random_message_lengths: [8]
+random_messages_per_length: 1
+
+failure_policy: record

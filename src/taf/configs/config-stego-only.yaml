@@ -1,0 +1,24 @@
+# Scenario: steganography only — every method, no metrics, file roundtrip.
+#
+# Use when you only care about encode -> save -> load -> decode correctness
+# (does the bit recovery survive a real WAV roundtrip?). Skips all metric
+# computation, so it runs much faster than the full matrix and the result
+# rows carry empty `metrics` dicts.
+
+# methods omitted -> all methods enabled
+metrics: []            # no metrics calculated
+
+target: FILES
+formats:
+  - wav
+
+output_dir: artifacts/stego-only
+keep_files: false      # don't litter the disk with intermediate WAVs
+overwrite: true
+max_workers: 4
+
+random_seed: 20260520
+random_message_lengths: [16]
+random_messages_per_length: 1
+
+failure_policy: record
