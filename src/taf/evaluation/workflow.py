@@ -4,130 +4,24 @@ import asyncio
 import copy
 import hashlib
 import re
-from collections import defaultdict
+import time
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import numpy as np
+from loguru import logger
 
 from taf.audio.formats import AudioFileFormat, DecodeTarget, is_direct_target
 from taf.audio.io import load_audio, save_audio
+from taf.evaluation.config import EvaluationConfig, FailurePolicy
+from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec
+from taf.evaluation.result import EvaluationResult, EvaluationRow
 from taf.models.Metric import Metric
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.models.WavFile import WavFile
 from taf.models.types import MethodType, MetricType
-
-
-class FailurePolicy(str, Enum):
-    RECORD = "record"
-    RAISE = "raise"
-
-
-@dataclass(frozen=True)
-class EvaluationMessage:
-    name: str
-    bits: tuple[int, ...]
-    source: str = "manual"
-    seed: int | None = None
-    index: int | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def length(self) -> int:
-        return len(self.bits)
-
-
-@dataclass(frozen=True)
-class RandomMessageSpec:
-    length: int
-    count: int = 1
-    seed: int | None = None
-    name_prefix: str = "random"
-
-
-@dataclass
-class EvaluationConfig:
-    methods: Sequence[MethodType | SteganographyMethod | Callable[[int], SteganographyMethod]] | None = None
-    metrics: Sequence[MetricType | Metric | Callable[[], Metric]] | None = None
-    formats: Sequence[AudioFileFormat | DecodeTarget | str] = (DecodeTarget.DIRECT,)
-    output_dir: Path = Path("artifacts") / "evaluation"
-    messages: Sequence[EvaluationMessage | Sequence[int]] = ()
-    random_messages: Sequence[RandomMessageSpec] = ()
-    random_message_lengths: Sequence[int] = ()
-    random_messages_per_length: int = 1
-    random_seed: int | None = None
-    keep_files: bool = True
-    overwrite: bool = True
-    max_workers: int = 1
-    codec_options: dict[str, dict[str, Any]] = field(default_factory=dict)
-    failure_policy: FailurePolicy = FailurePolicy.RECORD
-
-
-@dataclass
-class EvaluationRow:
-    input_path: Path
-    method: str
-    message_name: str
-    message_length: int
-    decode_mode: str
-    format: str | None
-    success: bool
-    metrics: dict[str, Any] = field(default_factory=dict)
-    metric_errors: dict[str, str] = field(default_factory=dict)
-    output_path: Path | None = None
-    decoded_message: list[int] | None = None
-    error: str | None = None
-    is_lossy: bool = False
-    transformation_name: str | None = None
-    codec_options: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "input_path": str(self.input_path),
-            "method": self.method,
-            "message_name": self.message_name,
-            "message_length": self.message_length,
-            "decode_mode": self.decode_mode,
-            "format": self.format,
-            "success": self.success,
-            "metrics": self.metrics,
-            "metric_errors": self.metric_errors,
-            "output_path": str(self.output_path) if self.output_path is not None else None,
-            "decoded_message": self.decoded_message,
-            "error": self.error,
-            "is_lossy": self.is_lossy,
-            "transformation_name": self.transformation_name,
-            "codec_options": self.codec_options,
-        }
-
-
-@dataclass
-class EvaluationResult:
-    messages: dict[str, EvaluationMessage]
-    rows: list[EvaluationRow] = field(default_factory=list)
-
-    def success_rate(self) -> float:
-        if not self.rows:
-            return 0.0
-        return sum(row.success for row in self.rows) / len(self.rows)
-
-    def by_method(self) -> dict[str, list[EvaluationRow]]:
-        grouped: dict[str, list[EvaluationRow]] = defaultdict(list)
-        for row in self.rows:
-            grouped[row.method].append(row)
-        return dict(grouped)
-
-    def by_format(self) -> dict[str, list[EvaluationRow]]:
-        grouped: dict[str, list[EvaluationRow]] = defaultdict(list)
-        for row in self.rows:
-            grouped[row.format or DecodeTarget.DIRECT.value].append(row)
-        return dict(grouped)
-
-    def to_dicts(self) -> list[dict[str, Any]]:
-        return [row.to_dict() for row in self.rows]
 
 
 @dataclass(frozen=True)
@@ -144,17 +38,21 @@ class _MetricSpec:
 
 def load_files(path: str | Path) -> list[WavFile]:
     directory = Path(path)
+    logger.debug("Scanning directory for audio files: {}", directory)
     files = sorted(
         file_path
         for file_path in directory.iterdir()
         if file_path.is_file()
         and file_path.suffix.lower() in {AudioFileFormat.FLAC.extension, AudioFileFormat.WAV.extension}
     )
+    logger.debug("Loading {} audio file(s) from {}", len(files), directory)
     return [WavFile.load(file_path) for file_path in files]
 
 
 def load_resource_files(paths: Iterable[Path]) -> list[WavFile]:
-    return [load_audio(path) for path in paths]
+    paths_list = list(paths)
+    logger.debug("Loading {} packaged-resource audio file(s)", len(paths_list))
+    return [load_audio(path) for path in paths_list]
 
 
 def evaluate_files(files: Iterable[WavFile], config: EvaluationConfig | None = None) -> EvaluationResult:
@@ -165,12 +63,31 @@ async def evaluate_files_async(
     files: Iterable[WavFile],
     config: EvaluationConfig | None = None,
 ) -> EvaluationResult:
+    files_list = list(files)
     resolved_config = config or EvaluationConfig()
     messages = _materialize_messages(resolved_config)
     method_specs = _method_specs(resolved_config)
     metric_specs = _metric_specs(resolved_config)
     targets = _normalize_targets(resolved_config.formats)
     semaphore = asyncio.Semaphore(max(1, resolved_config.max_workers))
+
+    total_tasks = len(files_list) * len(method_specs) * len(messages)
+    logger.info(
+        "Evaluating {} file(s) x {} method(s) x {} message(s) -> {} task(s) over {} target(s); "
+        "max_workers={} failure_policy={} output_dir={}",
+        len(files_list),
+        len(method_specs),
+        len(messages),
+        total_tasks,
+        len(targets),
+        resolved_config.max_workers,
+        resolved_config.failure_policy.value,
+        resolved_config.output_dir,
+    )
+    logger.debug("Methods: {}", [spec.label for spec in method_specs])
+    logger.debug("Metrics: {}", [spec.label for spec in metric_specs])
+    logger.debug("Targets: {}", [_format_value(t) or _decode_mode(t) for t in targets])
+    logger.debug("Messages: {}", [(m.name, m.length) for m in messages])
 
     async def guarded_job(wav_file: WavFile, method_spec: _MethodSpec, message: EvaluationMessage):
         async with semaphore:
@@ -186,12 +103,20 @@ async def evaluate_files_async(
 
     tasks = [
         guarded_job(wav_file, method_spec, message)
-        for wav_file in files
+        for wav_file in files_list
         for method_spec in method_specs
         for message in messages
     ]
+    start = time.perf_counter()
     row_groups = await asyncio.gather(*tasks)
+    elapsed = time.perf_counter() - start
     rows = [row for group in row_groups for row in group]
+    logger.info(
+        "Async evaluation finished in {:.2f}s — {} task(s) produced {} row(s)",
+        elapsed,
+        len(tasks),
+        len(rows),
+    )
     return EvaluationResult(messages={message.name: message for message in messages}, rows=rows)
 
 
@@ -206,9 +131,25 @@ def _evaluate_file_method_message(
     method = method_spec.create(wav_file.samplerate)
     method_label = _method_label(method, method_spec)
 
+    logger.debug(
+        "Encoding | file={} | method={} | message={} | bits={}",
+        wav_file.path,
+        method_label,
+        message.name,
+        message.length,
+    )
+
+    encode_start = time.perf_counter()
     try:
         encoded_samples = method.encode(wav_file.samples.copy(), list(message.bits))
     except Exception as error:
+        logger.exception(
+            "Encode failed | file={} | method={} | message={} | error={}",
+            wav_file.path,
+            method_label,
+            message.name,
+            error,
+        )
         if config.failure_policy == FailurePolicy.RAISE:
             raise
         return [
@@ -221,6 +162,15 @@ def _evaluate_file_method_message(
             )
             for target in targets
         ]
+    encode_elapsed = time.perf_counter() - encode_start
+    logger.debug(
+        "Encode done  | file={} | method={} | message={} | took={:.3f}s | out_samples={}",
+        wav_file.path,
+        method_label,
+        message.name,
+        encode_elapsed,
+        len(encoded_samples),
+    )
 
     encoded = WavFile(samplerate=wav_file.samplerate, samples=encoded_samples, path=wav_file.path)
     return [
@@ -240,23 +190,55 @@ def _evaluate_target(
     config: EvaluationConfig,
 ) -> EvaluationRow:
     output_path = _output_path(original.path, method_label, message.name, target, config)
+    target_label = _format_value(target) or _decode_mode(target)
 
     try:
         if isinstance(target, DecodeTarget):
+            logger.debug(
+                "Direct decode | file={} | method={} | message={} | target={}",
+                original.path,
+                method_label,
+                message.name,
+                target_label,
+            )
             decode_input = encoded
             output_path = None
         else:
             if output_path.exists() and not config.overwrite:
                 raise FileExistsError(f"Output file already exists: {output_path}")
             options = config.codec_options.get(target.value, {})
+            logger.debug(
+                "Saving encoded audio | path={} | format={} | options={}",
+                output_path,
+                target.value,
+                options or "<defaults>",
+            )
             saved_path = save_audio(encoded, output_path, target, options)
             decode_input = load_audio(saved_path)
+            logger.debug(
+                "Reloaded after save | path={} | samples={} | samplerate={}",
+                saved_path,
+                len(decode_input.samples),
+                decode_input.samplerate,
+            )
             if not config.keep_files:
                 _remove_file(saved_path)
+                logger.debug("Removed transient audio artifact: {}", saved_path)
                 output_path = None
 
+        decode_start = time.perf_counter()
         decoded_message = method.decode(decode_input.samples, message.length)
+        decode_elapsed = time.perf_counter() - decode_start
         success = bool(np.array_equal(list(message.bits), decoded_message))
+        logger.debug(
+            "Decode done  | file={} | method={} | message={} | target={} | took={:.3f}s | success={}",
+            original.path,
+            method_label,
+            message.name,
+            target_label,
+            decode_elapsed,
+            success,
+        )
         metrics, metric_errors = _calculate_metrics(original.samples, decode_input.samples, original.samplerate, metric_specs)
         return EvaluationRow(
             input_path=original.path,
@@ -275,6 +257,14 @@ def _evaluate_target(
             codec_options=config.codec_options.get(_format_value(target) or "", {}),
         )
     except Exception as error:
+        logger.exception(
+            "Target evaluation failed | file={} | method={} | message={} | target={} | error={}",
+            original.path,
+            method_label,
+            message.name,
+            target_label,
+            error,
+        )
         if config.failure_policy == FailurePolicy.RAISE:
             raise
         return _error_row(original, method_label, message, target, error, output_path)
@@ -288,13 +278,29 @@ def _calculate_metrics(
 ) -> tuple[dict[str, Any], dict[str, str]]:
     metrics: dict[str, Any] = {}
     errors: dict[str, str] = {}
+    logger.debug(
+        "Computing {} metric(s) at samplerate={} Hz over {} samples",
+        len(metric_specs),
+        samplerate,
+        len(original_samples),
+    )
     for metric_spec in metric_specs:
         metric = metric_spec.create()
         name = metric.name()
+        metric_start = time.perf_counter()
         try:
-            metrics[name] = metric.calculate(original_samples, processed_samples, samplerate, 0.03, 0.75)
+            value = metric.calculate(original_samples, processed_samples, samplerate, 0.03, 0.75)
         except Exception as error:
             errors[name] = str(error)
+            logger.warning("Metric '{}' raised: {}", name, error)
+            continue
+        metrics[name] = value
+        logger.debug(
+            "Metric ok    | name={} | took={:.3f}s | value={}",
+            name,
+            time.perf_counter() - metric_start,
+            value,
+        )
     return metrics, errors
 
 
@@ -560,3 +566,19 @@ def _slug(value: str) -> str:
 
 def _path_hash(path: Path) -> str:
     return hashlib.sha1(str(path).encode("utf-8")).hexdigest()[:8]
+
+
+__all__ = [
+    # Re-exported dataclasses (now defined in sibling modules)
+    "EvaluationConfig",
+    "EvaluationMessage",
+    "EvaluationResult",
+    "EvaluationRow",
+    "FailurePolicy",
+    "RandomMessageSpec",
+    # Engine entry points
+    "evaluate_files",
+    "evaluate_files_async",
+    "load_files",
+    "load_resource_files",
+]
