@@ -2,7 +2,7 @@ from numbers import Number
 
 import numpy as np
 
-from models.Metric import Metric
+from taf.models.Metric import Metric
 
 
 class SisdrMetric(Metric):

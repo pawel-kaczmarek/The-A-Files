@@ -4,17 +4,12 @@ from numbers import Number
 import librosa
 import numpy as np
 import scipy
-from tensorflow import keras
-from tensorflow.keras import Model, layers
-from tensorflow.keras.constraints import max_norm
-from tensorflow.keras.layers import Dense, Dropout, Conv2D
-from tensorflow.keras.layers import LSTM, TimeDistributed, Bidirectional
 
-from models.Metric import Metric
-from resources.paths import mosnet_model_path
+from taf.models.Metric import Metric
+from taf.resources.paths import mosnet_model_path
 
 # prevent TF warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 
 
 class MosNetMetric(Metric):
@@ -65,6 +60,12 @@ class MosNetMetric(Metric):
         return np.transpose(mag.astype(np.float32))
 
     def initialize(self):
+        from tensorflow import keras
+        from tensorflow.keras import Model, layers
+        from tensorflow.keras.constraints import max_norm
+        from tensorflow.keras.layers import Dense, Dropout, Conv2D
+        from tensorflow.keras.layers import LSTM, TimeDistributed, Bidirectional
+
         _input = keras.Input(shape=(None, 257))
 
         re_input = layers.Reshape((-1, 257, 1), input_shape=(-1, 257))(_input)

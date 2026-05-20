@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 from srmrpy import srmr
 
-from models.Metric import Metric
+from taf.models.Metric import Metric
 
 
 class SrmrMetric(Metric):

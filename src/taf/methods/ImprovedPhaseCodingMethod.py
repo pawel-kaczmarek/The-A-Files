@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 
-from models.SteganographyMethod import SteganographyMethod
+from taf.models.SteganographyMethod import SteganographyMethod
 
 
 class ImprovedPhaseCodingMethod(SteganographyMethod):
@@ -23,7 +23,7 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
         # Convert message to binary representation
         msg_bin = np.ravel(message)
 
-        # Convert binary to phase shifts (-π/8 for 1, π/8 for 0)
+        # Convert binary to phase shifts (-Ď€/8 for 1, Ď€/8 for 0)
         msg_pi = msg_bin.copy()
         msg_pi[msg_pi == 0] = -1
         msg_pi = msg_pi * -np.pi / 2  # 1/2 for phase shift to improve audio quality

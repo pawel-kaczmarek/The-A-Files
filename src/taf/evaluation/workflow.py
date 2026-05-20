@@ -13,13 +13,12 @@ from typing import Any
 
 import numpy as np
 
-from audio.formats import AudioFileFormat, DecodeTarget, is_direct_target
-from audio.io import load_audio, save_audio
-from loaders.WavFileLoader import WavFileLoader
-from models.Metric import Metric
-from models.SteganographyMethod import SteganographyMethod
-from models.WavFile import WavFile
-from models.types import MethodType, MetricType
+from taf.audio.formats import AudioFileFormat, DecodeTarget, is_direct_target
+from taf.audio.io import load_audio, save_audio
+from taf.models.Metric import Metric
+from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.WavFile import WavFile
+from taf.models.types import MethodType, MetricType
 
 
 class FailurePolicy(str, Enum):
@@ -145,35 +144,17 @@ class _MetricSpec:
 
 def load_files(path: str | Path) -> list[WavFile]:
     directory = Path(path)
-    loader = WavFileLoader(directory)
     files = sorted(
         file_path
         for file_path in directory.iterdir()
         if file_path.is_file()
         and file_path.suffix.lower() in {AudioFileFormat.FLAC.extension, AudioFileFormat.WAV.extension}
     )
-    return [loader.load(file_path.name) for file_path in files]
+    return [WavFile.load(file_path) for file_path in files]
 
 
 def load_resource_files(paths: Iterable[Path]) -> list[WavFile]:
     return [load_audio(path) for path in paths]
-
-
-def apply_all_attacks(wav_file: WavFile):
-    from attacks.attacks import CorruptedWavFile
-
-    return (
-        CorruptedWavFile(wav_file)
-        .low_pass_filter()
-        .resample()
-        .pitch_shift()
-        .additive_noise()
-        .time_stretch()
-        .frequency_filter()
-        .flip_random_samples()
-        .cut_random_samples()
-        .amplitude_scaling()
-    )
 
 
 def evaluate_files(files: Iterable[WavFile], config: EvaluationConfig | None = None) -> EvaluationResult:
@@ -392,7 +373,7 @@ def _method_specs(config: EvaluationConfig) -> list[_MethodSpec]:
 
 def _metric_specs(config: EvaluationConfig) -> list[_MetricSpec]:
     if config.metrics is None:
-        from metrics.factory import MetricFactory
+        from taf.metrics.factory import MetricFactory
 
         return [_MetricSpec(label=metric.name(), create=lambda original=metric: copy.deepcopy(original)) for metric in MetricFactory.get_all()]
 
@@ -411,7 +392,7 @@ def _metric_specs(config: EvaluationConfig) -> list[_MetricSpec]:
 
 def _method_type_spec(method_type: MethodType) -> _MethodSpec:
     def create(samplerate: int) -> SteganographyMethod:
-        from methods.factory import SteganographyMethodFactory
+        from taf.methods.factory import SteganographyMethodFactory
 
         method = SteganographyMethodFactory.get(samplerate, method_type)
         if method is None:
@@ -423,7 +404,7 @@ def _method_type_spec(method_type: MethodType) -> _MethodSpec:
 
 def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
     def create() -> Metric:
-        from metrics.factory import MetricFactory
+        from taf.metrics.factory import MetricFactory
 
         metric = MetricFactory.get(metric_type)
         if metric is None:

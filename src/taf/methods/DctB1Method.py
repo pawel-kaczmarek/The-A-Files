@@ -4,7 +4,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.fft import dct, idct
 
-from models.SteganographyMethod import SteganographyMethod
+from taf.models.SteganographyMethod import SteganographyMethod
 
 
 def _energy_compensation(C: np.ndarray, G2_ind: np.ndarray, niT: float) -> np.ndarray:

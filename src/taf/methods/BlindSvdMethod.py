@@ -4,7 +4,7 @@ import numpy as np
 from scipy.fftpack import dct, idct
 from scipy.linalg import svd
 
-from models.SteganographyMethod import SteganographyMethod
+from taf.models.SteganographyMethod import SteganographyMethod
 
 
 def _dct_transform(frame: np.ndarray) -> np.ndarray:

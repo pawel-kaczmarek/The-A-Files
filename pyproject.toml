@@ -24,7 +24,7 @@ dependencies = [
     "soundfile==0.11.0",
     "SRMRpy @ git+https://github.com/jfsantos/SRMRpy@5d3c134f775215556e813698d9352bc248718c0e",
     "tensorflow==2.12.1",
-    "tensorflow_intel==2.12.1",
+    "tensorflow_intel==2.12.1; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +41,6 @@ include = ["taf*"]
 [tool.setuptools.package-data]
 "taf.resources" = [
     "audio/*.wav",
-    "datasets/*/*.txt",
     "datasets/*/*/*.flac",
 ]
 "taf.resources.models.mosnet" = ["*.h5"]

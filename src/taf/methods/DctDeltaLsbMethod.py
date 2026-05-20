@@ -3,8 +3,8 @@ from typing import List, Tuple
 import numpy as np
 from scipy.fft import dct, idct
 
-from models.SteganographyMethod import SteganographyMethod
-from methods.common.split import to_frames, to_samples
+from taf.models.SteganographyMethod import SteganographyMethod
+from taf.methods.common.split import to_frames, to_samples
 
 
 def _normalize(vector: np.ndarray) -> Tuple[float, np.ndarray]:

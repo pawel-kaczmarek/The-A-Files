@@ -2,8 +2,8 @@ from typing import List
 import numpy as np
 from scipy.fft import fft, ifft
 from scipy.signal import lfilter
-from models.SteganographyMethod import SteganographyMethod
-from methods.common.mixer import mixer
+from taf.models.SteganographyMethod import SteganographyMethod
+from taf.methods.common.mixer import mixer
 
 
 class EchoMethod(SteganographyMethod):

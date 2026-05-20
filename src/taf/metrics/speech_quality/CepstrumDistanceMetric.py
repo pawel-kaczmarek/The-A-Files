@@ -2,8 +2,8 @@ from numbers import Number
 
 import numpy as np
 
-from models.Metric import Metric
-from metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff, lpc2cep
+from taf.models.Metric import Metric
+from taf.metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff, lpc2cep
 
 
 class CepstrumDistanceMetric(Metric):

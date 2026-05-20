@@ -3,8 +3,8 @@ from numbers import Number
 import numpy as np
 from loguru import logger
 
-from metrics.common.metrics_helper import log_mel_spectrogram, sgbfb
-from models.Metric import Metric
+from taf.metrics.common.metrics_helper import log_mel_spectrogram, sgbfb
+from taf.models.Metric import Metric
 
 
 class StgiMetric(Metric):

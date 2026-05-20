@@ -7,7 +7,7 @@ import numpy as np
 from scipy.fft import fftfreq
 from scipy.signal import butter, sosfilt
 
-from models.WavFile import WavFile
+from taf.models.WavFile import WavFile
 
 
 @dataclass
@@ -32,7 +32,7 @@ class CorruptedWavFile(WavFile):
         fft = np.fft.fftshift(np.fft.fft(self.samples))
         filtered_fft = fft.copy()
         filtered_fft[(np.abs(W) == cutoff_frequency)] = 0
-        self.samples = np.fft.ifft(np.fft.ifftshift(filtered_fft))
+        self.samples = np.fft.ifft(np.fft.ifftshift(filtered_fft)).real
         return self
 
     def flip_random_samples(self, samples_to_flip=200) -> CorruptedWavFile:
@@ -49,10 +49,11 @@ class CorruptedWavFile(WavFile):
         self.samples = data
         return self
 
-    def resample(self, target_samplerate: int = 27500):
+    def resample(self, target_samplerate: int = 27500) -> CorruptedWavFile:
         self.samples = librosa.resample(
             self.samples, orig_sr=self.samplerate, target_sr=target_samplerate, scale=True
         )
+        self.samplerate = target_samplerate
         return self
 
     def amplitude_scaling(self, scale: float = 1.1) -> CorruptedWavFile:

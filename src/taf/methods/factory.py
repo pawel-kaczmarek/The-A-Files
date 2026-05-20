@@ -1,22 +1,22 @@
 from typing import Dict, List
 
-from models.SteganographyMethod import SteganographyMethod
-from models.types import MethodType
-from methods.BlindSvdMethod import BlindSvdMethod
-from methods.DctB1Method import DctB1Method
-from methods.DctDeltaLsbMethod import DctDeltaLsbMethod
-from methods.DsssMethod import DsssMethod
-from methods.DwtLsbMethod import DwtLsbMethod
-from methods.EchoMethod import EchoMethod
-from methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
-from methods.FsvcMethod import FsvcMethod
-from methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
-from methods.LsbMethod import LsbMethod
-from methods.LwtMethod import LwtMethod
-from methods.NormSpaceMethod import NormSpaceMethod
-from methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
-from methods.PhaseCodingMethod import PhaseCodingMethod
-from methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
+from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.types import MethodType
+from taf.methods.BlindSvdMethod import BlindSvdMethod
+from taf.methods.DctB1Method import DctB1Method
+from taf.methods.DctDeltaLsbMethod import DctDeltaLsbMethod
+from taf.methods.DsssMethod import DsssMethod
+from taf.methods.DwtLsbMethod import DwtLsbMethod
+from taf.methods.EchoMethod import EchoMethod
+from taf.methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
+from taf.methods.FsvcMethod import FsvcMethod
+from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
+from taf.methods.LsbMethod import LsbMethod
+from taf.methods.LwtMethod import LwtMethod
+from taf.methods.NormSpaceMethod import NormSpaceMethod
+from taf.methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
+from taf.methods.PhaseCodingMethod import PhaseCodingMethod
+from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
 
 
 class SteganographyMethodFactory:
