@@ -23,11 +23,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package for tests
-        run: python -m pip install -e . --no-deps
+      - name: Install package with dependencies
+        run: python -m pip install -e .[dev]
 
-      - name: Run unit tests
-        run: python -m unittest discover -s tests -p "test_*.py"
+      - name: Run pytest
+        run: python -m pytest tests/
 
   build:
     runs-on: ubuntu-latest
@@ -48,10 +48,27 @@ jobs:
       - name: Build sdist and wheel
         run: python -m build
 
-      - name: Verify wheel install
+      - name: Install wheel with dependencies
         run: |
-          python -m pip install --force-reinstall --no-deps dist/*.whl
-          python -m unittest discover -s tests -p "test_*.py"
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl pytest
+
+      - name: Smoke-test public API from installed wheel
+        working-directory: /tmp
+        run: |
+          python -c "
+          from taf import __version__
+          from taf.evaluation.workflow import evaluate_files, EvaluationConfig
+          from taf.methods.factory import SteganographyMethodFactory
+          from taf.attacks import CorruptedWavFile, apply_all_attacks
+          from taf.audio.io import load_audio, save_audio
+          from taf.models.types import MethodType, MetricType
+          print('the-a-files', __version__, 'public API import: OK')
+          "
+
+      - name: Run pytest against installed wheel
+        working-directory: /tmp
+        run: python -m pytest ${{ github.workspace }}/tests
 
       - name: Upload distribution artifacts
         uses: actions/upload-artifact@v4
