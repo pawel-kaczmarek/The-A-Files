@@ -5,7 +5,7 @@ from librosa import lpc
 from scipy.linalg import toeplitz
 from scipy.signal import lfilter
 
-from models.Metric import Metric
+from taf.models.Metric import Metric
 
 
 class BaseSpeechEnhancementMetric(Metric, ABC):
@@ -55,8 +55,7 @@ class BaseSpeechEnhancementMetric(Metric, ABC):
         processed_length = len(processed_speech)
 
         if clean_length != processed_length:
-            print('Error: Files must have the same length.')
-            return
+            raise ValueError("Clean and processed signals must have the same length.")
 
         winlength = round(30 * sample_rate / 1000)
         skiprate = winlength // 4
@@ -177,8 +176,7 @@ class BaseSpeechEnhancementMetric(Metric, ABC):
         processed_length = len(processed_speech)
 
         if clean_length != processed_length:
-            print('Error: Both Speech Files must be same length.')
-            return
+            raise ValueError("Clean and processed signals must have the same length.")
 
         winlength = round(30 * sample_rate / 1000)
         skiprate = winlength // 4
@@ -243,8 +241,7 @@ class BaseSpeechEnhancementMetric(Metric, ABC):
         processed_length = len(processed_speech)
 
         if clean_length != processed_length:
-            print('Error: Both Speech Files must be same length.')
-            return
+            raise ValueError("Clean and processed signals must have the same length.")
 
         overall_snr = 10 * np.log10(np.sum(clean_speech ** 2) / np.sum((clean_speech - processed_speech) ** 2))
 

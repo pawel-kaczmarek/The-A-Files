@@ -3,8 +3,8 @@ from typing import List
 import bitstring
 import numpy as np
 
-from models.SteganographyMethod import SteganographyMethod
-from methods.common.background_separator import separate_fg_bg_full
+from taf.models.SteganographyMethod import SteganographyMethod
+from taf.methods.common.background_separator import separate_fg_bg_full
 
 
 class ForegroundBackgroundSegmentationMethod(SteganographyMethod):
@@ -26,7 +26,7 @@ class ForegroundBackgroundSegmentationMethod(SteganographyMethod):
 
         msg_idx = 0
 
-        # foreground → 2 bits
+        # foreground â†’ 2 bits
         for idx in foreground_indices:
             if msg_idx >= len(message):
                 break
@@ -43,7 +43,7 @@ class ForegroundBackgroundSegmentationMethod(SteganographyMethod):
 
             data[idx] = bitstring.BitArray(bin=bit_array, length=32).float
 
-        # background → 1 bit
+        # background â†’ 1 bit
         if msg_idx < len(message):
             for idx in background_indices:
                 if msg_idx >= len(message):

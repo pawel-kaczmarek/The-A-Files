@@ -1,6 +1,6 @@
 from typing import List
 import numpy as np
-from models.SteganographyMethod import SteganographyMethod
+from taf.models.SteganographyMethod import SteganographyMethod
 
 
 class PhaseCodingMethod(SteganographyMethod):
@@ -47,7 +47,7 @@ class PhaseCodingMethod(SteganographyMethod):
         chunks = np.fft.ifft(chunks_dft).real  # Perform inverse FFT to return to time domain
 
         # Reconstruct the watermarked audio data
-        data_with_watermark[0] = chunks.ravel().astype(np.float)
+        data_with_watermark[0] = chunks.ravel().astype(np.float32)
 
         # Return the watermarked audio with the original length
         return np.squeeze(data_with_watermark.T)[:len(data)]

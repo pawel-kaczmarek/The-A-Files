@@ -2,7 +2,7 @@ import unittest
 from importlib.metadata import version
 
 import taf
-from models.types import MethodType, MetricType
+from taf.models.types import MethodType, MetricType
 
 
 class PackageImportTests(unittest.TestCase):

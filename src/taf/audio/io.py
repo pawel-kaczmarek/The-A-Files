@@ -5,8 +5,8 @@ from typing import Any
 
 import soundfile as sf
 
-from audio.formats import AudioFileFormat
-from models.WavFile import WavFile
+from taf.audio.formats import AudioFileFormat
+from taf.models.WavFile import WavFile
 
 
 class AudioCodecUnavailableError(RuntimeError):

@@ -9,9 +9,9 @@ if __package__ in {None, ""}:
 
 os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
 
-from evaluation.workflow import EvaluationResult, evaluate_files, load_files, load_resource_files
-from models.WavFile import WavFile
-from resources.paths import packaged_dataset_audio_paths
+from taf.evaluation.workflow import EvaluationResult, evaluate_files, load_files, load_resource_files
+from taf.models.WavFile import WavFile
+from taf.resources.paths import packaged_dataset_audio_paths
 
 
 def main(root_dir: Path | None = None) -> None:

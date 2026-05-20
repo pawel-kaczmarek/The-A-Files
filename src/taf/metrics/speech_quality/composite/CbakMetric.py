@@ -2,7 +2,7 @@ from numbers import Number
 
 import numpy as np
 
-from metrics.speech_quality.composite.CompositeSpeechEnhancementMetric import BaseSpeechEnhancementMetric
+from taf.metrics.speech_quality.composite.CompositeSpeechEnhancementMetric import BaseSpeechEnhancementMetric
 
 
 class CbakMetric(BaseSpeechEnhancementMetric):

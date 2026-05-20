@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 import pesq as pypesq  # https://github.com/ludlows/python-pesq
 
-from models.Metric import Metric
+from taf.models.Metric import Metric
 
 
 class PesqMetric(Metric):

@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 import wave
 
-from resources.paths import (
+from taf.resources.paths import (
     example_wav_path,
     mosnet_model_path,
     packaged_dataset_audio_paths,

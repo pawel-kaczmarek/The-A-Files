@@ -1,7 +1,7 @@
 from typing import List
 import numpy as np
 import pywt
-from models.SteganographyMethod import SteganographyMethod
+from taf.models.SteganographyMethod import SteganographyMethod
 
 
 class DwtLsbMethod(SteganographyMethod):

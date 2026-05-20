@@ -3,8 +3,8 @@ from numbers import Number
 import numpy as np
 from scipy.signal import stft
 
-from models.Metric import Metric
-from metrics.common.metrics_helper import extract_overlapped_windows
+from taf.models.Metric import Metric
+from taf.metrics.common.metrics_helper import extract_overlapped_windows
 
 
 class CsiiMetric(Metric):

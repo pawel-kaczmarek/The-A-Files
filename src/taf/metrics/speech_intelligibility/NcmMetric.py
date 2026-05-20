@@ -4,8 +4,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import butter, lfilter, hilbert
 
-from models.Metric import Metric
-from metrics.common.metrics_helper import resample_matlab_like
+from taf.models.Metric import Metric
+from taf.metrics.common.metrics_helper import resample_matlab_like
 
 
 class NcmMetric(Metric):
@@ -118,7 +118,7 @@ class NcmMetric(Metric):
     def get_ansis(BAND):
         fcenter = (BAND[0:-1] + BAND[1:]) / 2
 
-        # Data from Table B.1 in "ANSI (1997). S3.5–1997 Methods for Calculation of the Speech Intelligibility
+        # Data from Table B.1 in "ANSI (1997). S3.5â€“1997 Methods for Calculation of the Speech Intelligibility
         # Index. New York: American National Standards Institute."
         f = np.array(
             [150, 250, 350, 450, 570, 700, 840, 1000, 1170, 1370, 1600, 1850, 2150, 2500, 2900, 3400, 4000, 4800, 5800,

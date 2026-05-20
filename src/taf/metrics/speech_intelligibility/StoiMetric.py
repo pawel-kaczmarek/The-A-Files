@@ -3,7 +3,7 @@ from numbers import Number
 import numpy as np
 import pystoi as pystoi  # https://github.com/mpariente/pystoi
 
-from models.Metric import Metric
+from taf.models.Metric import Metric
 
 
 class StoiMetric(Metric):
