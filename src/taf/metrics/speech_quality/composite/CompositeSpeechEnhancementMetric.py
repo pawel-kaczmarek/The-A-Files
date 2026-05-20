@@ -262,8 +262,8 @@ class BaseSpeechEnhancementMetric(Metric, ABC):
             clean_frame = clean_frame * window
             processed_frame = processed_frame * window
 
-            signal_energy = np.sum(clean_frame ** 2)
-            noise_energy = np.sum((clean_frame - processed_frame) ** 2)
+            signal_energy = max(float(np.sum(clean_frame ** 2)), 1e-30)
+            noise_energy = max(float(np.sum((clean_frame - processed_frame) ** 2)), 1e-30)
             segmental_snr[frame_count] = 10 * np.log10(signal_energy / noise_energy)
             segmental_snr[frame_count] = max(segmental_snr[frame_count], MIN_SNR)
             segmental_snr[frame_count] = min(segmental_snr[frame_count], MAX_SNR)

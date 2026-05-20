@@ -60,11 +60,20 @@ class MosNetMetric(Metric):
         return np.transpose(mag.astype(np.float32))
 
     def initialize(self):
+        # Build the Keras model once per instance: encode/decode is called many
+        # times per evaluation row, and a rebuild per call causes tf.function
+        # retracing warnings and burns several seconds each.
+        if getattr(self, "model", None) is not None:
+            return
+
+        import tensorflow as tf
         from tensorflow import keras
         from tensorflow.keras import Model, layers
         from tensorflow.keras.constraints import max_norm
         from tensorflow.keras.layers import Dense, Dropout, Conv2D
         from tensorflow.keras.layers import LSTM, TimeDistributed, Bidirectional
+
+        tf.get_logger().setLevel("ERROR")
 
         _input = keras.Input(shape=(None, 257))
 

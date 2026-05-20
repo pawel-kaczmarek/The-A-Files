@@ -162,7 +162,9 @@ class CsiiMetric(Metric):
         processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, highInd].T * r2_high).T)
         de_processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, highInd].T * (1 - r2_high)).T)
         SDR = processed_energy / de_processed_energy  # Eq 13 in Kates (2005)
-        SDRlog = 10 * np.log10(SDR)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            SDRlog = 10 * np.log10(SDR)
+        SDRlog = np.nan_to_num(SDRlog, nan=-15.0, neginf=-15.0, posinf=15.0)
         SDRlog_lim = SDRlog
         SDRlog_lim[SDRlog_lim < -15] = -15
         SDRlog_lim[SDRlog_lim > 15] = 15  # limit between [-15, 15]
@@ -173,7 +175,9 @@ class CsiiMetric(Metric):
         processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, middleInd].T * r2_middle).T)
         de_processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, middleInd].T * (1 - r2_middle)).T)
         SDR = processed_energy / de_processed_energy  # Eq 13 in Kates (2005)
-        SDRlog = 10 * np.log10(SDR)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            SDRlog = 10 * np.log10(SDR)
+        SDRlog = np.nan_to_num(SDRlog, nan=-15.0, neginf=-15.0, posinf=15.0)
         SDRlog_lim = SDRlog
         SDRlog_lim[SDRlog_lim < -15] = -15
         SDRlog_lim[SDRlog_lim > 15] = 15  # limit between [-15, 15]
@@ -184,7 +188,9 @@ class CsiiMetric(Metric):
         processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, lowInd].T * r2_low).T)
         de_processed_energy = crit_filter.dot((processed_spec[0:n_fftby2, lowInd].T * (1 - r2_low)).T)
         SDR = processed_energy / de_processed_energy  # Eq 13 in Kates (2005)
-        SDRlog = 10 * np.log10(SDR)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            SDRlog = 10 * np.log10(SDR)
+        SDRlog = np.nan_to_num(SDRlog, nan=-15.0, neginf=-15.0, posinf=15.0)
         SDRlog_lim = SDRlog
         SDRlog_lim[SDRlog_lim < -15] = -15
         SDRlog_lim[SDRlog_lim > 15] = 15  # limit between [-15, 15]
