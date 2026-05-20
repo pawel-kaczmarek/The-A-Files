@@ -53,6 +53,7 @@ include = ["taf*"]
     "datasets/*/*/*.flac",
 ]
 "taf.resources.models.mosnet" = ["*.h5"]
+"taf.configs" = ["*.yaml", "*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
