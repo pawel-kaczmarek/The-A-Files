@@ -1,7 +1,6 @@
 from numbers import Number
 
 import numpy as np
-from loguru import logger
 
 from taf.metrics.common.metrics_helper import log_mel_spectrogram, sgbfb
 from taf.models.Metric import Metric
@@ -17,9 +16,9 @@ class StgiMetric(Metric):
                   overlap: float = 0.75) -> Number | np.ndarray:
 
         if fs != 10000:
-            logger.warning(
-                "Speech signals must be time-aligned and of the same length. The algorithms only support 10 KHz sampling rate")
-            return -1
+            raise ValueError(
+                f"STGI only supports 10 kHz sampling rate (got fs={fs})."
+            )
 
         STM_channels = np.ones((11, 4))
         thresholds = [[0.252, 0.347, 0.275, 0.189],

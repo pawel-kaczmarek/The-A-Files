@@ -1,7 +1,6 @@
 from numbers import Number
 
 import numpy as np
-from loguru import logger
 
 from taf.metrics.common.metrics_helper import log_mel_spectrogram, sgbfb
 from taf.models.Metric import Metric
@@ -16,9 +15,9 @@ class WstmiMetric(Metric):
                   frame_len: float = 0.03,
                   overlap: float = 0.75) -> Number | np.ndarray:
         if fs != 10000:
-            logger.warning(
-                "Speech signals must be time-aligned and of the same length. The algorithms only support 10 KHz sampling rate")
-            return -1
+            raise ValueError(
+                f"wSTMI only supports 10 kHz sampling rate (got fs={fs})."
+            )
 
         win_length = 25.6
         win_shift = win_length / 2

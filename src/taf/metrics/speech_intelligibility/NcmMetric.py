@@ -78,7 +78,11 @@ class NcmMetric(Metric):
             lambda_y = np.linalg.norm(y_tmp - np.mean(y_tmp)) ** 2
             lambda_xy = np.sum((x_tmp - np.mean(x_tmp)) * (y_tmp - np.mean(y_tmp)))
             ro2[k] = (lambda_xy ** 2) / (lambda_x * lambda_y)
-            asnr[k] = 10 * np.log10((ro2[k] + 1e-20) / (1 - ro2[k] + 1e-20))  # Eq.9 in [1]
+            # Clamp both terms above zero: ro2 can drift slightly outside [0, 1]
+            # due to numerical noise, which would make the denominator negative.
+            numer = max(ro2[k] + 1e-20, 1e-20)
+            denom = max(1 - ro2[k] + 1e-20, 1e-20)
+            asnr[k] = 10 * np.log10(numer / denom)  # Eq.9 in [1]
 
             if asnr[k] < -15:
                 asnr[k] = -15
