@@ -9,6 +9,7 @@ from taf.methods.DsssMethod import DsssMethod
 from taf.methods.DwtLsbMethod import DwtLsbMethod
 from taf.methods.EchoMethod import EchoMethod
 from taf.methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
+from taf.methods.FgasMethod import FgasMethod
 from taf.methods.FsvcMethod import FsvcMethod
 from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from taf.methods.LsbMethod import LsbMethod
@@ -47,4 +48,5 @@ class SteganographyMethodFactory:
             MethodType.PRIME_FACTOR_INTERPOLATE: PrimeFactorInterpolatedMethod(),
             MethodType.LWT_METHOD: LwtMethod(),
             MethodType.FBSMethod: ForegroundBackgroundSegmentationMethod(sr=sr),
+            MethodType.FGAS_METHOD: FgasMethod(sr=sr),
         }

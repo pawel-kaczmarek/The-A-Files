@@ -17,6 +17,7 @@ class MethodType(Enum):
     PRIME_FACTOR_INTERPOLATE = auto()
     LWT_METHOD = auto()
     FBSMethod = auto()
+    FGAS_METHOD = auto()
 
 
 class MetricType(Enum):
