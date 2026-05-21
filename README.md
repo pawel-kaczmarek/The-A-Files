@@ -141,6 +141,7 @@ List of implemented methods:
 |          ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
 |                              ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
 | ```ForegroundBackgroundSegmentationMethod.py``` | Foreground-Background Segmentation LSB (FBS-LSB) [[23]](#articles)                  |
+|                             ```FgasMethod.py``` | Fixed-decoder network with adversarial perturbation generation (FGAS) [[24]](#articles) |
 
 Each method extend abstract class  ```SteganographyMethod```
 
@@ -300,7 +301,10 @@ Optimization, and Data Science (ISMODE) (pp. 97–102). IEEE. https://doi.org/10
 11th International Conference on Reliability, Infocom Technologies and Optimization (Trends and Future Directions) (
 ICRITO) (pp. 1–5). IEEE. https://doi.org/10.1109/ICRITO61523.2024.10522195 \
 [23] Wang, J., & Wang, K. (2025). A novel audio steganography based on the segmentation of the foreground and background
-of audio. Computers & Electrical Engineering, 117, 109247. https://doi.org/10.1016/j.compeleceng.2024.109247
+of audio. Computers & Electrical Engineering, 117, 109247. https://doi.org/10.1016/j.compeleceng.2024.109247 \
+[24] Yan, J., Cheng, Y., Yin, Z., Zhang, X., Wang, S., Sun, T., & Jiang, X. (2025). **FGAS: Fixed Decoder Network-Based
+Audio Steganography with Adversarial Perturbation Generation.** *arXiv preprint*
+arXiv:2505.22266. https://arxiv.org/abs/2505.22266
 
 #### Links
 
