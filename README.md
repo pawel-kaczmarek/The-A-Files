@@ -142,6 +142,7 @@ List of implemented methods:
 |                              ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
 | ```ForegroundBackgroundSegmentationMethod.py``` | Foreground-Background Segmentation LSB (FBS-LSB) [[23]](#articles)                  |
 |                             ```FgasMethod.py``` | Fixed-decoder network with adversarial perturbation generation (FGAS) [[24]](#articles) |
+|                           ```AacStcMethod.py``` | Adaptive +-1 LSB via AAC perceptual residual and Syndrome-Trellis Codes [[25]](#articles) |
 
 Each method extend abstract class  ```SteganographyMethod```
 
@@ -304,7 +305,14 @@ ICRITO) (pp. 1–5). IEEE. https://doi.org/10.1109/ICRITO61523.2024.10522195 \
 of audio. Computers & Electrical Engineering, 117, 109247. https://doi.org/10.1016/j.compeleceng.2024.109247 \
 [24] Yan, J., Cheng, Y., Yin, Z., Zhang, X., Wang, S., Sun, T., & Jiang, X. (2025). **FGAS: Fixed Decoder Network-Based
 Audio Steganography with Adversarial Perturbation Generation.** *arXiv preprint*
-arXiv:2505.22266. https://arxiv.org/abs/2505.22266
+arXiv:2505.22266. https://arxiv.org/abs/2505.22266 \
+[25] Luo, W., Zhang, Y., & Li, H. (2017). **Adaptive Audio Steganography Based on Advanced Audio Coding and
+Syndrome-Trellis Coding.** In C. Kraetzer et al. (Eds.), *Digital Forensics and Watermarking, IWDW 2017*, Lecture Notes
+in Computer Science, vol 10431, pp. 177-186. Springer.
+https://doi.org/10.1007/978-3-319-64185-0_14 \
+[26] Yan, Y., Li, Y., Xiao, Q., & Ren, Y. (2026). **PRoADS: Provably Secure and Robust Audio Diffusion Steganography
+with Latent Optimization and Backward Euler Inversion.** *arXiv preprint* arXiv:2603.10314 (ICASSP
+2026). https://arxiv.org/abs/2603.10314
 
 #### Links
 

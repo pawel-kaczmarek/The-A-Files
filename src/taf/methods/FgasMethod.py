@@ -167,6 +167,5 @@ class FgasMethod(SteganographyMethod):
 
     def type(self) -> str:
         return (
-            "FGAS: Fixed Decoder Network-Based Audio Steganography with "
-            "Adversarial Perturbation Generation (arXiv:2505.22266)"
+            "FGAS: Fixed Decoder Network-Based Audio Steganography with Adversarial Perturbation Generation (arXiv:2505.22266)"
         )

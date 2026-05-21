@@ -9,6 +9,7 @@ from taf.methods.DsssMethod import DsssMethod
 from taf.methods.DwtLsbMethod import DwtLsbMethod
 from taf.methods.EchoMethod import EchoMethod
 from taf.methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
+from taf.methods.AacStcMethod import AacStcMethod
 from taf.methods.FgasMethod import FgasMethod
 from taf.methods.FsvcMethod import FsvcMethod
 from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
@@ -18,7 +19,6 @@ from taf.methods.NormSpaceMethod import NormSpaceMethod
 from taf.methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
 from taf.methods.PhaseCodingMethod import PhaseCodingMethod
 from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
-
 
 class SteganographyMethodFactory:
 
@@ -32,7 +32,7 @@ class SteganographyMethodFactory:
 
     @staticmethod
     def _all_methods(sr: int) -> Dict[MethodType, SteganographyMethod]:
-        return {
+        methods: Dict[MethodType, SteganographyMethod] = {
             MethodType.BLIND_SVD_METHOD: BlindSvdMethod(),
             MethodType.IMPROVED_PHASE_CODING_METHOD: ImprovedPhaseCodingMethod(),
             MethodType.PHASE_CODING_METHOD: PhaseCodingMethod(),
@@ -49,4 +49,6 @@ class SteganographyMethodFactory:
             MethodType.LWT_METHOD: LwtMethod(),
             MethodType.FBSMethod: ForegroundBackgroundSegmentationMethod(sr=sr),
             MethodType.FGAS_METHOD: FgasMethod(sr=sr),
+            MethodType.AAC_STC_METHOD: AacStcMethod(sr=sr),
         }
+        return methods
