@@ -18,6 +18,7 @@ class MethodType(Enum):
     LWT_METHOD = auto()
     FBSMethod = auto()
     FGAS_METHOD = auto()
+    AAC_STC_METHOD = auto()
 
 
 class MetricType(Enum):
