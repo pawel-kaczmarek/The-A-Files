@@ -18,6 +18,7 @@ audio signal, measure speech quality metrics, and test the audio signal's robust
 
 * [About](#about)
 * [Package structure](#package-structure)
+* [Publishing](#publishing)
 * [Migration note](#migration-note)
 * [Steganography algorithms](#steganography-algorithms)
 * [Metrics](#metrics)
@@ -87,6 +88,12 @@ For local development, install the package in editable mode:
 ```bash
 python -m pip install -e .[dev]
 ```
+
+## Publishing
+
+Packaging and release instructions are in [docs/publishing.md](docs/publishing.md). The PyPI distribution name is `the-a-files`; the import package remains `taf`.
+
+`SRMRpy` is vendored under `src/srmrpy/` because it is required by the SRMR metric and is not published as a standard PyPI dependency.
 
 ## Packaged resources
 

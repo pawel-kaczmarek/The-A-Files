@@ -1,7 +1,6 @@
 from numbers import Number
 
 import numpy as np
-from srmrpy import srmr
 
 from taf.models.Metric import Metric
 
@@ -13,6 +12,8 @@ class SrmrMetric(Metric):
                   fs: int,
                   frame_len: float = 0.03,
                   overlap: float = 0.75) -> Number | np.ndarray:
+        from taf.metrics.speech_reverberation.srmrpy import srmr
+
         ratio, energy = srmr(samples_original, fs)
         ratio_processed, energy_processed = srmr(samples_processed, fs)
         # The outputs are ratio, which is the SRMR scorez
