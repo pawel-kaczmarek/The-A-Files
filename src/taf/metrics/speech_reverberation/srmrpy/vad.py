@@ -1,6 +1,6 @@
 import numpy as np
 
-from srmrpy.segmentaxis import segment_axis
+from .segmentaxis import segment_axis
 
 
 def simple_energy_vad(x, fs, framelen=0.02, theta_main=30, theta_min=-55):

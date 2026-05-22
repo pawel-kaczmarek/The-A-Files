@@ -12,9 +12,9 @@ from gammatone.filters import centre_freqs, erb_filterbank, make_erb_filters
 from scipy.io.wavfile import read as readwav
 from scipy.signal import hamming
 
-from srmrpy.hilbert import hilbert
-from srmrpy.modulation_filters import *
-from srmrpy.segmentaxis import segment_axis
+from .hilbert import hilbert
+from .modulation_filters import *
+from .segmentaxis import segment_axis
 
 
 def calc_erbs(low_freq, fs, n_filters):
