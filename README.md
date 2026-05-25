@@ -11,8 +11,6 @@ audio signal, measure speech quality metrics, and test the audio signal's robust
 * [🔎 About](#about)
 * [📦 Install](#install)
 * [⚡ Usage](#usage)
-* [🛠️ Technical specification](#technical-specification)
-* [📁 Packaged resources](#packaged-resources)
 * [🔐 Steganography algorithms](#steganography-algorithms)
 * [📊 Metrics](#metrics)
     * [🤖 AI Based](#ai-based)
@@ -105,54 +103,6 @@ Run the bundled evaluation workflow or import the package as `taf`:
 taf-eval direct-no-metrics
 taf-eval full
 python -c "from taf.methods.factory import SteganographyMethodFactory; from taf.models.types import MethodType; print(SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD).type())"
-```
-
-Colab-ready cell:
-
-```python
-!pip
-install - q
-the - a - files
-from taf.methods.factory import SteganographyMethodFactory;
-from taf.models.types import MethodType
-
-method = SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD)
-```
-
-<a id="technical-specification"></a>
-
-## 🛠️ Technical specification
-
-Implementation contracts and code-level extension notes are documented
-in [docs/technical_specification.md](docs/technical_specification.md).
-
-<a id="packaged-resources"></a>
-
-## 📁 Packaged resources
-
-Runtime assets that must work from source, tests, editable installs, and built distributions live under
-`src/taf/resources/`.
-
-Use this layout:
-
-* `src/taf/resources/audio/` for standalone example WAV files.
-* `src/taf/resources/datasets/` for the bundled `VCTK` and `LibriSpeech` sample corpora used by the smoke workflow.
-* `src/taf/resources/models/` for packaged model weights such as `.h5`.
-
-Example usage:
-
-```python
-from taf.models.WavFile import WavFile
-from taf.resources.paths import example_wav_path, mosnet_model_path, packaged_dataset_audio_paths
-
-with example_wav_path() as wav_path:
-    wav_file = WavFile.load(wav_path)
-
-with mosnet_model_path() as model_path:
-    print(model_path)
-
-with packaged_dataset_audio_paths() as dataset_paths:
-    print(len(dataset_paths["vctk"]))
 ```
 
 <a id="steganography-algorithms"></a>
