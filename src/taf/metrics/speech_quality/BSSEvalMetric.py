@@ -1,7 +1,6 @@
 from numbers import Number
 
 import numpy as np
-from museval import metrics  # https://github.com/sigsep/sigsep-mus-eval
 
 from taf.models.Metric import Metric
 
@@ -13,6 +12,13 @@ class BSSEvalMetric(Metric):
                   fs: int,
                   frame_len: float = 0.03,
                   overlap: float = 0.75) -> Number | np.ndarray:
+        try:
+            from museval import metrics  # https://github.com/sigsep/sigsep-mus-eval
+        except (ImportError, RuntimeError) as exc:
+            raise ImportError(
+                "BSS_EVAL requires museval and external ffmpeg/ffprobe binaries."
+            ) from exc
+
         result = metrics.bss_eval(reference_sources=samples_original,  # shape: [nsrc, nsample, nchannels]
                                   estimated_sources=samples_processed)
         values = [item[0][0] for item in result]
