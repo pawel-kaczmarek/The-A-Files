@@ -175,8 +175,8 @@ List of implemented metrics:
 
 | lp. | Name            | Short description                                     | Reference         |
 |-----|-----------------|-------------------------------------------------------|-------------------|
-| 1.  | `BsdMetric.py`  | Bark spectral distortion, BSD                         | [[7]](#articles)  |
-| 2.  | `SrmrMetric.py` | Speech-to-reverberation modulation energy ratio, SRMR | [[10]](#articles) |
+| 2.  | `BsdMetric.py`  | Bark spectral distortion, BSD                         | [[7]](#articles)  |
+| 3.  | `SrmrMetric.py` | Speech-to-reverberation modulation energy ratio, SRMR | [[10]](#articles) |
 
 <a id="speech-intelligibility"></a>
 
@@ -184,9 +184,9 @@ List of implemented metrics:
 
 | lp. | Name            | Short description                                | Reference        |
 |-----|-----------------|--------------------------------------------------|------------------|
-| 1.  | `CsiiMetric.py` | Coherence and speech intelligibility index, CSII | [[7]](#articles) |
-| 2.  | `NcmMetric.py`  | Normalized-covariance measure, NCM               | [[7]](#articles) |
-| 3.  | `StoiMetric.py` | Short-time objective intelligibility, STOI       | [[9]](#articles) |
+| 4.  | `CsiiMetric.py` | Coherence and speech intelligibility index, CSII | [[7]](#articles) |
+| 5.  | `NcmMetric.py`  | Normalized-covariance measure, NCM               | [[7]](#articles) |
+| 6.  | `StoiMetric.py` | Short-time objective intelligibility, STOI       | [[9]](#articles) |
 
 <a id="speech-quality"></a>
 
@@ -194,21 +194,21 @@ List of implemented metrics:
 
 | lp. | Name                           | Short description                                                     | Reference         |
 |-----|--------------------------------|-----------------------------------------------------------------------|-------------------|
-| 1.  | `SnrMetric.py`                 | Signal-to-noise ratio, SNR                                            | [[12]](#articles) |
-| 2.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance measure for objective speech quality assessment | [[11]](#articles) |
-| 3.  | `SnrSegMetric.py`              | Segmental signal-to-noise ratio, SNRseg                               | [[7]](#articles)  |
-| 4.  | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR, fwSNRseg                            | [[7]](#articles)  |
-| 5.  | `CepstrumDistanceMetric.py`    | Cepstrum distance objective speech quality measure, CD                | [[7]](#articles)  |
-| 6.  | `LlrMetric.py`                 | Log-likelihood ratio, LLR                                             | [[7]](#articles)  |
-| 7.  | `WssMetric.py`                 | Weighted spectral slope, WSS                                          | [[7]](#articles)  |
-| 8.  | `PesqMetric.py`                | Perceptual evaluation of speech quality, PESQ                         | [[8]](#articles)  |
-| 9.  | `CsigMetric.py`                | Composite speech signal distortion rating, Csig                       | [[13]](#articles) |
-| 10. | `CovlMetric.py`                | Composite overall signal quality rating, Covl                         | [[13]](#articles) |
-| 11. | `CbakMetric.py`                | Composite background-noise intrusiveness rating, Cbak                 | [[13]](#articles) |
-| 12. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index, wSTMI                     | [[14]](#articles) |
-| 13. | `StgiMetric.py`                | Spectro-temporal glimpsing index, STGI                                | [[15]](#articles) |
-| 14. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio, SI-SDR                    | [[17]](#articles) |
-| 15. | `BSSEvalMetric.py`             | BSSEval v4 signal separation evaluation metric                        | [[18]](#articles) |
+| 7.  | `SnrMetric.py`                 | Signal-to-noise ratio, SNR                                            | [[12]](#articles) |
+| 8.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance measure for objective speech quality assessment | [[11]](#articles) |
+| 9.  | `SnrSegMetric.py`              | Segmental signal-to-noise ratio, SNRseg                               | [[7]](#articles)  |
+| 10. | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR, fwSNRseg                            | [[7]](#articles)  |
+| 11. | `CepstrumDistanceMetric.py`    | Cepstrum distance objective speech quality measure, CD                | [[7]](#articles)  |
+| 12. | `LlrMetric.py`                 | Log-likelihood ratio, LLR                                             | [[7]](#articles)  |
+| 13. | `WssMetric.py`                 | Weighted spectral slope, WSS                                          | [[7]](#articles)  |
+| 14. | `PesqMetric.py`                | Perceptual evaluation of speech quality, PESQ                         | [[8]](#articles)  |
+| 15. | `CsigMetric.py`                | Composite speech signal distortion rating, Csig                       | [[13]](#articles) |
+| 16. | `CovlMetric.py`                | Composite overall signal quality rating, Covl                         | [[13]](#articles) |
+| 17. | `CbakMetric.py`                | Composite background-noise intrusiveness rating, Cbak                 | [[13]](#articles) |
+| 18. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index, wSTMI                     | [[14]](#articles) |
+| 19. | `StgiMetric.py`                | Spectro-temporal glimpsing index, STGI                                | [[15]](#articles) |
+| 20. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio, SI-SDR                    | [[17]](#articles) |
+| 21. | `BSSEvalMetric.py`             | BSSEval v4 signal separation evaluation metric                        | [[18]](#articles) |
 
 Each metric extends the abstract class `Metric`.
 
