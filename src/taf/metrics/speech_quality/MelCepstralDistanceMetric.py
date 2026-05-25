@@ -2,7 +2,7 @@ from numbers import Number
 
 import numpy as np
 from librosa.feature import melspectrogram
-from mel_cepstral_distance import get_metrics_mels
+from mel_cepstral_distance import compare_mel_spectrograms
 
 from taf.models.Metric import Metric
 
@@ -21,10 +21,8 @@ class MelCepstralDistanceMetric(Metric):
         center: bool = False
         n_mels: int = 20
         htk: bool = True
-        norm: str = None
+        norm = None
         dtype: np.dtype = np.float64
-        n_mfcc: int = 16
-        use_dtw: bool = True
 
         mel_spectrogram_original = melspectrogram(
             y=samples_original,
@@ -37,7 +35,6 @@ class MelCepstralDistanceMetric(Metric):
             pad_mode="constant",
             power=2.0,
             win_length=None,
-            # librosa.filters.mel arguments:
             n_mels=n_mels,
             htk=htk,
             norm=norm,
@@ -57,7 +54,6 @@ class MelCepstralDistanceMetric(Metric):
             pad_mode="constant",
             power=2.0,
             win_length=None,
-            # librosa.filters.mel arguments:
             n_mels=n_mels,
             htk=htk,
             norm=norm,
@@ -65,7 +61,13 @@ class MelCepstralDistanceMetric(Metric):
             fmin=0.0,
             fmax=None,
         )
-        return np.array(get_metrics_mels(mel_spectrogram_original, mel_spectrogram_processed))
+
+        # compare_mel_spectrograms expects (frames, n_mels); librosa returns (n_mels, frames).
+        mcd, _ = compare_mel_spectrograms(
+            mel_spectrogram_original.T,
+            mel_spectrogram_processed.T,
+        )
+        return np.array(mcd)
 
     def name(self) -> str:
         return "Mel-cepstral distance measure for objective speech quality assessment"

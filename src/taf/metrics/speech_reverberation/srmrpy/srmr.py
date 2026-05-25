@@ -10,7 +10,7 @@ import numpy as np
 from gammatone.fftweight import fft_gtgram
 from gammatone.filters import centre_freqs, erb_filterbank, make_erb_filters
 from scipy.io.wavfile import read as readwav
-from scipy.signal import hamming
+from scipy.signal.windows import hamming
 
 from .hilbert import hilbert
 from .modulation_filters import *

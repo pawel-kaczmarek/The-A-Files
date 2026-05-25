@@ -83,17 +83,31 @@ Repository layout:
 * `tests/` contains import- and behavior-level tests.
 * `Documentation/` remains outside the package as a project asset.
 
+**Supported Python versions:** 3.10, 3.11, 3.12
+
 For local development, install the package in editable mode:
 
 ```bash
 python -m pip install -e .[dev]
 ```
 
+**TensorFlow-dependent features** (FgasMethod, MosNetMetric) require the optional `[ai]` extra:
+
+```bash
+pip install "the-a-files[ai]"
+# or, for local development:
+pip install -e ".[dev,ai]"
+```
+
 ## Publishing
 
 Packaging and release instructions are in [docs/publishing.md](docs/publishing.md). The PyPI distribution name is `the-a-files`; the import package remains `taf`.
 
-`SRMRpy` is vendored under `src/srmrpy/` because it is required by the SRMR metric and is not published as a standard PyPI dependency.
+`SRMRpy` is vendored under `src/taf/metrics/speech_reverberation/srmrpy/` because it is required by the SRMR metric and is not published as a standard PyPI dependency.
+
+## Technical specification
+
+Implementation contracts and code-level extension notes are documented in [docs/technical_specification.md](docs/technical_specification.md).
 
 ## Packaged resources
 
@@ -131,48 +145,26 @@ The implementation modules were copied into `src/taf/` with their existing inter
 
 List of implemented methods:
 
-|                                      Class name | Description [Reference]                                                             |
-|------------------------------------------------:|-------------------------------------------------------------------------------------|
-|                              ```LsbMethod.py``` | Standard LSB coding [[1]](#articles)                                                |
-|                             ```EchoMethod.py``` | Echo Hiding technique with single echo kernel [[1]](#articles)                      |
-|                      ```PhaseCodingMethod.py``` | Phase coding technique [[1]](#articles)                                             |
-|              ```ImprovedPhaseCodingMethod.py``` | Improved Phase Coding technique [[19]](#articles)                                   |
-|                      ```DctDeltaLsbMethod.py``` | DCT Delta LSB [[1]](#articles)                                                      |
-|                           ```DwtLsbMethod.py``` | DWT LSB based [[1]](#articles)                                                      |
-|                            ```DctB1Method.py``` | First band of DCT coefficients (DCT-b1) [[2]](#articles)                            |
-|              ```PatchworkMultilayerMethod.py``` | Patchwork-Based multilayer [[3]](#articles)                                         |
-|                        ```NormSpaceMethod.py``` | Norm space method [[4]](#articles)                                                  |
-|                             ```FsvcMethod.py``` | Frequency Singular Value Coefficient Modification (FSVC) [[5]](#articles)           |
-|                             ```DsssMethod.py``` | Direct Sequence Spread Spectrum technique [[6]](#articles)                          |
-|                         ```BlindSvdMethod.py``` | Blind SVD-based using entropy and log-polar transformation method [[20]](#articles) |
-|          ```PrimeFactorInterpolatedMethod.py``` | Prime Factor Interpolated method [[21]](#articles)                                  |
-|                              ```LwtMethod.py``` | LWT method [[22]](#articles)                                                        |
-| ```ForegroundBackgroundSegmentationMethod.py``` | Foreground-Background Segmentation LSB (FBS-LSB) [[23]](#articles)                  |
-|                             ```FgasMethod.py``` | Fixed-decoder network with adversarial perturbation generation (FGAS) [[24]](#articles) |
-|                           ```AacStcMethod.py``` | Adaptive +-1 LSB via AAC perceptual residual and Syndrome-Trellis Codes [[25]](#articles) |
+* Standard LSB coding (`LsbMethod.py`) [[1]](#articles)
+* Echo Hiding technique with single echo kernel (`EchoMethod.py`) [[1]](#articles)
+* Phase coding technique (`PhaseCodingMethod.py`) [[1]](#articles)
+* Improved Phase Coding technique (`ImprovedPhaseCodingMethod.py`) [[19]](#articles)
+* DCT Delta LSB (`DctDeltaLsbMethod.py`) [[1]](#articles)
+* DWT LSB based (`DwtLsbMethod.py`) [[1]](#articles)
+* First band of DCT coefficients, DCT-b1 (`DctB1Method.py`) [[2]](#articles)
+* Patchwork-Based multilayer (`PatchworkMultilayerMethod.py`) [[3]](#articles)
+* Norm space method (`NormSpaceMethod.py`) [[4]](#articles)
+* Frequency Singular Value Coefficient Modification, FSVC (`FsvcMethod.py`) [[5]](#articles)
+* Direct Sequence Spread Spectrum technique (`DsssMethod.py`) [[6]](#articles)
+* Blind SVD-based using entropy and log-polar transformation method (`BlindSvdMethod.py`) [[20]](#articles)
+* Prime Factor Interpolated method (`PrimeFactorInterpolatedMethod.py`) [[21]](#articles)
+* LWT method (`LwtMethod.py`) [[22]](#articles)
+* Foreground-Background Segmentation LSB, FBS-LSB (`ForegroundBackgroundSegmentationMethod.py`) [[23]](#articles)
+* Fixed-decoder network with adversarial perturbation generation, FGAS (`FgasMethod.py`) [[24]](#articles)
+* Adaptive +-1 LSB via AAC perceptual residual and Syndrome-Trellis Codes (`AacStcMethod.py`) [[25]](#articles)
+* Wireless-channel DWT LSB message embedding (`WirelessDwtLsbMethod.py`) [[27]](#articles)
 
-Each method extend abstract class  ```SteganographyMethod```
-
-```python
-from abc import abstractmethod, ABC
-from typing import List
-import numpy as np
-
-
-class SteganographyMethod(ABC):
-
-    @abstractmethod
-    def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
-        ...
-
-    @abstractmethod
-    def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
-        ...
-
-    @abstractmethod
-    def type(self) -> str:
-        ...
-```
+Technical details for method implementation are in [docs/technical_specification.md](docs/technical_specification.md).
 
 ## Metrics
 
@@ -319,7 +311,10 @@ in Computer Science, vol 10431, pp. 177-186. Springer.
 https://doi.org/10.1007/978-3-319-64185-0_14 \
 [26] Yan, Y., Li, Y., Xiao, Q., & Ren, Y. (2026). **PRoADS: Provably Secure and Robust Audio Diffusion Steganography
 with Latent Optimization and Backward Euler Inversion.** *arXiv preprint* arXiv:2603.10314 (ICASSP
-2026). https://arxiv.org/abs/2603.10314
+2026). https://arxiv.org/abs/2603.10314 \
+[27] Hamdi, A. A., Eyssa, A. A., Abdalla, M. I., ElAffendi, M., AlQahtani, A. A. S., Ateya, A. A., & Elsayed, R. A.
+**Improving Audio Steganography Transmission over Various Wireless Channels.** *Journal of Sensor and Actuator
+Networks*, 14(6), 106 (2025). https://doi.org/10.3390/jsan14060106
 
 #### Links
 

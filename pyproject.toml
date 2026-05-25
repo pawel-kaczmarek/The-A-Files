@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "the-a-files"
-version = "0.1.0"
+version = "0.1.1"
 description = "Audio steganography methods, attacks, and speech-quality evaluation metrics."
 readme = "README.md"
-requires-python = ">=3.10,<3.11"
+requires-python = ">=3.10,<3.13"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE", "LICENSES/*"]
 authors = [
@@ -29,29 +29,35 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Analysis",
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "bitstring==4.0.1",
-    "Gammatone==1.0.3",
-    "librosa==0.9.2",
-    "loguru==0.6.0",
-    "mel_cepstral_distance==0.0.2",
-    "museval==0.4.1",
-    "numba==0.56.4",
-    "numpy==1.23.5",
-    "pesq==0.0.4",
-    "pystoi==0.3.3",
-    "PyWavelets==1.4.1",
+    "bitstring>=4.0.1",
+    "Gammatone>=1.0.3",
+    "librosa>=0.10.0",
+    "loguru>=0.6.0",
+    "mel_cepstral_distance>=0.0.2",
+    "museval>=0.4.0",
+    "numba>=0.59.0",
+    "numpy>=1.26.0,<2",
+    "pesq>=0.0.4",
+    "pystoi>=0.3.3",
+    "PyWavelets>=1.5.0",
     "PyYAML>=6.0",
-    "scipy==1.9.3",
-    "soundfile==0.11.0",
-    "tensorflow==2.12.1",
-    "tensorflow_intel==2.12.1; platform_system == 'Windows'",
+    "scipy>=1.11.0",
+    "soundfile>=0.11.0",
 ]
 
 [project.optional-dependencies]
+ai = [
+    # TensorFlow 2.15+ is required for Python 3.12 support.
+    # Install with: pip install "the-a-files[ai]"
+    # Required by: FgasMethod, MosNetMetric
+    "tensorflow>=2.15,<3",
+]
 dev = [
     "build>=1.2",
     "pytest>=8.0",
