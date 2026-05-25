@@ -15,6 +15,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+pytest.importorskip("tensorflow", reason="install the-a-files[ai] to run FGAS tests")
+
 from taf.methods.FgasMethod import FgasMethod
 
 
