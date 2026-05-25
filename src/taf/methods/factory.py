@@ -19,6 +19,7 @@ from taf.methods.NormSpaceMethod import NormSpaceMethod
 from taf.methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
 from taf.methods.PhaseCodingMethod import PhaseCodingMethod
 from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
+from taf.methods.WirelessDwtLsbMethod import WirelessDwtLsbMethod
 
 class SteganographyMethodFactory:
 
@@ -50,5 +51,6 @@ class SteganographyMethodFactory:
             MethodType.FBSMethod: ForegroundBackgroundSegmentationMethod(sr=sr),
             MethodType.FGAS_METHOD: FgasMethod(sr=sr),
             MethodType.AAC_STC_METHOD: AacStcMethod(sr=sr),
+            MethodType.WIRELESS_DWT_LSB_METHOD: WirelessDwtLsbMethod(),
         }
         return methods

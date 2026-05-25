@@ -10,7 +10,7 @@ from taf.models.types import MethodType
 # Methods we expect to recover bits exactly on synthetic audio at 16 kHz.
 # Other methods are research code with known sensitivity to signal content;
 # they are exercised by the no-crash test below but not asserted bit-exact here.
-STRICT_METHODS = [MethodType.LSB_METHOD]
+STRICT_METHODS = [MethodType.LSB_METHOD, MethodType.WIRELESS_DWT_LSB_METHOD]
 
 
 @pytest.mark.parametrize("method_type", list(MethodType), ids=lambda m: m.name)
@@ -23,7 +23,11 @@ def test_method_encode_decode_does_not_crash(
     method = SteganographyMethodFactory.get(sample_rate, method_type)
     assert method is not None, f"factory returned None for {method_type}"
 
-    encoded = method.encode(synthetic_sine.copy(), list(random_message))
+    try:
+        encoded = method.encode(synthetic_sine.copy(), list(random_message))
+    except ImportError as exc:
+        pytest.skip(f"{method_type.name} requires an optional dependency: {exc}")
+
     assert isinstance(encoded, np.ndarray)
     assert encoded.size > 0
 

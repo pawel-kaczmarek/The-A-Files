@@ -19,6 +19,7 @@ class MethodType(Enum):
     FBSMethod = auto()
     FGAS_METHOD = auto()
     AAC_STC_METHOD = auto()
+    WIRELESS_DWT_LSB_METHOD = auto()
 
 
 class MetricType(Enum):
