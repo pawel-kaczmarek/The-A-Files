@@ -1,7 +1,17 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
+
+SRC_PATH = Path(__file__).resolve().parents[1] / "src"
+src_path_text = str(SRC_PATH)
+
+if src_path_text in sys.path:
+    sys.path.remove(src_path_text)
+sys.path.insert(0, src_path_text)
 
 
 SAMPLE_RATE = 16000
