@@ -53,6 +53,7 @@ coverage.xml
 docs/_build/
 
 .pip-wheel-cache
+pytest-cache-files-hv9nqi6w/
 
 .codex/
 AGENTS.md

@@ -105,6 +105,32 @@ taf-eval full
 python -c "from taf.methods.factory import SteganographyMethodFactory; from taf.models.types import MethodType; print(SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD).type())"
 ```
 
+## Streamlit UI
+
+Install the optional UI dependency from PyPI:
+
+```bash
+pip install "the-a-files[ui]"
+```
+
+For local development, install the package in editable mode:
+
+```bash
+pip install -e ".[ui]"
+```
+
+Run the Streamlit app:
+
+```bash
+taf-streamlit
+```
+
+You can also run the module directly with Streamlit:
+
+```bash
+streamlit run src/taf/ui/streamlit_app.py
+```
+
 <a id="steganography-algorithms"></a>
 
 ## 🔐 Steganography algorithms
