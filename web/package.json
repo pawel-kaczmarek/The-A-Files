@@ -1,6 +1,6 @@
 {
   "name": "the-a-files-web",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Web research platform for The A-Files audio steganography toolkit.",
   "scripts": {

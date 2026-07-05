@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "the-a-files"
-version = "0.1.1"
+version = "1.0.0"
 description = "Audio steganography methods, attacks, and speech-quality evaluation metrics."
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
