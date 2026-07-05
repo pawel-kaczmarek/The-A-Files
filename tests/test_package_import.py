@@ -12,7 +12,7 @@ from taf.models.types import MethodType, MetricType
 class PackageImportTests(unittest.TestCase):
     def test_taf_import(self) -> None:
         self.assertTrue(taf)
-        self.assertEqual(version("the-a-files"), "0.1.1")
+        self.assertEqual(version("the-a-files"), "1.0.0")
 
     def test_core_enum_imports(self) -> None:
         self.assertTrue(MethodType)
