@@ -30,6 +30,7 @@ class EvaluationConfig:
     random_message_lengths: Sequence[int] = ()
     random_messages_per_length: int = 1
     random_seed: int | None = None
+    attacks: Sequence[str] = ()
     keep_files: bool = True
     overwrite: bool = True
     max_workers: int = 1

@@ -55,13 +55,18 @@ def load_resource_files(paths: Iterable[Path]) -> list[WavFile]:
     return [load_audio(path) for path in paths_list]
 
 
-def evaluate_files(files: Iterable[WavFile], config: EvaluationConfig | None = None) -> EvaluationResult:
-    return asyncio.run(evaluate_files_async(files, config))
+def evaluate_files(
+    files: Iterable[WavFile],
+    config: EvaluationConfig | None = None,
+    on_row: Callable[[EvaluationRow], None] | None = None,
+) -> EvaluationResult:
+    return asyncio.run(evaluate_files_async(files, config, on_row=on_row))
 
 
 async def evaluate_files_async(
     files: Iterable[WavFile],
     config: EvaluationConfig | None = None,
+    on_row: Callable[[EvaluationRow], None] | None = None,
 ) -> EvaluationResult:
     files_list = list(files)
     resolved_config = config or EvaluationConfig()
@@ -69,15 +74,17 @@ async def evaluate_files_async(
     method_specs = _method_specs(resolved_config)
     metric_specs = _metric_specs(resolved_config)
     targets = _resolve_targets(resolved_config)
+    attack_variants = _resolve_attack_variants(resolved_config)
     semaphore = asyncio.Semaphore(max(1, resolved_config.max_workers))
 
     total_tasks = len(files_list) * len(method_specs) * len(messages)
     logger.info(
-        "Evaluating {} file(s) x {} method(s) x {} message(s) -> {} task(s); "
+        "Evaluating {} file(s) x {} method(s) x {} message(s) x {} attack variant(s) -> {} task(s); "
         "target={} formats={} max_workers={} failure_policy={} output_dir={}",
         len(files_list),
         len(method_specs),
         len(messages),
+        len(attack_variants),
         total_tasks,
         resolved_config.target.value,
         [_format_value(t) or _decode_mode(t) for t in targets],
@@ -91,15 +98,20 @@ async def evaluate_files_async(
 
     async def guarded_job(wav_file: WavFile, method_spec: _MethodSpec, message: EvaluationMessage):
         async with semaphore:
-            return await asyncio.to_thread(
+            job_rows = await asyncio.to_thread(
                 _evaluate_file_method_message,
                 wav_file,
                 method_spec,
                 message,
                 metric_specs,
                 targets,
+                attack_variants,
                 resolved_config,
             )
+        if on_row is not None:
+            for row in job_rows:
+                on_row(row)
+        return job_rows
 
     tasks = [
         guarded_job(wav_file, method_spec, message)
@@ -126,6 +138,7 @@ def _evaluate_file_method_message(
     message: EvaluationMessage,
     metric_specs: Sequence[_MetricSpec],
     targets: Sequence[AudioFileFormat | DecodeTarget],
+    attack_variants: Sequence[str | None],
     config: EvaluationConfig,
 ) -> list[EvaluationRow]:
     method = method_spec.create(wav_file.samplerate)
@@ -159,8 +172,11 @@ def _evaluate_file_method_message(
                 message=message,
                 target=target,
                 error=error,
+                attack=attack,
+                encode_time=time.perf_counter() - encode_start,
             )
             for target in targets
+            for attack in attack_variants
         ]
     encode_elapsed = time.perf_counter() - encode_start
     logger.debug(
@@ -174,8 +190,11 @@ def _evaluate_file_method_message(
 
     encoded = WavFile(samplerate=wav_file.samplerate, samples=encoded_samples, path=wav_file.path)
     return [
-        _evaluate_target(wav_file, encoded, method, method_label, message, metric_specs, target, config)
+        _evaluate_target(
+            wav_file, encoded, method, method_label, message, metric_specs, target, attack, config, encode_elapsed
+        )
         for target in targets
+        for attack in attack_variants
     ]
 
 
@@ -187,10 +206,13 @@ def _evaluate_target(
     message: EvaluationMessage,
     metric_specs: Sequence[_MetricSpec],
     target: AudioFileFormat | DecodeTarget,
+    attack: str | None,
     config: EvaluationConfig,
+    encode_time: float | None = None,
 ) -> EvaluationRow:
     output_path = _output_path(original.path, method_label, message.name, target, config)
     target_label = _format_value(target) or _decode_mode(target)
+    attack_elapsed: float | None = None
 
     try:
         if isinstance(target, DecodeTarget):
@@ -226,20 +248,35 @@ def _evaluate_target(
                 logger.debug("Removed transient audio artifact: {}", saved_path)
                 output_path = None
 
+        decode_samples = decode_input.samples
+        if attack is not None:
+            logger.debug(
+                "Applying attack | file={} | method={} | message={} | target={} | attack={}",
+                original.path,
+                method_label,
+                message.name,
+                target_label,
+                attack,
+            )
+            attack_start = time.perf_counter()
+            decode_samples, _ = _apply_attack(decode_samples, decode_input.samplerate, attack)
+            attack_elapsed = time.perf_counter() - attack_start
+
         decode_start = time.perf_counter()
-        decoded_message = method.decode(decode_input.samples, message.length)
+        decoded_message = method.decode(decode_samples, message.length)
         decode_elapsed = time.perf_counter() - decode_start
         success = bool(np.array_equal(list(message.bits), decoded_message))
         logger.debug(
-            "Decode done  | file={} | method={} | message={} | target={} | took={:.3f}s | success={}",
+            "Decode done  | file={} | method={} | message={} | target={} | attack={} | took={:.3f}s | success={}",
             original.path,
             method_label,
             message.name,
             target_label,
+            attack or "none",
             decode_elapsed,
             success,
         )
-        metrics, metric_errors = _calculate_metrics(original.samples, decode_input.samples, original.samplerate, metric_specs)
+        metrics, metric_errors = _calculate_metrics(original.samples, decode_samples, original.samplerate, metric_specs)
         return EvaluationRow(
             input_path=original.path,
             method=method_label,
@@ -255,19 +292,29 @@ def _evaluate_target(
             is_lossy=_is_lossy(target),
             transformation_name=_transformation_name(target),
             codec_options=config.codec_options.get(_format_value(target) or "", {}),
+            attack=attack,
+            message_bits=list(message.bits),
+            sample_rate=original.samplerate,
+            duration_seconds=len(original.samples) / original.samplerate if original.samplerate else None,
+            encode_time_seconds=encode_time,
+            decode_time_seconds=decode_elapsed,
+            attack_time_seconds=attack_elapsed,
         )
     except Exception as error:
         logger.exception(
-            "Target evaluation failed | file={} | method={} | message={} | target={} | error={}",
+            "Target evaluation failed | file={} | method={} | message={} | target={} | attack={} | error={}",
             original.path,
             method_label,
             message.name,
             target_label,
+            attack or "none",
             error,
         )
         if config.failure_policy == FailurePolicy.RAISE:
             raise
-        return _error_row(original, method_label, message, target, error, output_path)
+        return _error_row(
+            original, method_label, message, target, error, output_path, attack=attack, encode_time=encode_time
+        )
 
 
 def _calculate_metrics(
@@ -420,6 +467,44 @@ def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
     return _MetricSpec(label=metric_type.name, create=create)
 
 
+def available_attack_names() -> list[str]:
+    """Public attack names exposed by ``CorruptedWavFile`` (sorted)."""
+    import inspect
+
+    from taf.attacks.attacks import CorruptedWavFile
+
+    return sorted(
+        name
+        for name, member in inspect.getmembers(CorruptedWavFile, predicate=inspect.isfunction)
+        if not name.startswith("_") and name in CorruptedWavFile.__dict__
+    )
+
+
+def _resolve_attack_variants(config: EvaluationConfig) -> list[str | None]:
+    """Each configured attack is evaluated as its own variant, next to a no-attack baseline."""
+    if not config.attacks:
+        return [None]
+    known = set(available_attack_names())
+    unknown = [name for name in config.attacks if name not in known]
+    if unknown:
+        raise ValueError(f"Unknown attack(s): {unknown}. Known: {sorted(known)}")
+    variants: list[str | None] = [None]
+    for name in config.attacks:
+        if name not in variants:
+            variants.append(name)
+    return variants
+
+
+def _apply_attack(samples: np.ndarray, samplerate: int, attack: str) -> tuple[np.ndarray, int]:
+    from taf.attacks.attacks import CorruptedWavFile
+
+    corrupted = CorruptedWavFile(
+        WavFile(samplerate=samplerate, samples=np.asarray(samples).copy(), path=Path(""))
+    )
+    corrupted = getattr(corrupted, attack)()
+    return np.asarray(corrupted.samples), corrupted.samplerate
+
+
 def _resolve_targets(config: EvaluationConfig) -> list[AudioFileFormat | DecodeTarget]:
     """Translate the (target, formats) pair on a config into concrete iteration targets.
 
@@ -473,6 +558,8 @@ def _error_row(
     target: AudioFileFormat | DecodeTarget,
     error: Exception,
     output_path: Path | None = None,
+    attack: str | None = None,
+    encode_time: float | None = None,
 ) -> EvaluationRow:
     return EvaluationRow(
         input_path=wav_file.path,
@@ -486,6 +573,11 @@ def _error_row(
         error=str(error),
         is_lossy=_is_lossy(target),
         transformation_name=_transformation_name(target),
+        attack=attack,
+        message_bits=list(message.bits),
+        sample_rate=wav_file.samplerate,
+        duration_seconds=len(wav_file.samples) / wav_file.samplerate if wav_file.samplerate else None,
+        encode_time_seconds=encode_time,
     )
 
 
@@ -585,6 +677,7 @@ __all__ = [
     "FailurePolicy",
     "RandomMessageSpec",
     # Engine entry points
+    "available_attack_names",
     "evaluate_files",
     "evaluate_files_async",
     "load_files",

@@ -26,6 +26,13 @@ class EvaluationRow:
     is_lossy: bool = False
     transformation_name: str | None = None
     codec_options: dict[str, Any] = field(default_factory=dict)
+    attack: str | None = None
+    message_bits: list[int] | None = None
+    sample_rate: int | None = None
+    duration_seconds: float | None = None
+    encode_time_seconds: float | None = None
+    decode_time_seconds: float | None = None
+    attack_time_seconds: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -44,6 +51,13 @@ class EvaluationRow:
             "is_lossy": self.is_lossy,
             "transformation_name": self.transformation_name,
             "codec_options": self.codec_options,
+            "attack": self.attack,
+            "message_bits": self.message_bits,
+            "sample_rate": self.sample_rate,
+            "duration_seconds": self.duration_seconds,
+            "encode_time_seconds": self.encode_time_seconds,
+            "decode_time_seconds": self.decode_time_seconds,
+            "attack_time_seconds": self.attack_time_seconds,
         }
 
 

@@ -131,6 +131,70 @@ You can also run the module directly with Streamlit:
 streamlit run src/taf/ui/streamlit_app.py
 ```
 
+## 🌐 REST API & web research platform
+
+The toolkit ships a reusable **experiment module** (`taf.experiments`) plus an
+optional FastAPI layer and a Next.js dashboard on top of it.
+
+### Experiment engine (works without the UI)
+
+```bash
+pip install -e ".[experiments]"   # FastAPI + pandas + uvicorn
+```
+
+```python
+from taf.experiments import ExperimentConfig, ExperimentType, run_experiment
+
+config = ExperimentConfig(
+    experiment_type=ExperimentType.DATASET_BENCHMARK,
+    name="lsb-vs-fsvc-vctk",
+    dataset_id="vctk",            # example | vctk | librispeech | all | upload:<id>
+    file_limit=4,                 # dataset_path="C:/my/corpus" also works
+    methods=["LSB_METHOD", "FSVC_METHOD"],
+    metrics=["SNR_METRIC", "PESQ_METRIC"],
+    attacks=["additive_noise"],   # each attack runs next to a no-attack baseline
+    payload_lengths=[16, 32],
+    repetitions=3,
+    random_seed=42,
+)
+run = run_experiment(config)      # per-row failures are recorded, never raised
+print(run.status, run.summary["overall"])
+run.to_csv("detailed_results.csv")
+```
+
+Six experiment types share this one config and one normalized result-row
+format (file, method, payload, attack, BER, bit accuracy, metrics, timings,
+status/error): `dataset_benchmark`, `attack_robustness`, `perceptual_quality`,
+`embedding_capacity`, `method_comparison`, `research_experiment`. Scenario
+analytics (robustness matrix, capacity thresholds, weighted method ranking)
+are computed by `taf.experiments.scenarios`.
+
+### REST API
+
+```bash
+uvicorn taf.api.main:app --reload   # or: taf-api
+# http://127.0.0.1:8000 — interactive OpenAPI docs at /docs
+```
+
+Key endpoints: `GET /api/catalog/{methods,metrics,attacks,datasets}`,
+`POST /api/experiments/preview`, `POST /api/experiments/run`,
+`GET /api/experiments/history`, `GET /api/experiments/{id}/{results,summary,export.csv,export_summary.csv,config.json}`,
+live streams at `/api/experiments/events` and `/api/experiments/{id}/events`
+(Server-Sent Events), dataset upload at `POST /api/datasets/uploads`.
+
+### Web dashboard
+
+A Next.js + TypeScript + Tailwind (shadcn-style) dashboard lives in
+[`web/`](web/README.md) — one page per experiment type, shared experiment
+layout, live progress, summary tables and CSV export. It is **not** part of
+the PyPI distribution:
+
+```bash
+cd web
+npm install
+npm run dev   # http://localhost:3000
+```
+
 <a id="steganography-algorithms"></a>
 
 ## 🔐 Steganography algorithms

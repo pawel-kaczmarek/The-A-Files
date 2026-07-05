@@ -66,6 +66,17 @@ dev = [
 ui = [
     "streamlit>=1.35",
 ]
+api = [
+    "fastapi>=0.110",
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.29",
+]
+experiments = [
+    "fastapi>=0.110",
+    "pandas>=2.0",
+    "python-multipart>=0.0.9",
+    "uvicorn[standard]>=0.29",
+]
 
 [project.urls]
 Homepage = "https://github.com/pawel-kaczmarek/The-A-Files"
@@ -77,6 +88,7 @@ Publishing = "https://github.com/pawel-kaczmarek/The-A-Files/blob/main/docs/publ
 [project.scripts]
 taf-eval = "taf.main:main"
 taf-streamlit = "taf.ui.streamlit_app:main"
+taf-api = "taf.api.app:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
