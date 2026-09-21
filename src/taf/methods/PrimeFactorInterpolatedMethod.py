@@ -1,3 +1,17 @@
+"""Interpolation-based steganography with prime-factor variable capacity.
+
+Every second sample is replaced by the interpolation of its two neighbours
+plus a payload value, and the number of payload bits a position carries is
+derived from the least prime factor of the log-scaled neighbour difference.
+Both sides compute that capacity from the retained neighbours alone, so the
+receiver is blind.
+
+The previous implementation was written for integer PCM but was fed float
+audio in [-1, 1], where log2(diff) is negative and the payload was added as
+whole units, wrecking the signal (SNR -23 dB). It also returned twice as many
+samples as the cover, and its decoder recovered the payload from a difference
+that never held it (BER 27-56% even on integer input).
+"""
 import math
 from typing import List
 
@@ -5,10 +19,8 @@ import numpy as np
 
 from taf.models.SteganographyMethod import SteganographyMethod
 
-
-def _interpolate_samples(samples: np.ndarray) -> List[int]:
-    """Calculate interpolated samples."""
-    return [(samples[i] + samples[i + 1]) // 2 for i in range(len(samples) - 1)]
+_INT16_MAX = 32767
+_INT16_MIN = -32768
 
 
 def _least_prime_factor(n: int) -> int:
@@ -21,78 +33,92 @@ def _least_prime_factor(n: int) -> int:
     return n
 
 
+def _to_int16(audio: np.ndarray) -> tuple[np.ndarray, bool]:
+    """Return the signal as int16 samples plus whether it was float."""
+    if np.issubdtype(audio.dtype, np.integer):
+        return audio.astype(np.int64), False
+    return np.clip(np.rint(audio.astype(np.float64) * _INT16_MAX),
+                   _INT16_MIN, _INT16_MAX).astype(np.int64), True
+
+
 class PrimeFactorInterpolatedMethod(SteganographyMethod):
+    """
+    Args:
+        max_bits_per_sample: Upper bound on the payload width of one position.
+            The least prime factor of a prime N is N itself, which would add a
+            five-digit offset to a single sample; capping it keeps the worst
+            case audible-but-small.
+    """
+
+    def __init__(self, max_bits_per_sample: int = 4):
+        if not 1 <= max_bits_per_sample <= 8:
+            raise ValueError("max_bits_per_sample must be in [1, 8]")
+        self.max_bits_per_sample = max_bits_per_sample
+
+    def _capacity_at(self, left: int, right: int) -> int:
+        """Bits carried by the position between two retained neighbours."""
+        diff = abs(int(right) - int(left))
+        n = int(math.floor(math.log2(diff))) if diff > 0 else 0
+        width = _least_prime_factor(n) if n >= 2 else 1
+        return int(min(max(width, 1), self.max_bits_per_sample))
+
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
-        """Encode the message into the audio samples."""
-        interpolated = _interpolate_samples(data)  # Interpolate the audio samples
-        message_bits = ''.join(map(str, message))  # Convert the message into a binary string
-        stego_samples = []  # List to store stego audio samples
-        message_index = 0  # Pointer for the message bits
+        """Embed the message into the odd-indexed samples."""
+        samples, was_float = _to_int16(data)
+        stego = samples.copy()
 
-        # Iterate over the interpolated samples to embed the message
-        for i in range(len(interpolated)):
-            original = data[i]  # Original sample
-            interp = interpolated[i]  # Interpolated sample
-            diff = abs(original - interp)  # Calculate the difference between original and interpolated samples
+        bits = [int(bit) for bit in message]
+        if any(bit not in (0, 1) for bit in bits):
+            raise ValueError("message must contain only 0 and 1 bits")
 
-            # Calculate N based on the difference
-            N = math.floor(math.log2(diff)) if diff != 0 else 0
-            # Ensure sample_space is at least 1
-            sample_space = max(_least_prime_factor(N) if N >= 2 else N, 1)
+        bit_index = 0
+        for position in range(1, len(samples) - 1, 2):
+            if bit_index >= len(bits):
+                break
 
-            # Extract a part of the message based on the sample_space
-            if message_index < len(message_bits):
-                part = int(message_bits[message_index:message_index + sample_space], 2)
-                message_index += sample_space
-            else:
-                part = 0
+            left, right = int(samples[position - 1]), int(samples[position + 1])
+            width = self._capacity_at(left, right)
+            chunk = bits[bit_index:bit_index + width]
+            # A short trailing chunk is left-aligned, exactly as the decoder
+            # reads it back.
+            payload = 0
+            for bit in chunk:
+                payload = (payload << 1) | bit
+            payload <<= width - len(chunk)
+            bit_index += len(chunk)
 
-            # Embed the part of the message into the interpolated sample
-            if interp > 0:
-                modified_interp = interp + part  # Modify the positive interpolated sample
-            elif interp < 0:
-                modified_interp = -(abs(interp) + part)  # Modify the negative interpolated sample
-            else:
-                modified_interp = interp  # If zero, keep it unchanged
+            interpolated = (left + right) // 2
+            stego[position] = np.clip(interpolated + payload, _INT16_MIN, _INT16_MAX)
 
-            # Append the modified interpolated sample and the original sample
-            stego_samples.append(modified_interp)
-            stego_samples.append(original)
+        if bit_index < len(bits):
+            raise ValueError(
+                f"message too long for cover audio: {len(bits)} > {bit_index} bits"
+            )
 
-        # Handle the last sample if the number of samples is odd
-        if len(data) % 2 != 0:
-            stego_samples.append(data[-1])
-
-        return np.array(stego_samples, dtype=data.dtype)  # Return the stego audio as a numpy array
+        if was_float:
+            return (stego.astype(np.float64) / _INT16_MAX).astype(data.dtype, copy=False)
+        return stego.astype(data.dtype, copy=False)
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
-        """Decode the message from the stego audio."""
-        # Split the samples into original and interpolated parts
-        original_samples = data_with_watermark[1::2]  # Odd indexed samples (original)
-        interpolated_samples = data_with_watermark[0::2]  # Even indexed samples (interpolated)
+        """Recover the message from the odd-indexed samples."""
+        samples, _ = _to_int16(data_with_watermark)
+        bits: List[int] = []
 
-        # Variable to store the binary message bits
-        message_bits = ''
+        for position in range(1, len(samples) - 1, 2):
+            if len(bits) >= watermark_length:
+                break
 
-        # Process each pair of samples
-        for i in range(len(interpolated_samples)):
-            interp = interpolated_samples[i]  # Interpolated sample
-            original = original_samples[i]  # Original sample
-            diff = abs(original - interp)  # Calculate the difference between the samples
+            left, right = int(samples[position - 1]), int(samples[position + 1])
+            width = self._capacity_at(left, right)
+            payload = int(samples[position]) - (left + right) // 2
+            payload = max(0, min(payload, (1 << width) - 1))
 
-            # Calculate N based on the difference
-            N = math.floor(math.log2(diff)) if diff != 0 else 0
-            sample_space = max(_least_prime_factor(N) if N >= 2 else N, 1)
+            for shift in range(width - 1, -1, -1):
+                bits.append((payload >> shift) & 1)
+                if len(bits) >= watermark_length:
+                    break
 
-            # If the difference is significant, extract a part of the message
-            if diff != 0:
-                part = abs(interp - original)  # Usually, we extract the hidden part from this difference
-                # Convert the extracted part to binary
-                message_bits += format(int(part), f'0{sample_space}b')
-
-        # After collecting all bits, convert them to a list of bits
-        # Return only the portion of the message based on the watermark length
-        return list(map(int, message_bits[:watermark_length]))
+        return bits[:watermark_length]
 
     def type(self) -> str:
         """Return the name of the steganography method."""
