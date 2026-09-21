@@ -8,18 +8,43 @@ class DwtLsbMethod(SteganographyMethod):
     """
     Implements a Discrete Wavelet Transform (DWT) LSB-based watermarking method.
 
-    This method uses DWT to decompose an audio signal and embeds watermark bits
-    into specific coefficients using the Least Significant Bit (LSB) technique.
+    The signal is decomposed with a 2-level DWT and each watermark bit is
+    carried by the parity of a quantised detail coefficient, which is the
+    wavelet-domain equivalent of flipping a least significant bit.
+
+    The quantisation step is derived from the RMS of the detail band of the
+    signal being processed, so the encoder and the decoder agree on it without
+    sharing the cover, and the embedding survives amplitude scaling.
     """
 
-    def __init__(self, dwt_type: str = 'bior5.5'):
+    def __init__(self, dwt_type: str = 'bior5.5', step_scale: float = 0.5, spacing: int = 10):
         """
         Initialize the method with the specified DWT wavelet type.
 
         Args:
             dwt_type (str): Wavelet type for DWT decomposition and reconstruction.
+            step_scale (float): Quantisation step, as a fraction of the detail
+                band RMS. Larger values are more robust and more audible.
+            spacing (int): Distance between two consecutive carrier coefficients.
         """
         self.dwt_type = dwt_type
+        self.step_scale = step_scale
+        self.spacing = spacing
+
+    def _positions(self, coeff_count: int, bit_count: int) -> List[int]:
+        positions = [self.spacing * (i + 1) for i in range(bit_count)]
+        if positions and positions[-1] >= coeff_count:
+            capacity = max(coeff_count // self.spacing - 1, 0)
+            raise ValueError(
+                f"message too long for cover audio: {bit_count} > {capacity} bits"
+            )
+        return positions
+
+    def _step(self, band: np.ndarray) -> float:
+        rms = float(np.sqrt(np.mean(np.square(band))))
+        if rms == 0.0:
+            raise ValueError("cover audio has an all-zero detail band")
+        return self.step_scale * rms
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         """
@@ -35,18 +60,23 @@ class DwtLsbMethod(SteganographyMethod):
         # Perform 2-level DWT decomposition
         coeffs = pywt.wavedec(data, self.dwt_type, mode='sym', level=2)
         cA2, cD2, cD1 = coeffs
+        cD2 = cD2.copy()
 
-        # Embed watermark bits into cD2 coefficients at specific positions
-        for i, bit in enumerate(message):
-            position = 10 * (i + 1)  # Example position; adjust if needed
-            if position < len(cD2):
-                cD2[position] = bit
-            else:
-                break  # Avoid out-of-bounds errors
+        positions = self._positions(len(cD2), len(message))
+        step = self._step(cD2)
+
+        # Carry each bit in the parity of the quantisation index, placing the
+        # coefficient at the centre of its quantisation bin.
+        for position, bit in zip(positions, message):
+            index = int(np.floor(cD2[position] / step))
+            if index % 2 != int(bit):
+                index += 1
+            cD2[position] = (index + 0.5) * step
 
         # Reconstruct the signal using the modified coefficients
         modified_coeffs = (cA2, cD2, cD1)
-        return pywt.waverec(modified_coeffs, self.dwt_type, mode='sym')
+        reconstructed = pywt.waverec(modified_coeffs, self.dwt_type, mode='sym')
+        return reconstructed[:len(data)]
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
         """
@@ -63,11 +93,10 @@ class DwtLsbMethod(SteganographyMethod):
         coeffs = pywt.wavedec(data_with_watermark, self.dwt_type, mode='sym', level=2)
         _, cD2, _ = coeffs
 
-        # Extract watermark bits from cD2 coefficients at specific positions
-        return [
-            int(np.rint(cD2[10 * (i + 1)])) if 10 * (i + 1) < len(cD2) else 0
-            for i in range(watermark_length)
-        ]
+        positions = self._positions(len(cD2), watermark_length)
+        step = self._step(cD2)
+
+        return [int(np.floor(cD2[position] / step)) % 2 for position in positions]
 
     def type(self) -> str:
         """
