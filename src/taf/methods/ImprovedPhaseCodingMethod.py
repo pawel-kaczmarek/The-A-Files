@@ -15,18 +15,20 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
         seg_len = int(2 * 2 ** np.ceil(np.log2(2 * msg_len)))
 
         # Calculate the number of segments needed
-        seg_num = int(np.ceil(len(data) / seg_len))
+        original_length = len(data)
+        seg_num = int(np.ceil(original_length / seg_len))
 
-        # Resize the audio array to fit the number of segments
-        data.resize(seg_num * seg_len, refcheck=False)
+        # Zero-pad a copy up to a whole number of segments. Resizing `data`
+        # in place would mutate the caller's cover signal.
+        data = np.pad(np.asarray(data, dtype=np.float64), (0, seg_num * seg_len - original_length))
 
         # Convert message to binary representation
         msg_bin = np.ravel(message)
 
-        # Convert binary to phase shifts (-Ď€/8 for 1, Ď€/8 for 0)
+        # Convert binary to phase shifts (-pi/2 for 1, +pi/2 for 0)
         msg_pi = msg_bin.copy()
         msg_pi[msg_pi == 0] = -1
-        msg_pi = msg_pi * -np.pi / 2  # 1/2 for phase shift to improve audio quality
+        msg_pi = msg_pi * -np.pi / 2
 
         # Reshape audio into segments and perform FFT
         segs = data.reshape((seg_num, seg_len))
@@ -43,14 +45,22 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
             P[i, seg_mid - (end - start):seg_mid] = msg_pi[start:end]
             P[i, seg_mid + 1:seg_mid + 1 + (end - start)] = -msg_pi[start:end][::-1]
 
-        # Reconstruct the audio with modified phase
+        # Reconstruct the audio with modified phase and drop the padding so the
+        # stego signal keeps the cover length.
         segs = M * np.exp(1j * P)
-        return np.fft.ifft(segs).real.ravel().astype(np.float32)
+        return np.fft.ifft(segs).real.ravel()[:original_length].astype(np.float32)
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
         seg_len = int(2 * 2 ** np.ceil(np.log2(2 * watermark_length)))
         seg_num = int(np.ceil(len(data_with_watermark) / seg_len))
         seg_mid = seg_len // 2
+
+        # Mirror the zero padding the encoder used so the final (partial)
+        # segment is still a full-length FFT block.
+        data_with_watermark = np.pad(
+            np.asarray(data_with_watermark, dtype=np.float64),
+            (0, seg_num * seg_len - len(data_with_watermark)),
+        )
 
         extracted_bits = []
 
