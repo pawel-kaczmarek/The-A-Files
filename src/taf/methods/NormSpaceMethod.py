@@ -9,7 +9,15 @@ from taf.methods.common.split import to_frames
 
 class NormSpaceMethod(SteganographyMethod):
 
-    def __init__(self, sr: int, delta: float = 0.01):
+    def __init__(self, sr: int, delta: float = 0.05):
+        """
+        Args:
+            sr: Sampling rate of the audio signal.
+            delta: Norm split, as a fraction of the mean sub-vector norm. A
+                relative value keeps both the audible distortion and the
+                detection margin proportional to the segment level; the
+                absolute delta used previously destroyed quiet segments.
+        """
         self.sr = sr
         self.delta = delta
 
@@ -19,6 +27,11 @@ class NormSpaceMethod(SteganographyMethod):
         rsegments = []
 
         for ind, segment in enumerate(segments):
+            if ind >= len(message):
+                # Framing can yield more segments than bits; leave the surplus
+                # untouched rather than indexing past the message.
+                rsegments.append(segment)
+                continue
 
             cA1, cD1 = pywt.dwt(segment, 'db1')
 
@@ -35,12 +48,13 @@ class NormSpaceMethod(SteganographyMethod):
 
             watermark_bit = message[ind]
             nrm = (nrmv1 + nrmv2) / 2
+            delta = self.delta * nrm
             if watermark_bit == 1:
-                nrmv1 = nrm + self.delta
-                nrmv2 = nrm - self.delta
+                nrmv1 = nrm + delta
+                nrmv2 = nrm - delta
             else:
-                nrmv1 = nrm - self.delta
-                nrmv2 = nrm + self.delta
+                nrmv1 = nrm - delta
+                nrmv2 = nrm + delta
 
             rv1 = nrmv1 * u1
             rv2 = nrmv2 * u2
@@ -52,8 +66,10 @@ class NormSpaceMethod(SteganographyMethod):
 
             rcA1 = idct(rv, norm='ortho')
 
+            # idwt pads odd-length segments back up, which previously grew the
+            # stego signal by one sample per frame and desynchronised it.
             rseg = pywt.idwt(rcA1, cD1, 'db1')
-            rsegments.append(rseg[:])
+            rsegments.append(rseg[:len(segment)])
 
         if last_frame is not None:
             rsegments.append(last_frame)
@@ -80,6 +96,9 @@ class NormSpaceMethod(SteganographyMethod):
                 watermark_bits.append(1)
             else:
                 watermark_bits.append(0)
+
+            if len(watermark_bits) == watermark_length:
+                break
 
         return watermark_bits
 
