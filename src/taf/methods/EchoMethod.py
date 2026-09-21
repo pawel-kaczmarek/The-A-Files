@@ -10,7 +10,36 @@ class EchoMethod(SteganographyMethod):
     """
     Implements the Echo Hiding watermarking technique using single echo kernels.
     This method embeds watermark bits by applying echoes with different delays to an audio signal.
+
+    Frames are sized from the signal so that every message bit gets one, and
+    the echo amplitude is a constructor parameter: the original fixed value of
+    0.5 produced a plainly audible echo (SNR 6 dB on speech).
     """
+
+    def __init__(self, alpha: float = 0.2, d0: int = 150, d1: int = 200, min_frame_length: int = 2048):
+        """
+        Args:
+            alpha (float): Echo amplitude. Higher is more robust, more audible.
+            d0 (int): Echo delay carrying a 0 bit, in samples.
+            d1 (int): Echo delay carrying a 1 bit, in samples.
+            min_frame_length (int): Shortest usable frame; sets the capacity.
+        """
+        self.alpha = alpha
+        self.d0 = d0
+        self.d1 = d1
+        self.min_frame_length = min_frame_length
+
+    def _frame_length(self, sample_count: int, bit_count: int) -> int:
+        if bit_count <= 0:
+            raise ValueError("message must not be empty")
+
+        frame_length = sample_count // bit_count
+        if frame_length < self.min_frame_length:
+            capacity = sample_count // self.min_frame_length
+            raise ValueError(
+                f"message too long for cover audio: {bit_count} > {capacity} bits"
+            )
+        return frame_length
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         """
@@ -23,15 +52,10 @@ class EchoMethod(SteganographyMethod):
         Returns:
             np.ndarray: Watermarked audio signal.
         """
-        d0, d1 = 150, 200  # Echo delays for bits 0 and 1
-        alpha = 0.5        # Echo amplitude
-        L = 8 * 1024       # Frame length
-
-        nframe = np.floor(data.shape[0] / L)
-        N = int(nframe - np.mod(nframe, 8))  # Number of usable frames for embedding
-
-        # Adjust or truncate the message length to fit into the available frames
-        bits = (message + N * [0])[:N] if len(message) < N else message[:N]
+        d0, d1, alpha = self.d0, self.d1, self.alpha
+        L = self._frame_length(len(data), len(message))
+        N = len(message)
+        bits = list(message)
 
         # Create echo kernels for bits 0 and 1
         k0 = np.append(np.zeros(d0), [1]) * alpha
@@ -65,10 +89,9 @@ class EchoMethod(SteganographyMethod):
         Returns:
             List[int]: Extracted watermark bits.
         """
-        d0, d1 = 150, 200  # Echo delays for bits 0 and 1
-        L = 8 * 1024       # Frame length
-
-        N = int(np.floor(len(data_with_watermark) / L))
+        d0, d1 = self.d0, self.d1
+        L = self._frame_length(len(data_with_watermark), watermark_length)
+        N = watermark_length
         xsig = np.reshape(data_with_watermark[:N * L], (N, L)).T
 
         extracted_bits = []
