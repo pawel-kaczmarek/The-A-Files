@@ -48,14 +48,15 @@ class DctB1Method(SteganographyMethod):
         lG2 (int): Number of DCT coefficients in group G2.
     """
 
-    def __init__(self, sr: int, lt: int = 23, lw: int = 1486, lG1: int = 24, lG2: int = 6):
+    def __init__(self, sr: int, lt: int = 23, lw: int = 1486, lG1: int = 24, lG2: int = 6,
+                 key: int = 20240521):
         self.sr = sr  # Sampling rate
         self.lt = lt  # Transition samples
         self.lw = lw  # Embedding samples
         self.lG1 = lG1  # Group G1 size
         self.lG2 = lG2  # Group G2 size
         self.band_size = lG1 + lG2  # Total band size
-        self.G1_inds = []
+        self.key = key  # Shared secret selecting the carrier coefficients
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         """
@@ -80,10 +81,9 @@ class DctB1Method(SteganographyMethod):
 
         for ind, frame in enumerate(frames):
             C = dct(frame[self.lt:], norm="ortho")
-            C_hat, G1_ind = self._embed_bits_in_frame(
-                C, padded_message[ind * bits_per_frame:(ind + 1) * bits_per_frame]
+            C_hat = self._embed_bits_in_frame(
+                C, padded_message[ind * bits_per_frame:(ind + 1) * bits_per_frame], ind
             )
-            self.G1_inds.append(G1_ind)
 
             # Reconstruct frame
             rframe = np.zeros_like(frame)
@@ -120,7 +120,7 @@ class DctB1Method(SteganographyMethod):
             band1 = C[:self.band_size]
             delta = np.sqrt(self._get_band_masking_energy(band1, 0))
 
-            for k in self.G1_inds[ind]:
+            for k in self._divide_band_into_groups(band1, ind)[0]:
                 bit = 1 if abs(C[k] / delta - np.floor(C[k] / delta) - 0.5) < 0.25 else 0
                 watermark_bits.append(bit)
 
@@ -141,28 +141,41 @@ class DctB1Method(SteganographyMethod):
         a_tmn = -0.275 * bark_scale_freq - 15.025
         return 10 ** (a_tmn / 10) * _get_energy(C)
 
-    def _divide_band_into_groups(self, C: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        choice = np.random.choice(len(C), size=self.lG1, replace=False)
+    def _divide_band_into_groups(self, C: np.ndarray, frame_index: int) -> Tuple[np.ndarray, np.ndarray]:
+        """Pick the carrier coefficients from the shared key alone.
+
+        The selection used to come from an unseeded np.random.choice and was
+        remembered on the instance, which made the decoder non-blind: it only
+        worked on the very object that had encoded, and a second encode()
+        shifted the stored indices out from under it. Deriving the split from
+        key and frame index reproduces it on the receiving side.
+        """
+        rng = np.random.default_rng((self.key, frame_index))
+        choice = rng.choice(len(C), size=self.lG1, replace=False)
         rest = np.setdiff1d(np.arange(len(C)), choice)
         return np.sort(choice), np.sort(rest)
 
-    def _embed_bits_in_band(self, C: np.ndarray, watermark_bits: List[int], lv: int, band_index: int) -> Tuple[
-        np.ndarray, np.ndarray]:
+    def _embed_bits_in_band(self, C: np.ndarray, watermark_bits: List[int], lv: int, band_index: int,
+                            frame_index: int) -> np.ndarray:
         delta = np.sqrt(self._get_band_masking_energy(C, band_index))
-        G1_ind, G2_ind = self._divide_band_into_groups(C)
+        G1_ind, G2_ind = self._divide_band_into_groups(C, frame_index)
 
         C_hat = C.copy()
         for bit, ind in zip(watermark_bits, G1_ind):
             C_hat[ind] = np.floor(C[ind] / delta + 0.5) * delta if bit == 0 else np.floor(
                 C[ind] / delta) * delta + delta / 2
 
-        niT = np.sum(C_hat[G1_ind]) - np.sum(C[G1_ind])
+        # The compensation removes the *energy* the quantisation added, so the
+        # budget is a difference of squares, not of raw coefficient values.
+        niT = np.sum(np.square(C_hat[G1_ind])) - np.sum(np.square(C[G1_ind]))
         C_hat = _energy_compensation(C_hat, G2_ind, niT)
-        return C_hat, G1_ind
+        return C_hat
 
-    def _embed_bits_in_frame(self, C: np.ndarray, watermark_bits: List[int]) -> Tuple[np.ndarray, np.ndarray]:
+    def _embed_bits_in_frame(self, C: np.ndarray, watermark_bits: List[int],
+                             frame_index: int) -> np.ndarray:
         band1 = C[:self.band_size]
-        band1_hat, G1_ind1 = self._embed_bits_in_band(band1, watermark_bits, lv=1, band_index=0)
+        band1_hat = self._embed_bits_in_band(band1, watermark_bits, lv=1, band_index=0,
+                                             frame_index=frame_index)
         C_hat = C.copy()
         C_hat[:self.band_size] = band1_hat
-        return C_hat, G1_ind1
+        return C_hat
