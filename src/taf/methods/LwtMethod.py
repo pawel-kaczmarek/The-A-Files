@@ -21,6 +21,11 @@ class LwtMethod(SteganographyMethod):
         num_blocks = len(LH) // block_size
 
         message_flat = np.array(message).flatten()
+        if len(message_flat) > num_blocks:
+            raise ValueError(
+                f"message too long for cover audio: {len(message_flat)} > {num_blocks} bits"
+            )
+
         for idx in range(min(num_blocks, len(message_flat))):
             block_start = idx * block_size
             block_end = block_start + block_size
@@ -32,7 +37,8 @@ class LwtMethod(SteganographyMethod):
 
         coeffs[2] = LH
         watermarked_data_flat = pywt.waverec(coeffs, 'haar')
-        return watermarked_data_flat
+        # waverec pads odd-length signals, so trim back to the cover length.
+        return watermarked_data_flat[:len(data_flat)]
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
         data_flat = data_with_watermark.flatten()
@@ -49,8 +55,12 @@ class LwtMethod(SteganographyMethod):
             if block_end > len(LH):
                 break
 
+            # The encoder forces a whole block to one sign, so the sign of the
+            # block mean carries the bit. Comparing against the absolute
+            # embedding threshold instead would break under any amplitude
+            # scaling of the stego signal.
             mean_value = np.mean(LH[block_start:block_end])
-            watermark_bits.append(1 if mean_value > self.threshold else 0)
+            watermark_bits.append(1 if mean_value >= 0 else 0)
 
         return watermark_bits
 
