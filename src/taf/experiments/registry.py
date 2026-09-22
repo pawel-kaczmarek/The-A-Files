@@ -1,6 +1,6 @@
 """Discovery of methods, metrics, attacks and datasets for experiments.
 
-Thin wrappers over the existing factories/helpers so that scripts, the API
+Thin wrappers over the existing factories so that scripts, the API
 and the UI all see the same inventory.
 """
 
@@ -25,15 +25,35 @@ TENSORFLOW_METRICS = {"AI_MOSNET_METRIC"}
 LONG_INPUT_METHODS = {"ECHO_METHOD", "DSSS_METHOD"}
 
 _ATTACK_DESCRIPTIONS = {
-    "additive_noise": "Adds Gaussian noise to the signal.",
-    "amplitude_scaling": "Multiplies all samples by a constant factor.",
-    "cut_random_samples": "Zeroes a number of randomly chosen samples.",
-    "flip_random_samples": "Inverts the sign of randomly chosen samples.",
-    "frequency_filter": "Removes a single frequency bin via FFT filtering.",
-    "low_pass_filter": "Butterworth low-pass filter.",
-    "pitch_shift": "Shifts pitch by n semitone steps (librosa).",
-    "resample": "Resamples the signal to a different sample rate.",
-    "time_stretch": "Stretches/compresses the signal in time (librosa).",
+    "awgn": "Additive white Gaussian noise at a target SNR.",
+    "pink_noise": "Additive 1/f noise at a target SNR.",
+    "impulse_noise": "Sparse high-amplitude impulses at a target SNR.",
+    "codec": "Round trip through a real lossy encoder.",
+    "mp3": "MP3 encode/decode round trip (libmp3lame).",
+    "aac": "AAC encode/decode round trip.",
+    "opus": "Opus encode/decode round trip (libopus).",
+    "vorbis": "Vorbis encode/decode round trip (libvorbis).",
+    "low_pass": "Butterworth low-pass filter.",
+    "high_pass": "Butterworth high-pass filter.",
+    "band_pass": "Butterworth band-pass filter.",
+    "notch": "IIR notch removing a narrow band.",
+    "smoothing": "Moving-average (boxcar FIR) smoothing.",
+    "resample": "Sample-rate round trip through an intermediate rate.",
+    "clock_drift": "Playback/capture clock mismatch in parts per million.",
+    "bit_depth": "Uniform PCM requantisation to a lower bit depth.",
+    "gain": "Amplitude scaling specified in decibels.",
+    "clipping": "Hard clipping at an amplitude, peak or percentile threshold.",
+    "compression_dynamic": "Static dynamic-range compression with make-up gain.",
+    "time_shift": "Displacement along the time axis.",
+    "crop": "Removal of a contiguous piece of the signal.",
+    "dropout": "Zeroed runs of samples, preserving length.",
+    "sample_jitter": "Insertion or deletion of short sample runs.",
+    "time_stretch": "Duration change at constant pitch (phase vocoder).",
+    "speed": "Playback speed change; duration and pitch move together.",
+    "pitch_shift": "Pitch change at constant duration.",
+    "echo": "Single delayed copy: y[n] = x[n] + a*x[n-D].",
+    "reverb": "Convolution with a synthetic room impulse response.",
+    "acoustic_channel": "Simulated loudspeaker, room, microphone path.",
 }
 
 
@@ -53,57 +73,93 @@ class AttackSpec:
 
 
 def list_methods() -> list[dict[str, Any]]:
-    from taf.ui.helpers import discover_methods
+    from taf.methods.factory import SteganographyMethodFactory
 
+    methods = SteganographyMethodFactory._all_methods(_DEFAULT_SAMPLE_RATE)
     return [
         {
-            "name": row["name"],
-            "class_name": row["class"],
-            "description": row["type"],
-            "requires_tensorflow": row["name"] in TENSORFLOW_METHODS,
-            "needs_long_input": row["name"] in LONG_INPUT_METHODS,
+            "name": method_type.name,
+            "class_name": method.__class__.__name__,
+            "description": _safe_method_description(method),
+            "requires_tensorflow": method_type.name in TENSORFLOW_METHODS,
+            "needs_long_input": method_type.name in LONG_INPUT_METHODS,
         }
-        for row in discover_methods(_DEFAULT_SAMPLE_RATE)
+        for method_type, method in sorted(methods.items(), key=lambda item: item[0].name)
     ]
 
 
 def list_metrics() -> list[dict[str, Any]]:
-    from taf.ui.helpers import discover_metrics
+    from taf.metrics.factory import MetricFactory
 
+    metrics = MetricFactory._all_methods()
     return [
         {
-            "name": row["name"],
-            "class_name": row["class"],
-            "category": row["category"],
-            "requires_tensorflow": row["name"] in TENSORFLOW_METRICS,
+            "name": metric_type.name,
+            "class_name": metric.__class__.__name__,
+            "category": _metric_category(metric.__class__.__module__),
+            "requires_tensorflow": metric_type.name in TENSORFLOW_METRICS,
             # All packaged metrics compare original vs processed samples and
             # require both signals to share length/sample rate.
             "compares_original": True,
             "supports_attacked_audio": True,
         }
-        for row in discover_metrics()
+        for metric_type, metric in sorted(metrics.items(), key=lambda item: item[0].name)
     ]
 
 
+def _safe_method_description(method: object) -> str:
+    type_function = getattr(method, "type", None)
+    if not callable(type_function):
+        return ""
+    try:
+        return str(type_function())
+    except Exception:
+        return ""
+
+
+def _metric_category(module_name: str) -> str:
+    parts = module_name.split(".")
+    if "ai_based" in parts:
+        return "ai_based"
+    if "speech_intelligibility" in parts:
+        return "speech_intelligibility"
+    if "speech_quality" in parts:
+        return "speech_quality"
+    if "speech_reverberation" in parts:
+        return "speech_reverberation"
+    return "unknown"
+
+
 def list_attacks() -> list[AttackSpec]:
-    from taf.attacks.attacks import CorruptedWavFile
+    """Attack specifications taken from the attack registry.
+
+    The parameters come from each attack's dataclass fields, so the catalogue
+    always matches what the attack actually accepts. This replaced reflection
+    over ``CorruptedWavFile`` methods, which also picked up helpers such as
+    ``apply()`` and could not report defaults for parameters without one.
+    """
+    from dataclasses import MISSING, fields
+
+    from taf.attacks.registry import ATTACK_CLASSES, ATTACK_FACTORIES, attack_class
 
     specs: list[AttackSpec] = []
-    for name, member in sorted(inspect.getmembers(CorruptedWavFile, predicate=inspect.isfunction)):
-        if name.startswith("_") or name not in CorruptedWavFile.__dict__:
-            continue
+    for name in sorted(set(ATTACK_CLASSES) | set(ATTACK_FACTORIES)):
+        cls = attack_class(name)
         parameters = [
-            AttackParameter(name=param.name, default=param.default)
-            for param in inspect.signature(member).parameters.values()
-            if param.name != "self"
+            AttackParameter(
+                name=item.name,
+                default=None if item.default is MISSING else item.default,
+            )
+            for item in fields(cls)
+            if not (name in ATTACK_FACTORIES and item.name == "codec")
         ]
         specs.append(
             AttackSpec(
                 name=name,
-                class_name=CorruptedWavFile.__name__,
+                class_name=cls.__name__,
                 description=_ATTACK_DESCRIPTIONS.get(name, ""),
                 parameters=parameters,
-                changes_length_or_rate=name in {"resample", "time_stretch", "pitch_shift"},
+                changes_length_or_rate=bool(getattr(cls, "changes_length_or_rate", False)),
             )
         )
     return specs

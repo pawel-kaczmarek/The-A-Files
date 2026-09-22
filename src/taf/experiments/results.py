@@ -104,6 +104,7 @@ def normalize_row(
             else None
         ),
         attack=row.attack,
+        attack_parameters=dict(row.attack_parameters or {}),
         metrics=_finite_metrics(row.metrics),
         metric_errors=dict(row.metric_errors),
         bit_accuracy=accuracy,

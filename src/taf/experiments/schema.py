@@ -90,12 +90,19 @@ class ExperimentConfig(BaseModel):
     @field_validator("attacks")
     @classmethod
     def _known_attacks(cls, values: list[str]) -> list[str]:
-        from taf.evaluation.workflow import available_attack_names
+        """Accept the full attack specification grammar.
 
-        known = set(available_attack_names())
-        unknown = [value for value in values if value not in known]
+        An entry may carry parameters (``"awgn:snr_db=20"``), a severity
+        (``"mp3@strong"``) or name a pipeline, so it cannot be checked against
+        a list of bare names.
+        """
+        from taf.attacks.registry import available_attacks, unknown_specs
+
+        unknown = unknown_specs(values)
         if unknown:
-            raise ValueError(f"Unknown attack(s): {unknown}. Known: {sorted(known)}")
+            raise ValueError(
+                f"Unknown attack(s): {unknown}. Known: {sorted(available_attacks())}"
+            )
         return values
 
     @field_validator("payload_lengths")

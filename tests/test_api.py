@@ -47,10 +47,18 @@ def test_catalog_endpoints(client):
     assert {"name", "class_name", "description", "requires_tensorflow"} <= set(methods[0])
     assert len(methods) >= 15
     assert len(metrics) >= 20
-    assert len(attacks) >= 9
+    assert len(attacks) >= 25
     # Attacks expose their parameters with defaults for the settings page.
-    noise = next(row for row in attacks if row["name"] == "additive_noise")
-    assert noise["parameters"] == [{"name": "std", "default": 0.001}]
+    noise = next(row for row in attacks if row["name"] == "awgn")
+    assert {"name": "snr_db", "default": 20.0} in noise["parameters"]
+    assert {"name": "seed", "default": 0} in noise["parameters"]
+    # Codec attacks are catalogued per codec with their bitrate parameter.
+    mp3 = next(row for row in attacks if row["name"] == "mp3")
+    assert {"name": "bitrate_kbps", "default": 128} in mp3["parameters"]
+    assert all("codec" != parameter["name"] for parameter in mp3["parameters"])
+    # Attacks that move the sample grid are flagged for the runner's warnings.
+    assert next(row for row in attacks if row["name"] == "crop")["changes_length_or_rate"]
+    assert not next(row for row in attacks if row["name"] == "awgn")["changes_length_or_rate"]
     packaged = {row["id"] for row in datasets if row["kind"] == "packaged"}
     assert {"example", "vctk", "librispeech", "all"} <= packaged
 

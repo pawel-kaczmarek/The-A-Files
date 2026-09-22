@@ -173,9 +173,15 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
                     message=f"{metric} requires TensorFlow (install the 'ai' extra); it will be recorded as a metric error.",
                 )
             )
+    from taf.attacks.registry import parse_spec, resolve_name
+
     changing = {spec.name for spec in registry.list_attacks() if spec.changes_length_or_rate}
     for attack in config.attacks:
-        if attack in changing:
+        try:
+            attack_name = resolve_name(parse_spec(attack)[0])
+        except Exception:  # noqa: BLE001 - validation reports this separately
+            attack_name = attack
+        if attack_name in changing:
             warnings.append(
                 PlanWarning(
                     code="attack_changes_signal",

@@ -213,6 +213,7 @@ def _evaluate_target(
     output_path = _output_path(original.path, method_label, message.name, target, config)
     target_label = _format_value(target) or _decode_mode(target)
     attack_elapsed: float | None = None
+    attack_metadata: dict[str, Any] = {}
 
     try:
         if isinstance(target, DecodeTarget):
@@ -259,7 +260,9 @@ def _evaluate_target(
                 attack,
             )
             attack_start = time.perf_counter()
-            decode_samples, _ = _apply_attack(decode_samples, decode_input.samplerate, attack)
+            decode_samples, _, attack_metadata = _apply_attack(
+                decode_samples, decode_input.samplerate, attack
+            )
             attack_elapsed = time.perf_counter() - attack_start
 
         decode_start = time.perf_counter()
@@ -293,6 +296,7 @@ def _evaluate_target(
             transformation_name=_transformation_name(target),
             codec_options=config.codec_options.get(_format_value(target) or "", {}),
             attack=attack,
+            attack_parameters=attack_metadata,
             message_bits=list(message.bits),
             sample_rate=original.samplerate,
             duration_seconds=len(original.samples) / original.samplerate if original.samplerate else None,
@@ -468,41 +472,52 @@ def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
 
 
 def available_attack_names() -> list[str]:
-    """Public attack names exposed by ``CorruptedWavFile`` (sorted)."""
-    import inspect
+    """Attack names the registry can build (sorted)."""
+    from taf.attacks.registry import available_attacks
 
-    from taf.attacks.attacks import CorruptedWavFile
-
-    return sorted(
-        name
-        for name, member in inspect.getmembers(CorruptedWavFile, predicate=inspect.isfunction)
-        if not name.startswith("_") and name in CorruptedWavFile.__dict__
-    )
+    return available_attacks()
 
 
 def _resolve_attack_variants(config: EvaluationConfig) -> list[str | None]:
-    """Each configured attack is evaluated as its own variant, next to a no-attack baseline."""
+    """Each configured attack is evaluated as its own variant, next to a no-attack baseline.
+
+    An entry may be a bare name (``"awgn"``), a parameterised specification
+    (``"awgn:snr_db=20"``), a severity (``"mp3@strong"``) or a named pipeline
+    (``"pipeline:name=voice_call"``). Specifications are validated here so a
+    typo fails before any audio is processed.
+    """
     if not config.attacks:
         return [None]
-    known = set(available_attack_names())
-    unknown = [name for name in config.attacks if name not in known]
+
+    from taf.attacks.registry import unknown_specs
+
+    unknown = unknown_specs(config.attacks)
     if unknown:
-        raise ValueError(f"Unknown attack(s): {unknown}. Known: {sorted(known)}")
+        raise ValueError(
+            f"Unknown attack(s): {unknown}. Known: {sorted(available_attack_names())}"
+        )
+
     variants: list[str | None] = [None]
-    for name in config.attacks:
-        if name not in variants:
-            variants.append(name)
+    for spec in config.attacks:
+        if spec not in variants:
+            variants.append(spec)
     return variants
 
 
-def _apply_attack(samples: np.ndarray, samplerate: int, attack: str) -> tuple[np.ndarray, int]:
-    from taf.attacks.attacks import CorruptedWavFile
+def _apply_attack(
+    samples: np.ndarray, samplerate: int, attack: str
+) -> tuple[np.ndarray, int, dict[str, Any]]:
+    """Apply one attack specification, returning the audio and its metadata.
 
-    corrupted = CorruptedWavFile(
-        WavFile(samplerate=samplerate, samples=np.asarray(samples).copy(), path=Path(""))
-    )
-    corrupted = getattr(corrupted, attack)()
-    return np.asarray(corrupted.samples), corrupted.samplerate
+    The metadata is what makes a benchmark row reproducible: it carries the
+    resolved parameters, the seed, the input and output rates and lengths, and
+    any clipping or length correction the attack performed.
+    """
+    from taf.attacks.registry import build
+
+    built = build(attack, sample_rate=samplerate)
+    result = built.apply(np.asarray(samples), samplerate)
+    return np.asarray(result.audio), result.sample_rate, dict(result.metadata)
 
 
 def _resolve_targets(config: EvaluationConfig) -> list[AudioFileFormat | DecodeTarget]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from typing import Any, Sequence
 
@@ -27,6 +28,7 @@ _BASE_COLUMNS = [
     "message_bits",
     "decoded_bits",
     "attack",
+    "attack_parameters",
     "bit_accuracy",
     "ber",
     "decode_success",
@@ -47,7 +49,13 @@ def rows_to_dataframe(rows: Sequence[ExperimentResultRow]) -> pd.DataFrame:
         record = row.model_dump(mode="json")
         metrics = record.pop("metrics", {})
         metric_errors = record.pop("metric_errors", {})
-        record.pop("attack_parameters", None)
+        # Attack parameters are what make a row reproducible, so they are kept
+        # as a JSON string rather than dropped.
+        record["attack_parameters"] = (
+            json.dumps(record.pop("attack_parameters", None), sort_keys=True, default=str)
+            if record.get("attack_parameters")
+            else None
+        )
         for name in metric_names:
             if name in metrics:
                 record[f"metric:{name}"] = metrics[name]

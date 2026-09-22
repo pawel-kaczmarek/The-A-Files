@@ -27,6 +27,7 @@ class EvaluationRow:
     transformation_name: str | None = None
     codec_options: dict[str, Any] = field(default_factory=dict)
     attack: str | None = None
+    attack_parameters: dict[str, Any] = field(default_factory=dict)
     message_bits: list[int] | None = None
     sample_rate: int | None = None
     duration_seconds: float | None = None
@@ -52,6 +53,7 @@ class EvaluationRow:
             "transformation_name": self.transformation_name,
             "codec_options": self.codec_options,
             "attack": self.attack,
+            "attack_parameters": self.attack_parameters,
             "message_bits": self.message_bits,
             "sample_rate": self.sample_rate,
             "duration_seconds": self.duration_seconds,
