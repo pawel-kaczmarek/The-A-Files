@@ -22,6 +22,7 @@ class MethodType(Enum):
     WIRELESS_DWT_LSB_METHOD = auto()
     LEARNABLE_EMBEDDING_GA_METHOD = auto()
     QIM_METHOD = auto()
+    IMPROVED_SPREAD_SPECTRUM_METHOD = auto()
 
 
 class MetricType(Enum):
