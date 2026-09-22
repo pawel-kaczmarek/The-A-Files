@@ -29,7 +29,7 @@ from taf.models.SteganographyMethod import SteganographyMethod
 class LowFrequencyAmplitudeMethod(SteganographyMethod):
     """Low-frequency amplitude modification (LFAM)."""
 
-    def __init__(self, sr: int = 16000, cutoff: float = 2000.0, margin: float = 0.12,
+    def __init__(self, sr: int = 16000, cutoff: float = 2000.0, margin: float = 0.3,
                  min_segment_length: int = 768):
         """
         Args:
