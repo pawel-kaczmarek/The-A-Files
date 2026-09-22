@@ -39,3 +39,24 @@ def synthetic_sine() -> np.ndarray:
 def random_message() -> list[int]:
     rng = np.random.default_rng(seed=20260520)
     return [int(b) for b in rng.integers(0, 2, size=MESSAGE_LENGTH)]
+
+
+@pytest.fixture(scope="session")
+def speech_cover() -> np.ndarray:
+    """A real speech cover from the packaged VCTK subset.
+
+    Synthetic tones are not a fair test bed for every method: a pure sine has
+    a degenerate amplitude distribution, which the histogram method cannot
+    embed into, so bit-exactness has to be asserted on real speech.
+    """
+    import soundfile as sf
+
+    from taf.resources.paths import packaged_dataset_audio_paths
+
+    with packaged_dataset_audio_paths() as dataset_paths:
+        # The shortest clip keeps the slow neural methods tolerable.
+        path = sorted(dataset_paths["vctk"])[2]
+        samples, samplerate = sf.read(str(path), dtype="float32")
+
+    assert samplerate == SAMPLE_RATE
+    return samples
