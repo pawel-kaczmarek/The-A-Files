@@ -65,16 +65,27 @@ def ffmpeg_available() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
+#: Samples used to estimate the encoder delay. A few seconds is far more than
+#: enough to lock onto a delay of at most a tenth of a second, and bounding it
+#: keeps the correlation cheap regardless of file length.
+_DELAY_WINDOW = 1 << 15
+
+
 def _estimate_delay(reference: np.ndarray, decoded: np.ndarray, max_lag: int) -> int:
     """Lag, in samples, that best aligns ``decoded`` with ``reference``.
 
     Encoders prepend padding: LAME adds its own, and AAC encoders typically add
     over a thousand samples. That offset is a container artefact, not codec
     damage, and leaving it in makes every position-based method fail for the
-    wrong reason. The lag is estimated on a prefix by cross-correlation, which
-    is enough to lock on and far cheaper than correlating whole files.
+    wrong reason.
+
+    The correlation runs over a bounded prefix and through the FFT. A direct
+    correlation over the whole signal is O(n^2) and took about 100 seconds per
+    codec attack on 5 seconds of speech, which made a codec sweep impractical.
     """
-    window = min(len(reference), len(decoded), 200_000)
+    from scipy.signal import correlate
+
+    window = min(len(reference), len(decoded), _DELAY_WINDOW)
     if window < 16:
         return 0
 
@@ -85,14 +96,13 @@ def _estimate_delay(reference: np.ndarray, decoded: np.ndarray, max_lag: int) ->
     if not np.any(a) or not np.any(b):
         return 0
 
-    correlation = np.correlate(b, a, mode="full")
+    correlation = correlate(b, a, mode="full", method="fft")
     lags = np.arange(-window + 1, window)
     allowed = np.abs(lags) <= max_lag
     if not np.any(allowed):
         return 0
 
-    best = int(lags[allowed][int(np.argmax(correlation[allowed]))])
-    return best
+    return int(lags[allowed][int(np.argmax(correlation[allowed]))])
 
 
 @dataclass(frozen=True)
