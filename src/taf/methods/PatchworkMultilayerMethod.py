@@ -7,15 +7,33 @@ from taf.models.SteganographyMethod import SteganographyMethod
 
 class PatchworkMultilayerMethod(SteganographyMethod):
 
-    def __init__(self, sr: int):
+    def __init__(self, sr: int, min_segment_length: int = 8):
         self.sr = sr
+        self.min_segment_length = min_segment_length
         self.fs = 3000  # starting frequency for watermark embedding
         self.fe = 7000  # ending frequency for watermark embedding
         self.k1 = 0.195
         self.k2 = 0.08
 
+    def _check_capacity(self, sample_count: int, watermark_length: int, name: str) -> None:
+        """Each bit needs a pair of segments inside the embedding band.
+
+        A segment carries its bit in the mean of its absolute coefficients, so
+        a pair of two-coefficient segments is noise, not a relation. The
+        minimum segment length is what actually bounds the capacity.
+        """
+        si = int(self.fs / (self.sr / sample_count))
+        ei = int(self.fe / (self.sr / sample_count))
+        capacity = (ei + 1 - si) // (2 * self.min_segment_length)
+
+        if watermark_length > capacity:
+            raise ValueError(
+                f"{name} too long for cover audio: {watermark_length} > {capacity} bits"
+            )
+
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         L = len(data)
+        self._check_capacity(L, len(message), "message")
 
         si = int(self.fs / (self.sr / L))
         ei = int(self.fe / (self.sr / L))
@@ -72,6 +90,7 @@ class PatchworkMultilayerMethod(SteganographyMethod):
 
     def decode(self, data_with_watermark: np.ndarray, watermark_length: int) -> List[int]:
         L = len(data_with_watermark)
+        self._check_capacity(L, watermark_length, "watermark")
 
         si = int(self.fs / (self.sr / L))
         ei = int(self.fe / (self.sr / L))

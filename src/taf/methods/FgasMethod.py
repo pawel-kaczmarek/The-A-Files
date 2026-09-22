@@ -136,6 +136,8 @@ class FgasMethod(SteganographyMethod):
         if len(message) == 0:
             return data
 
+        self._check_capacity(len(data), len(message), "message")
+
         cover = data.astype(np.float32).reshape(1, -1, 1)
         target = np.asarray(message, dtype=np.float32).reshape(1, -1)
         target_tf = tf.constant(target)
@@ -173,6 +175,19 @@ class FgasMethod(SteganographyMethod):
         stego_np = tf.clip_by_value(cover_tf + delta * mask, -1.0, 1.0).numpy().reshape(-1)
         return stego_np.astype(data.dtype, copy=False)
 
+    def _check_capacity(self, sample_count: int, watermark_length: int, name: str) -> None:
+        """Read-out neighbourhoods must not overlap.
+
+        Each bit is decided at one position and optimised over the samples
+        within `radius` of it. Packing the positions closer than that means
+        neighbouring bits fight over the same samples, and neither converges.
+        """
+        capacity = sample_count // (2 * self.radius + 1)
+        if watermark_length > capacity:
+            raise ValueError(
+                f"{name} too long for cover audio: {watermark_length} > {capacity} bits"
+            )
+
     def _read_out_mask(self, sample_count: int, message_length: int) -> np.ndarray:
         """Mark the samples the perturbation is allowed to touch."""
         positions = np.linspace(0, sample_count - 1, message_length).astype(int)
@@ -191,6 +206,8 @@ class FgasMethod(SteganographyMethod):
 
         if watermark_length == 0:
             return []
+
+        self._check_capacity(len(data_with_watermark), watermark_length, "watermark")
 
         stego = data_with_watermark.astype(np.float32).reshape(1, -1, 1)
         pred = self._forward(tf.constant(stego), watermark_length).numpy().reshape(-1)

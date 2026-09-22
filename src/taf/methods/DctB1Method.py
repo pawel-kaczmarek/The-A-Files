@@ -73,8 +73,14 @@ class DctB1Method(SteganographyMethod):
         num_frames = len(data) // lf
         bits_per_frame = self.lG1
 
-        # Ensure message length matches the number of frames
-        padded_message = (message + [0] * (num_frames * bits_per_frame))[:num_frames * bits_per_frame]
+        capacity = num_frames * bits_per_frame
+        if len(message) > capacity:
+            raise ValueError(
+                f"message too long for cover audio: {len(message)} > {capacity} bits"
+            )
+
+        # Pad the tail of the last frame; the decoder drops the padding.
+        padded_message = (message + [0] * capacity)[:capacity]
 
         frames = np.array_split(data[:num_frames * lf], num_frames)
         rframes = []

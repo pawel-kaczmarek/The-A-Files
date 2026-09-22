@@ -29,7 +29,8 @@ class HistogramMethod(SteganographyMethod):
 
     def __init__(self, sr: int = 16000, amplitude_span: float = 2.5, threshold: float = 2.0,
                  cutoff: float = 2000.0, rounds: int = 24,
-                 search_span: float = 0.2, search_steps: int = 41):
+                 search_span: float = 0.2, search_steps: int = 41,
+                 min_samples_per_bin: int = 32):
         """
         Args:
             sr: Sampling rate, needed for the low-frequency split.
@@ -42,6 +43,9 @@ class HistogramMethod(SteganographyMethod):
                 decoder searches over, to re-align the histogram after an
                 attack has changed the mean absolute amplitude.
             search_steps: Number of scale factors tried within that range.
+            min_samples_per_bin: Samples a histogram bin needs before it can
+                carry a relation; sets the capacity together with the bit
+                count.
             rounds: Maximum embedding rounds. Each round re-counts the
                 populations in the band-limited signal the decoder will see.
             cutoff: Upper edge of the low-frequency component that carries the
@@ -63,6 +67,7 @@ class HistogramMethod(SteganographyMethod):
         self.rounds = rounds
         self.search_span = search_span
         self.search_steps = search_steps
+        self.min_samples_per_bin = min_samples_per_bin
 
     def _split(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Split into the low-frequency carrier and the untouched remainder."""
@@ -75,6 +80,14 @@ class HistogramMethod(SteganographyMethod):
         mean_amplitude = float(np.mean(np.abs(audio)))
         if mean_amplitude == 0.0:
             raise ValueError("cover audio is silent")
+
+        # Three bins per bit, and a bin with almost no samples in it cannot
+        # carry a population relation at all.
+        capacity = len(audio) // (3 * self.min_samples_per_bin)
+        if bit_count > capacity:
+            raise ValueError(
+                f"message too long for cover audio: {bit_count} > {capacity} bits"
+            )
 
         upper = self.amplitude_span * mean_amplitude
         bin_count = 3 * bit_count
