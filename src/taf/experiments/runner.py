@@ -58,6 +58,45 @@ class ExperimentRun:
         return target
 
 
+def _resolved_attacks(config: ExperimentConfig) -> list[str]:
+    """Attack specifications for a run, expanding a named preset.
+
+    A preset is resolved against the sample rate of the dataset so that the
+    cutoffs and resampling targets it contains are valid for the material:
+    a suite built for 44.1 kHz would otherwise ask for filters above the
+    Nyquist frequency of 16 kHz speech. Explicitly listed attacks are kept
+    and come first.
+    """
+    specs = list(config.attacks)
+    if not config.attack_preset:
+        return specs
+
+    from taf.attacks.presets import benchmark_suite
+
+    sample_rate = _dataset_sample_rate(config)
+    for spec in benchmark_suite(config.attack_preset, sample_rate):
+        if spec not in specs:
+            specs.append(spec)
+    return specs
+
+
+def _dataset_sample_rate(config: ExperimentConfig) -> int:
+    """Sample rate of the first file in the dataset, for preset resolution."""
+    import soundfile as sf
+
+    try:
+        files = load_dataset_files(config)
+    except Exception:  # noqa: BLE001 - dataset problems are reported elsewhere
+        return 16000
+
+    for path in files:
+        try:
+            return int(sf.info(str(path)).samplerate)
+        except Exception:  # noqa: BLE001 - unreadable files are reported per row
+            continue
+    return 16000
+
+
 def validate_config(config: ExperimentConfig) -> list[str]:
     """All scenario-independent + scenario-specific validation problems."""
     problems = validate_for_scenario(config)
@@ -176,7 +215,7 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
     from taf.attacks.registry import parse_spec, resolve_name
 
     changing = {spec.name for spec in registry.list_attacks() if spec.changes_length_or_rate}
-    for attack in config.attacks:
+    for attack in _resolved_attacks(config):
         try:
             attack_name = resolve_name(parse_spec(attack)[0])
         except Exception:  # noqa: BLE001 - validation reports this separately
@@ -196,7 +235,7 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
     if file_count == 0:
         warnings.append(PlanWarning(code="empty_dataset", message="No audio files matched this selection."))
 
-    attack_variants = 1 + len(dict.fromkeys(config.attacks))
+    attack_variants = 1 + len(dict.fromkeys(_resolved_attacks(config)))
     encode_operations = (
         file_count * len(config.methods) * len(config.payload_lengths) * config.repetitions
     )
@@ -241,7 +280,7 @@ def build_evaluation_config(config: ExperimentConfig):
             for length in config.payload_lengths
         ],
         random_seed=config.random_seed,
-        attacks=list(config.attacks),
+        attacks=_resolved_attacks(config),
         keep_files=config.save_encoded_audio,
         max_workers=config.max_workers,
     )

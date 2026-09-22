@@ -47,6 +47,11 @@ class ExperimentConfig(BaseModel):
     methods: list[str] = Field(default_factory=list)
     metrics: list[str] = Field(default_factory=list)
     attacks: list[str] = Field(default_factory=list)
+    #: Expand a named benchmark suite into ``attacks`` ("quick", "standard"
+    #: or "full"). The suite is resolved when the run starts, against the
+    #: sample rate of the material, so its filter cutoffs and resampling
+    #: targets are valid for the dataset at hand.
+    attack_preset: str | None = None
 
     payload_lengths: list[int] = Field(default_factory=lambda: [16])
     repetitions: int = Field(default=1, ge=1, le=50)
@@ -86,6 +91,18 @@ class ExperimentConfig(BaseModel):
         if unknown:
             raise ValueError(f"Unknown metric(s): {unknown}. Known: {sorted(known)}")
         return values
+
+    @field_validator("attack_preset")
+    @classmethod
+    def _known_preset(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        from taf.attacks.presets import SUITES
+
+        key = str(value).lower()
+        if key not in SUITES:
+            raise ValueError(f"Unknown attack preset {value!r}. Known: {sorted(SUITES)}")
+        return key
 
     @field_validator("attacks")
     @classmethod

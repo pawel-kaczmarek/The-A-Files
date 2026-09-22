@@ -161,6 +161,58 @@ def _collect(rows: Sequence[ExperimentResultRow], getter) -> list[float]:
     return values
 
 
+#: BER at or below which a payload is usually still recoverable with an
+#: error-correcting code. It is an engineering threshold for reporting, not a
+#: property of any method, and is stated explicitly so results can be compared.
+USABLE_BER_THRESHOLD = 0.1
+
+
+def distribution_stats(values: Sequence[float]) -> dict[str, Any]:
+    """Mean, median, spread and range, with a normal-approximation interval.
+
+    A single mean hides everything that matters in a robustness experiment:
+    a method that fails on one file in ten and one that degrades slightly
+    everywhere can share an average BER. The median and the range separate
+    them.
+    """
+    import math
+
+    clean = [float(value) for value in values if value is not None and math.isfinite(float(value))]
+    if not clean:
+        return {
+            "count": 0,
+            "mean": None,
+            "median": None,
+            "std": None,
+            "min": None,
+            "max": None,
+            "ci95_low": None,
+            "ci95_high": None,
+        }
+
+    ordered = sorted(clean)
+    count = len(ordered)
+    mean = sum(ordered) / count
+    middle = count // 2
+    median = ordered[middle] if count % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+    variance = sum((value - mean) ** 2 for value in ordered) / (count - 1) if count > 1 else 0.0
+    std = math.sqrt(variance)
+    # 1.96 standard errors: a normal approximation, which is adequate for the
+    # sample sizes a benchmark run produces and is stated rather than implied.
+    half_width = 1.96 * std / math.sqrt(count) if count > 1 else 0.0
+
+    return {
+        "count": count,
+        "mean": mean,
+        "median": median,
+        "std": std,
+        "min": ordered[0],
+        "max": ordered[-1],
+        "ci95_low": mean - half_width,
+        "ci95_high": mean + half_width,
+    }
+
+
 def group_stats(rows: Sequence[ExperimentResultRow]) -> dict[str, Any]:
     """Core statistics for any group of rows."""
     ok_rows = [row for row in rows if row.status == "ok"]
@@ -168,12 +220,30 @@ def group_stats(rows: Sequence[ExperimentResultRow]) -> dict[str, Any]:
     avg_metrics = {
         name: _mean(_collect(rows, lambda r, n=name: r.metrics.get(n))) for name in metric_names
     }
+    ber_values = _collect(rows, lambda r: r.ber)
+    ber_stats = distribution_stats(ber_values)
+
     return {
         "rows": len(rows),
         "error_rows": len(rows) - len(ok_rows),
         "decode_success_rate": _mean([1.0 if row.decode_success else 0.0 for row in rows]),
         "avg_bit_accuracy": _mean(_collect(rows, lambda r: r.bit_accuracy)),
-        "avg_ber": _mean(_collect(rows, lambda r: r.ber)),
+        "avg_ber": _mean(ber_values),
+        "ber_stats": ber_stats,
+        # Share of runs that recovered the payload exactly, and the share that
+        # stayed within the usable threshold. Both say more about a method than
+        # the mean does.
+        "perfect_extraction_rate": (
+            sum(1 for value in ber_values if value == 0.0) / len(ber_values)
+            if ber_values
+            else None
+        ),
+        "usable_extraction_rate": (
+            sum(1 for value in ber_values if value <= USABLE_BER_THRESHOLD) / len(ber_values)
+            if ber_values
+            else None
+        ),
+        "usable_ber_threshold": USABLE_BER_THRESHOLD,
         "avg_encode_time_seconds": _mean(_collect(rows, lambda r: r.encode_time_seconds)),
         "avg_decode_time_seconds": _mean(_collect(rows, lambda r: r.decode_time_seconds)),
         "avg_metrics": {name: value for name, value in avg_metrics.items() if value is not None},
@@ -225,6 +295,8 @@ __all__ = [
     "bit_error_rate",
     "by_method",
     "by_method_attack",
+    "distribution_stats",
+    "USABLE_BER_THRESHOLD",
     "by_method_payload",
     "group_by",
     "group_stats",
