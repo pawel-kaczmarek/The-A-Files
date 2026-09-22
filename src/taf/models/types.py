@@ -27,6 +27,7 @@ class MethodType(Enum):
     TIME_SPREAD_ECHO_METHOD = auto()
     HISTOGRAM_METHOD = auto()
     LOW_FREQUENCY_AMPLITUDE_METHOD = auto()
+    AUDIOSEAL_METHOD = auto()
 
 
 class MetricType(Enum):

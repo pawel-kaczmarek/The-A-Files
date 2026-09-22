@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.models.types import MethodType
+from taf.methods.AudioSealMethod import AudioSealMethod
 from taf.methods.BackwardForwardEchoMethod import BackwardForwardEchoMethod
 from taf.methods.BlindSvdMethod import BlindSvdMethod
 from taf.methods.DctB1Method import DctB1Method
@@ -66,5 +67,6 @@ class SteganographyMethodFactory:
             MethodType.TIME_SPREAD_ECHO_METHOD: TimeSpreadEchoMethod(),
             MethodType.HISTOGRAM_METHOD: HistogramMethod(sr=sr),
             MethodType.LOW_FREQUENCY_AMPLITUDE_METHOD: LowFrequencyAmplitudeMethod(sr=sr),
+            MethodType.AUDIOSEAL_METHOD: AudioSealMethod(sr=sr),
         }
         return methods
