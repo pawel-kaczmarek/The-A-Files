@@ -7,6 +7,14 @@ from taf.models.SteganographyMethod import SteganographyMethod
 class LsbMethod(SteganographyMethod):
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
+        if len(message) > len(data):
+            raise ValueError(
+                f"message too long for cover audio: {len(message)} > {len(data)} bits"
+            )
+
+        # Work on a copy: the caller keeps the cover to compute quality metrics
+        # against, and embedding in place would overwrite it.
+        data = data.copy()
         for idx, m in enumerate(message):
             # Convert the floating-point number to a 32-bit binary string
             bit_array = bitstring.BitArray(float=data[idx], length=32).bin
