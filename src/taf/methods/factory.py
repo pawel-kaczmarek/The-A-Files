@@ -13,6 +13,7 @@ from taf.methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgro
 from taf.methods.AacStcMethod import AacStcMethod
 from taf.methods.FgasMethod import FgasMethod
 from taf.methods.FsvcMethod import FsvcMethod
+from taf.methods.HistogramMethod import HistogramMethod
 from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from taf.methods.ImprovedSpreadSpectrumMethod import ImprovedSpreadSpectrumMethod
 from taf.methods.LearnableEmbeddingGaMethod import LearnableEmbeddingGaMethod
@@ -62,5 +63,6 @@ class SteganographyMethodFactory:
             MethodType.IMPROVED_SPREAD_SPECTRUM_METHOD: ImprovedSpreadSpectrumMethod(),
             MethodType.BACKWARD_FORWARD_ECHO_METHOD: BackwardForwardEchoMethod(),
             MethodType.TIME_SPREAD_ECHO_METHOD: TimeSpreadEchoMethod(),
+            MethodType.HISTOGRAM_METHOD: HistogramMethod(sr=sr),
         }
         return methods
