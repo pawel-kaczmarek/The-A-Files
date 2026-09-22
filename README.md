@@ -113,32 +113,6 @@ taf-eval full
 python -c "from taf.methods.factory import SteganographyMethodFactory; from taf.models.types import MethodType; print(SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD).type())"
 ```
 
-## Streamlit UI
-
-Install the optional UI dependency from PyPI:
-
-```bash
-pip install "the-a-files[ui]"
-```
-
-For local development, install the package in editable mode:
-
-```bash
-pip install -e ".[ui]"
-```
-
-Run the Streamlit app:
-
-```bash
-taf-streamlit
-```
-
-You can also run the module directly with Streamlit:
-
-```bash
-streamlit run src/taf/ui/streamlit_app.py
-```
-
 ## 🌐 REST API & web research platform
 
 The toolkit ships a reusable **experiment module** (`taf.experiments`) plus an
@@ -378,32 +352,52 @@ undetectable by these features; `1.0` means it is trivially detectable.
 
 ## 🧪 Attacks
 
-List of attack on audio samples:
+Attacks model what a stego signal goes through between embedding and
+extraction: incidental processing, storage and transmission, format
+conversion, playback and recapture, or a deliberate attempt to remove the
+payload. Each one is a dataclass whose fields are its parameters, applied
+through a common interface that returns the processed audio together with the
+metadata needed to reproduce the run.
 
-* Low pass filter
-* High pass filter
-* Additive noise
-* Frequency filter
-* Flip random samples
-* Cut random samples
-* Sample suppression
-* Resample (downsampling, upsampling)
-* Amplitude scaling
-* Pitch shift
-* Time stretch
-* Speed change (resampling without pitch correction)
-* Quantization (bit-depth reduction)
-* Smoothing (moving average)
-* Echo addition
-* Cropping
-* Zero padding
-* MP3 compression
-* AAC compression
-* Opus compression
+```python
+from taf.attacks import build
 
-The compression, filtering, speed and suppression operators follow the
-benchmark set of [[38]](#articles), so results can be read next to the numbers
-reported there. Compression attacks require FFmpeg on `PATH`.
+result = build("awgn:snr_db=20,seed=7").apply(samples, sample_rate)
+result.audio
+result.metadata["parameters"]      # {"snr_db": 20.0, "seed": 7, ...}
+result.metadata["measured_snr_db"]
+```
+
+| Family | Attacks |
+| --- | --- |
+| Codec | `mp3`, `aac`, `opus`, `vorbis` — real FFmpeg encode/decode round trips |
+| Noise | `awgn`, `pink_noise`, `impulse_noise` — specified by target SNR |
+| Filtering | `low_pass`, `high_pass`, `band_pass`, `notch`, `smoothing` |
+| Resampling | `resample` (round trip), `clock_drift` |
+| Quantization | `bit_depth` |
+| Amplitude | `gain` (dB), `clipping`, `compression_dynamic` |
+| Temporal | `time_shift`, `crop`, `zero_padding`, `sample_jitter`, `dropout`, `time_stretch`, `speed`, `pitch_shift` |
+| Acoustic | `echo`, `reverb`, `acoustic_channel` |
+| Pipelines | `streaming_upload`, `voice_call`, `broadcast`, `over_the_air`, `desync_attack` |
+
+A specification may carry parameters (`"awgn:snr_db=20"`), a severity
+(`"mp3@strong"`) or name a pipeline (`"pipeline:name=voice_call"`). Severity
+labels resolve into explicit numbers that are recorded in every result row, so
+results stay reproducible without consulting the source.
+
+Benchmark suites cover the families at several levels:
+
+```yaml
+experiment_type: attack_robustness
+attack_preset: standard     # quick | standard | full
+```
+
+Filter cutoffs and resampling targets are derived from the sample rate of the
+material, so a suite is valid at 16 kHz and at 44.1 kHz alike.
+
+Compression attacks require FFmpeg on `PATH`. Full details, the audit of the
+previous implementation, the parameter rationale and the known limitations are
+in [docs/attacks.md](docs/attacks.md).
 
 <a id="references"></a>
 
