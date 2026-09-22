@@ -24,6 +24,7 @@ class MethodType(Enum):
     QIM_METHOD = auto()
     IMPROVED_SPREAD_SPECTRUM_METHOD = auto()
     BACKWARD_FORWARD_ECHO_METHOD = auto()
+    TIME_SPREAD_ECHO_METHOD = auto()
 
 
 class MetricType(Enum):

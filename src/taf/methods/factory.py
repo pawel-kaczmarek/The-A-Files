@@ -23,6 +23,7 @@ from taf.methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
 from taf.methods.PhaseCodingMethod import PhaseCodingMethod
 from taf.methods.QimMethod import QimMethod
 from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
+from taf.methods.TimeSpreadEchoMethod import TimeSpreadEchoMethod
 from taf.methods.WirelessDwtLsbMethod import WirelessDwtLsbMethod
 
 class SteganographyMethodFactory:
@@ -60,5 +61,6 @@ class SteganographyMethodFactory:
             MethodType.QIM_METHOD: QimMethod(),
             MethodType.IMPROVED_SPREAD_SPECTRUM_METHOD: ImprovedSpreadSpectrumMethod(),
             MethodType.BACKWARD_FORWARD_ECHO_METHOD: BackwardForwardEchoMethod(),
+            MethodType.TIME_SPREAD_ECHO_METHOD: TimeSpreadEchoMethod(),
         }
         return methods
