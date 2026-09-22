@@ -17,6 +17,7 @@ from taf.methods.HistogramMethod import HistogramMethod
 from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
 from taf.methods.ImprovedSpreadSpectrumMethod import ImprovedSpreadSpectrumMethod
 from taf.methods.LearnableEmbeddingGaMethod import LearnableEmbeddingGaMethod
+from taf.methods.LowFrequencyAmplitudeMethod import LowFrequencyAmplitudeMethod
 from taf.methods.LsbMethod import LsbMethod
 from taf.methods.LwtMethod import LwtMethod
 from taf.methods.NormSpaceMethod import NormSpaceMethod
@@ -64,5 +65,6 @@ class SteganographyMethodFactory:
             MethodType.BACKWARD_FORWARD_ECHO_METHOD: BackwardForwardEchoMethod(),
             MethodType.TIME_SPREAD_ECHO_METHOD: TimeSpreadEchoMethod(),
             MethodType.HISTOGRAM_METHOD: HistogramMethod(sr=sr),
+            MethodType.LOW_FREQUENCY_AMPLITUDE_METHOD: LowFrequencyAmplitudeMethod(sr=sr),
         }
         return methods
