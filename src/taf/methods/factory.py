@@ -2,6 +2,7 @@ from typing import Dict, List
 
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.models.types import MethodType
+from taf.methods.BackwardForwardEchoMethod import BackwardForwardEchoMethod
 from taf.methods.BlindSvdMethod import BlindSvdMethod
 from taf.methods.DctB1Method import DctB1Method
 from taf.methods.DctDeltaLsbMethod import DctDeltaLsbMethod
@@ -58,5 +59,6 @@ class SteganographyMethodFactory:
             MethodType.LEARNABLE_EMBEDDING_GA_METHOD: LearnableEmbeddingGaMethod(),
             MethodType.QIM_METHOD: QimMethod(),
             MethodType.IMPROVED_SPREAD_SPECTRUM_METHOD: ImprovedSpreadSpectrumMethod(),
+            MethodType.BACKWARD_FORWARD_ECHO_METHOD: BackwardForwardEchoMethod(),
         }
         return methods

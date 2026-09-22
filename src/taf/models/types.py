@@ -23,6 +23,7 @@ class MethodType(Enum):
     LEARNABLE_EMBEDDING_GA_METHOD = auto()
     QIM_METHOD = auto()
     IMPROVED_SPREAD_SPECTRUM_METHOD = auto()
+    BACKWARD_FORWARD_ECHO_METHOD = auto()
 
 
 class MetricType(Enum):
