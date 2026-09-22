@@ -13,6 +13,7 @@ from taf.methods.AacStcMethod import AacStcMethod
 from taf.methods.FgasMethod import FgasMethod
 from taf.methods.FsvcMethod import FsvcMethod
 from taf.methods.ImprovedPhaseCodingMethod import ImprovedPhaseCodingMethod
+from taf.methods.LearnableEmbeddingGaMethod import LearnableEmbeddingGaMethod
 from taf.methods.LsbMethod import LsbMethod
 from taf.methods.LwtMethod import LwtMethod
 from taf.methods.NormSpaceMethod import NormSpaceMethod
@@ -52,5 +53,6 @@ class SteganographyMethodFactory:
             MethodType.FGAS_METHOD: FgasMethod(sr=sr),
             MethodType.AAC_STC_METHOD: AacStcMethod(sr=sr),
             MethodType.WIRELESS_DWT_LSB_METHOD: WirelessDwtLsbMethod(),
+            MethodType.LEARNABLE_EMBEDDING_GA_METHOD: LearnableEmbeddingGaMethod(),
         }
         return methods

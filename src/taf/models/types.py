@@ -20,6 +20,7 @@ class MethodType(Enum):
     FGAS_METHOD = auto()
     AAC_STC_METHOD = auto()
     WIRELESS_DWT_LSB_METHOD = auto()
+    LEARNABLE_EMBEDDING_GA_METHOD = auto()
 
 
 class MetricType(Enum):
