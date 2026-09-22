@@ -45,10 +45,20 @@ def rows_to_dataframe(rows: Sequence[ExperimentResultRow]) -> pd.DataFrame:
     """Flatten normalized rows: one column per metric, stable base columns."""
     records: list[dict[str, Any]] = []
     metric_names: list[str] = sorted({name for row in rows for name in row.metrics})
+    attack_metric_names: list[str] = sorted({name for row in rows for name in row.attack_metrics})
     for row in rows:
         record = row.model_dump(mode="json")
         metrics = record.pop("metrics", {})
         metric_errors = record.pop("metric_errors", {})
+        attack_metrics = record.pop("attack_metrics", {})
+        attack_metric_errors = record.pop("attack_metric_errors", {})
+        for name in attack_metric_names:
+            if name in attack_metrics:
+                record[f"attack_metric:{name}"] = attack_metrics[name]
+            elif name in attack_metric_errors:
+                record[f"attack_metric:{name}"] = f"error: {attack_metric_errors[name]}"
+            else:
+                record[f"attack_metric:{name}"] = None
         # Attack parameters are what make a row reproducible, so they are kept
         # as a JSON string rather than dropped.
         record["attack_parameters"] = (
@@ -64,7 +74,11 @@ def rows_to_dataframe(rows: Sequence[ExperimentResultRow]) -> pd.DataFrame:
             else:
                 record[f"metric:{name}"] = None
         records.append(record)
-    columns = _BASE_COLUMNS + [f"metric:{name}" for name in metric_names]
+    columns = (
+        _BASE_COLUMNS
+        + [f"metric:{name}" for name in metric_names]
+        + [f"attack_metric:{name}" for name in attack_metric_names]
+    )
     frame = pd.DataFrame.from_records(records)
     if frame.empty:
         return pd.DataFrame(columns=columns)

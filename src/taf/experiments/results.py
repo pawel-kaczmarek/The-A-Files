@@ -38,8 +38,12 @@ class ExperimentResultRow(BaseModel):
     decoded_bits: str | None = None
     attack: str | None = None
     attack_parameters: dict[str, Any] = Field(default_factory=dict)
+    #: Cover vs stego: how audible the embedding is. Independent of any attack.
     metrics: dict[str, float | None] = Field(default_factory=dict)
     metric_errors: dict[str, str] = Field(default_factory=dict)
+    #: Stego vs attacked: how much the attack degraded the signal.
+    attack_metrics: dict[str, float | None] = Field(default_factory=dict)
+    attack_metric_errors: dict[str, str] = Field(default_factory=dict)
     bit_accuracy: float | None = None
     ber: float | None = None
     decode_success: bool = False
@@ -106,6 +110,8 @@ def normalize_row(
         attack=row.attack,
         attack_parameters=dict(row.attack_parameters or {}),
         metrics=_finite_metrics(row.metrics),
+        attack_metrics=_finite_metrics(row.attack_metrics),
+        attack_metric_errors=dict(row.attack_metric_errors or {}),
         metric_errors=dict(row.metric_errors),
         bit_accuracy=accuracy,
         ber=1.0 - accuracy if accuracy is not None else None,

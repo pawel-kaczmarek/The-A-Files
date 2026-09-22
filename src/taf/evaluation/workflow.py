@@ -250,6 +250,7 @@ def _evaluate_target(
                 output_path = None
 
         decode_samples = decode_input.samples
+        stego_samples = decode_input.samples
         if attack is not None:
             logger.debug(
                 "Applying attack | file={} | method={} | message={} | target={} | attack={}",
@@ -279,7 +280,32 @@ def _evaluate_target(
             decode_elapsed,
             success,
         )
-        metrics, metric_errors = _calculate_metrics(original.samples, decode_samples, original.samplerate, metric_specs)
+        # Imperceptibility and robustness are different measurements and are
+        # kept apart. `metrics` always compares the cover with the stego
+        # signal, so it answers "how much did embedding change the audio" and
+        # is identical across the attack variants of one encode. Attack damage
+        # is reported separately, against the stego signal the attacker
+        # received, so the two effects are never summed into one number.
+        metrics, metric_errors = _calculate_metrics(
+            original.samples, stego_samples, original.samplerate, metric_specs
+        )
+        attack_metrics: dict[str, Any] = {}
+        attack_metric_errors: dict[str, str] = {}
+        if attack is not None:
+            if len(decode_samples) == len(stego_samples):
+                attack_metrics, attack_metric_errors = _calculate_metrics(
+                    stego_samples, decode_samples, original.samplerate, metric_specs
+                )
+            else:
+                # Cropping, stretching and padding change the length, and the
+                # packaged metrics all require two signals of equal length.
+                attack_metric_errors = {
+                    "*": (
+                        f"attack changed the signal length "
+                        f"({len(stego_samples)} -> {len(decode_samples)} samples); "
+                        "sample-aligned quality metrics do not apply"
+                    )
+                }
         return EvaluationRow(
             input_path=original.path,
             method=method_label,
@@ -290,6 +316,8 @@ def _evaluate_target(
             success=success,
             metrics=metrics,
             metric_errors=metric_errors,
+            attack_metrics=attack_metrics,
+            attack_metric_errors=attack_metric_errors,
             output_path=output_path,
             decoded_message=list(decoded_message),
             is_lossy=_is_lossy(target),
