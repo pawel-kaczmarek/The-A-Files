@@ -28,6 +28,7 @@ class MethodType(Enum):
     HISTOGRAM_METHOD = auto()
     LOW_FREQUENCY_AMPLITUDE_METHOD = auto()
     AUDIOSEAL_METHOD = auto()
+    WAVMARK_METHOD = auto()
 
 
 class MetricType(Enum):

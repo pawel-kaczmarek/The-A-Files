@@ -62,8 +62,9 @@ ai = [
 neural = [
     # Pretrained neural watermarking baselines.
     # Install with: pip install "the-a-files[neural]"
-    # Required by: AudioSealMethod
+    # Required by: AudioSealMethod, WavMarkMethod
     "audioseal>=0.1.4",
+    "wavmark>=0.0.3",
     "torch>=2.1",
 ]
 dev = [

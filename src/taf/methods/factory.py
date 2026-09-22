@@ -27,6 +27,7 @@ from taf.methods.PhaseCodingMethod import PhaseCodingMethod
 from taf.methods.QimMethod import QimMethod
 from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
 from taf.methods.TimeSpreadEchoMethod import TimeSpreadEchoMethod
+from taf.methods.WavMarkMethod import WavMarkMethod
 from taf.methods.WirelessDwtLsbMethod import WirelessDwtLsbMethod
 
 class SteganographyMethodFactory:
@@ -68,5 +69,6 @@ class SteganographyMethodFactory:
             MethodType.HISTOGRAM_METHOD: HistogramMethod(sr=sr),
             MethodType.LOW_FREQUENCY_AMPLITUDE_METHOD: LowFrequencyAmplitudeMethod(sr=sr),
             MethodType.AUDIOSEAL_METHOD: AudioSealMethod(sr=sr),
+            MethodType.WAVMARK_METHOD: WavMarkMethod(sr=sr),
         }
         return methods
