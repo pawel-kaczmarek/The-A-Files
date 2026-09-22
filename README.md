@@ -17,6 +17,7 @@ audio signal, measure speech quality metrics, and test the audio signal's robust
     * [🏛️ Speech Reverberation](#speech-reverberation)
     * [🗣️ Speech Intelligibility](#speech-intelligibility)
     * [🎧 Speech Quality](#speech-quality)
+* [🕵️ Steganalysis](#steganalysis)
 * [🧪 Attacks](#attacks)
 * [📚 References](#references)
     * [📄 Articles](#articles)
@@ -85,6 +86,13 @@ Install the latest PyPI release:
 
 ```bash
 pip install the-a-files
+```
+
+The pretrained neural methods (`AudioSealMethod`, `WavMarkMethod`) are an
+optional extra:
+
+```bash
+pip install "the-a-files[neural]"
 ```
 
 Optional AI features such as `FgasMethod` and `MosNetMetric` require TensorFlow:
@@ -221,6 +229,15 @@ List of implemented methods:
 | 16. | `FgasMethod.py`                             | Fixed-decoder network with adversarial perturbation generation, FGAS    | [[24]](#articles) |
 | 17. | `AacStcMethod.py`                           | Adaptive +-1 LSB via AAC perceptual residual and syndrome-trellis codes | [[25]](#articles) |
 | 18. | `WirelessDwtLsbMethod.py`                   | Wireless-channel DWT LSB message embedding                              | [[27]](#articles) |
+| 19. | `LearnableEmbeddingGaMethod.py`             | Learnable embedding with genetic optimization                           | [[28]](#articles) |
+| 20. | `QimMethod.py`                              | Quantization index modulation, spread-transform dither modulation       | [[29]](#articles) |
+| 21. | `ImprovedSpreadSpectrumMethod.py`           | Improved spread spectrum with host-interference rejection               | [[30]](#articles) |
+| 22. | `BackwardForwardEchoMethod.py`              | Echo hiding with backward and forward kernels                           | [[32]](#articles) |
+| 23. | `TimeSpreadEchoMethod.py`                   | Time-spread echo with a pseudo-noise kernel                             | [[33]](#articles) |
+| 24. | `HistogramMethod.py`                        | Histogram-based embedding, robust to cropping and time-scaling          | [[34]](#articles) |
+| 25. | `LowFrequencyAmplitudeMethod.py`            | Low-frequency amplitude modification, LFAM                              | [[35]](#articles) |
+| 26. | `AudioSealMethod.py`                        | AudioSeal neural watermarking, pretrained                               | [[36]](#articles) |
+| 27. | `WavMarkMethod.py`                          | WavMark neural watermarking, pretrained                                 | [[37]](#articles) |
 
 <a id="metrics"></a>
 
@@ -327,19 +344,66 @@ class Metric(ABC):
 
 <a id="attacks"></a>
 
+<a id="steganalysis"></a>
+
+## 🕵️ Steganalysis
+
+Quality metrics say how much a method damages the audio and the attacks say
+how much of the payload survives, but neither answers whether an observer can
+tell that anything was embedded at all - the property that separates
+steganography from watermarking.
+
+`taf.steganalysis` trains a detector to separate covers from stego signals and
+reports how well it does on held-out material. The classifier is an ensemble of
+Fisher discriminants on random feature subspaces [[39]](#articles), over
+residual-Markov and log-spectral features.
+
+```python
+from taf.steganalysis import measure_detectability
+from taf.methods.factory import SteganographyMethodFactory
+from taf.models.types import MethodType
+
+result = measure_detectability(
+    SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD),
+    covers,                 # a few mono waveforms; they are cut into windows
+    message_length=20,
+)
+print(result.accuracy, result.undetectable)
+```
+
+An accuracy near `0.5` means the detector is guessing, so the method is
+undetectable by these features; `1.0` means it is trivially detectable.
+
+<a id="attacks"></a>
+
 ## 🧪 Attacks
 
 List of attack on audio samples:
 
 * Low pass filter
+* High pass filter
 * Additive noise
 * Frequency filter
 * Flip random samples
 * Cut random samples
+* Sample suppression
 * Resample (downsampling, upsampling)
 * Amplitude scaling
 * Pitch shift
 * Time stretch
+* Speed change (resampling without pitch correction)
+* Quantization (bit-depth reduction)
+* Smoothing (moving average)
+* Echo addition
+* Cropping
+* Zero padding
+* MP3 compression
+* AAC compression
+* Opus compression
+
+The compression, filtering, speed and suppression operators follow the
+benchmark set of [[38]](#articles), so results can be read next to the numbers
+reported there. Compression attacks require FFmpeg on `PATH`.
 
 <a id="references"></a>
 
@@ -402,6 +466,32 @@ List of attack on audio samples:
 [26] Y. Yan, Y. Li, Q. Xiao, and Y. Ren, "PRoADS: Provably Secure and Robust Audio Diffusion Steganography with Latent Optimization and Backward Euler Inversion," *arXiv preprint*, arXiv:2603.10314, 2026. [arXiv:2603.10314](https://arxiv.org/abs/2603.10314)
 
 [27] A. A. Hamdi, A. A. Eyssa, M. I. Abdalla, M. ElAffendi, A. A. S. AlQahtani, A. A. Ateya, and R. A. Elsayed, "Improving Audio Steganography Transmission over Various Wireless Channels," *Journal of Sensor and Actuator Networks*, vol. 14, no. 6, article 106, 2025. [doi:10.3390/jsan14060106](https://doi.org/10.3390/jsan14060106)
+
+[28] J. Nayeem, H.-B. Lee, and Y.-H. Seo, "Robust Audio Watermarking with Learnable Embedding Technique and Genetic Optimization," *Digital Signal Processing*, vol. 183, article 106372, 2026. [doi:10.1016/j.dsp.2026.106372](https://doi.org/10.1016/j.dsp.2026.106372)
+
+[29] B. Chen and G. W. Wornell, "Quantization Index Modulation: A Class of Provably Good Methods for Digital Watermarking and Information Embedding," *IEEE Transactions on Information Theory*, vol. 47, no. 4, pp. 1423-1443, 2001. [doi:10.1109/18.923725](https://doi.org/10.1109/18.923725)
+
+[30] H. S. Malvar and D. A. F. Florencio, "Improved Spread Spectrum: A New Modulation Technique for Robust Watermarking," *IEEE Transactions on Signal Processing*, vol. 51, no. 4, pp. 898-905, 2003. [doi:10.1109/TSP.2003.809385](https://doi.org/10.1109/TSP.2003.809385)
+
+[31] I. J. Cox, J. Kilian, F. T. Leighton, and T. Shamoon, "Secure Spread Spectrum Watermarking for Multimedia," *IEEE Transactions on Image Processing*, vol. 6, no. 12, pp. 1673-1687, 1997. [doi:10.1109/83.650120](https://doi.org/10.1109/83.650120)
+
+[32] H. J. Kim and Y. H. Choi, "A Novel Echo-Hiding Scheme with Backward and Forward Kernels," *IEEE Transactions on Circuits and Systems for Video Technology*, vol. 13, no. 8, pp. 885-889, 2003. [doi:10.1109/TCSVT.2003.815950](https://doi.org/10.1109/TCSVT.2003.815950)
+
+[33] B.-S. Ko, R. Nishimura, and Y. Suzuki, "Time-Spread Echo Method for Digital Audio Watermarking," *IEEE Transactions on Multimedia*, vol. 7, no. 2, pp. 212-221, 2005. [doi:10.1109/TMM.2005.843366](https://doi.org/10.1109/tmm.2005.843366)
+
+[34] S. Xiang and J. Huang, "Histogram-Based Audio Watermarking Against Time-Scale Modification and Cropping Attacks," *IEEE Transactions on Multimedia*, vol. 9, no. 7, pp. 1357-1372, 2007. [doi:10.1109/TMM.2007.906580](https://doi.org/10.1109/TMM.2007.906580)
+
+[35] W.-N. Lie and L.-C. Chang, "Robust and High-Quality Time-Domain Audio Watermarking Based on Low-Frequency Amplitude Modification," *IEEE Transactions on Multimedia*, vol. 8, no. 1, pp. 46-59, 2006. [doi:10.1109/TMM.2005.861292](https://doi.org/10.1109/TMM.2005.861292)
+
+[36] R. San Roman, P. Fernandez, H. Elsahar, A. Defossez, T. Furon, and T. Tran, "Proactive Detection of Voice Cloning with Localized Watermarking," in *Proceedings of the 41st International Conference on Machine Learning (ICML)*, 2024. [arXiv:2401.17264](https://arxiv.org/abs/2401.17264)
+
+[37] G. Chen, Y. Wu, S. Liu, T. Liu, X. Du, and F. Wei, "WavMark: Watermarking for Audio Generation," *arXiv preprint*, arXiv:2308.12770, 2023. [arXiv:2308.12770](https://arxiv.org/abs/2308.12770)
+
+[38] H. Liu, M. Guo, Z. Jiang, L. Wang, and N. Z. Gong, "AudioMarkBench: Benchmarking Robustness of Audio Watermarking," in *Advances in Neural Information Processing Systems 37 (NeurIPS Datasets and Benchmarks)*, 2024. [arXiv:2406.06979](https://arxiv.org/abs/2406.06979)
+
+[39] J. Kodovsky, J. Fridrich, and V. Holub, "Ensemble Classifiers for Steganalysis of Digital Media," *IEEE Transactions on Information Forensics and Security*, vol. 7, no. 2, pp. 432-444, 2012. [doi:10.1109/TIFS.2011.2175919](https://doi.org/10.1109/TIFS.2011.2175919)
+
+[40] T. Filler, J. Judas, and J. Fridrich, "Minimizing Additive Distortion in Steganography Using Syndrome-Trellis Codes," *IEEE Transactions on Information Forensics and Security*, vol. 6, no. 3, pp. 920-935, 2011. [doi:10.1109/TIFS.2011.2134094](https://doi.org/10.1109/TIFS.2011.2134094)
 
 <a id="links"></a>
 
