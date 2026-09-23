@@ -72,9 +72,6 @@ dev = [
     "pytest>=8.0",
     "twine>=5.0",
 ]
-ui = [
-    "streamlit>=1.35",
-]
 api = [
     "fastapi>=0.110",
     "python-multipart>=0.0.9",
@@ -96,7 +93,6 @@ Publishing = "https://github.com/pawel-kaczmarek/The-A-Files/blob/main/docs/publ
 
 [project.scripts]
 taf-eval = "taf.main:main"
-taf-streamlit = "taf.ui.streamlit_app:main"
 taf-api = "taf.api.app:main"
 
 [tool.setuptools]
