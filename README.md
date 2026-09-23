@@ -2,127 +2,142 @@
 
 ![logo.png](docs/logo.png)
 
-> ***The A-Files is a powerful audio steganography software that allows users to embed secret data within an
-audio signal, measure speech quality metrics, and test the audio signal's robustness against different types of attacks.
-<br><br>With The A-Files, users can ensure that their sensitive information remains private and protected.***
+> **The A-Files** (`taf`) is an open-source research toolkit for the reproducible evaluation of audio steganography and
+> watermarking methods applied to speech. It provides reference implementations of embedding schemes, objective
+> measures of perceptual transparency and intelligibility, a parameterised and seeded model of channel distortions and
+> removal attacks, and a statistical steganalysis procedure for estimating detectability.
 
-## 🧭 Table of contents
+🇵🇱 A Polish-language guide to the structure and content of this document is available in
+[docs/README.pl.md](docs/README.pl.md).
 
-* [🔎 About](#about)
-* [📦 Install](#install)
-* [⚡ Usage](#usage)
-* [🔐 Steganography algorithms](#steganography-algorithms)
-* [📊 Metrics](#metrics)
-    * [🤖 AI Based](#ai-based)
-    * [🏛️ Speech Reverberation](#speech-reverberation)
-    * [🗣️ Speech Intelligibility](#speech-intelligibility)
-    * [🎧 Speech Quality](#speech-quality)
-* [🕵️ Steganalysis](#steganalysis)
-* [🧪 Attacks](#attacks)
-* [📚 References](#references)
-    * [📄 Articles](#articles)
-  * [🔗 Software resources](#links)
-* [⚖️ Licence](#licence)
-* [🧩 Dependencies](#dependencies)
-* [👥 Authors](#authors)
+## Table of contents
+
+1. [Scope and problem formulation](#about)
+2. [Installation](#install)
+3. [Usage](#usage)
+4. [Experiment engine, REST API and web platform](#platform)
+5. [Steganography and watermarking methods](#steganography-algorithms)
+6. [Objective quality metrics](#metrics)
+    1. [Data-driven (AI-based) metrics](#ai-based)
+    2. [Speech reverberation](#speech-reverberation)
+    3. [Speech intelligibility](#speech-intelligibility)
+    4. [Speech quality](#speech-quality)
+7. [Steganalysis](#steganalysis)
+8. [Attack and channel model](#attacks)
+9. [References](#references)
+    1. [Literature](#articles)
+    2. [Software resources](#links)
+10. [Licence](#licence)
+11. [External dependencies](#dependencies)
+12. [Authors](#authors)
 
 <a id="about"></a>
 
-## 🔎 About
+## 1. Scope and problem formulation
 
-The A-Files is a research-oriented toolkit for digital audio steganography and watermarking in speech signals. It
-models the embedding problem as a trade-off between payload capacity, perceptual transparency, robustness against
-signal processing, and bit-level decoding reliability. A typical experiment starts with a cover waveform `x[n]`, embeds
-a binary payload `b` to produce a stego waveform `y[n]`, optionally applies a channel or attack transform, and then
-compares the decoded payload with the original message while measuring the acoustic distortion introduced by the
-embedding process.
+Information hiding in audio is governed by four mutually conflicting requirements: **payload capacity**, **perceptual
+transparency**, **robustness** to signal processing, and — in the steganographic setting — **statistical
+undetectability**. No single method dominates on all four axes, and published results are frequently obtained under
+incomparable conditions (different corpora, payload sizes, attack parameters and metric implementations). The A-Files
+addresses this by evaluating all methods under a single, fully specified experimental protocol.
 
-The project provides:
+Let `x[n]` denote a cover speech signal sampled at `f_s`, and `b ∈ {0,1}^L` a binary payload of length `L`. An embedding
+function `E` produces the stego signal
 
-* Embedding and decoding methods for time-domain, transform-domain, spread-spectrum, echo/phase, and neural approaches
-* Objective speech-quality, intelligibility, reverberation, and AI-based evaluation metrics
-* Audio attack operators for robustness testing under common signal-processing distortions
+```
+y[n] = E(x[n], b),
+```
 
-<img src="docs/functions.svg" alt="The A-Files functions"> 
+which may be subjected to a channel or attack operator `A_θ` with explicit parameters `θ`, yielding `z[n] = A_θ(y[n])`.
+A blind decoder `D` recovers an estimate `b̂ = D(z[n], L)` without access to the cover. Each trial is characterised by:
 
-###### Loading
+* **Reliability** — bit error rate `BER = (1/L) Σ 1[b_i ≠ b̂_i]` and bit accuracy `1 − BER`;
+* **Transparency** — objective distortion between `x` and `y` (e.g. SNR, PESQ, STOI), computed *before* the attack so
+  that embedding distortion is not confounded with attack damage;
+* **Robustness** — BER as a function of the attack family and its severity `θ`;
+* **Capacity** — the largest `L` for which decoding remains error-free on a segment of given duration;
+* **Detectability** — held-out accuracy of a cover-versus-stego classifier (Section [7](#steganalysis)).
 
-Audio is loaded as a discrete-time waveform together with sampling-rate and format metadata. The package supports common
-uncompressed and lossless speech containers such as WAV and FLAC, including bundled VCTK and LibriSpeech samples for
-repeatable experiments. Payloads are represented as binary message vectors, which lets each method expose explicit
-`encode` and `decode` behavior independent of the storage format.
+<img src="docs/functions.svg" alt="The A-Files functional overview">
 
-###### Capacity
+The toolkit comprises:
 
-Capacity is evaluated as the number of recoverable payload bits that can be embedded in a finite audio segment. The
-implemented methods cover low-complexity LSB substitution, phase and echo coding, DCT/DWT/LWT-domain embedding,
-patchwork watermarking, norm-space and SVD-based schemes, adaptive AAC/STC embedding, wireless-channel DWT-LSB, and
-fixed-decoder adversarial steganography. These algorithms expose different capacity-distortion profiles and different
-failure modes under compression, filtering, resampling, and synchronization changes.
+* reference implementations of 27 embedding methods spanning time-domain, transform-domain (DCT, DWT, LWT, SVD),
+  spread-spectrum, quantisation-index-modulation, echo, phase and neural approaches;
+* 21 objective metrics of speech quality, intelligibility and reverberation, including a learned MOS predictor;
+* a library of seeded, parameterised attacks grouped by physical phenomenon, with severity presets and composite
+  channel pipelines;
+* a steganalysis module estimating empirical detectability;
+* an asynchronous experiment engine that produces normalised, exportable result tables.
 
-###### Transparency
+###### Signal and payload representation
 
-Transparency is measured by comparing the cover and stego signals with objective speech metrics. The library includes
-energy- and spectrum-based measures such as SNR, segmental SNR, frequency-weighted segmental SNR, log-likelihood ratio,
-weighted spectral slope, cepstral distance, mel-cepstral distance, and SI-SDR. It also includes perceptual and
-task-oriented measures such as PESQ, STOI, CSII, NCM, wSTMI, STGI, SRMR, BSD, composite speech-enhancement metrics, and
-MOSNet. Together these metrics quantify distortion, intelligibility loss, reverberation-related degradation, and
-predicted mean opinion score.
+Audio is represented as a discrete-time waveform with its sampling rate and container metadata. WAV, FLAC and OGG are
+supported. Two public speech corpora are bundled as fixed subsets — VCTK (10 utterances) and LibriSpeech (11
+utterances) — so that experiments can be repeated without external downloads. Payloads are binary vectors, which
+decouples each method's `encode`/`decode` interface from the storage format.
 
-###### Robustness
+###### Method contract
 
-Robustness is tested by applying controlled signal transformations after embedding and measuring whether the payload can
-still be decoded. The attack set includes additive noise, amplitude scaling, frequency cutting, filtering, cropping,
-resampling, quantization, pitch shifting, and time stretching. This enables method comparisons under channel-like
-degradation and adversarial removal attempts, using decode success and objective metric shifts as the primary evidence.
-
-*Powered by some great [GitHub repositories](#links)*
+Every method is subject to an automated conformance test on real speech from the bundled VCTK subset. The test asserts
+that (i) the payload is recovered bit-exactly by a *fresh* decoder instance, so no state is shared between encoder and
+decoder; (ii) `encode` neither modifies the caller's cover nor changes its length; (iii) a payload exceeding the
+method's capacity raises `ValueError` instead of being silently truncated; and (iv) encoding and decoding are
+numerically stable on synthetic signals. Embedding strengths and quantisation steps are defined relative to signal
+quantities the decoder can recompute (frame norm, band RMS, mean amplitude), which makes the methods invariant to global
+gain and usable on low-level recordings.
 
 <a id="install"></a>
 
-## 📦 Install
+## 2. Installation
 
-Install the latest PyPI release:
+The package is distributed on PyPI:
 
 ```bash
 pip install the-a-files
 ```
 
-The pretrained neural methods (`AudioSealMethod`, `WavMarkMethod`) are an
-optional extra:
+Optional components are provided as extras:
 
-```bash
-pip install "the-a-files[neural]"
-```
+| Extra | Command | Enables |
+| --- | --- | --- |
+| `neural` | `pip install "the-a-files[neural]"` | Pretrained neural watermarking baselines (`AudioSealMethod`, `WavMarkMethod`; PyTorch) |
+| `ai` | `pip install "the-a-files[ai]"` | `FgasMethod` and `MosNetMetric` (TensorFlow ≥ 2.15) |
+| `experiments` | `pip install "the-a-files[experiments]"` | Experiment engine and REST API (pandas, FastAPI, Uvicorn) |
+| `dev` | `pip install -e ".[dev]"` | Test and build tooling (pytest, build, twine) |
 
-Optional AI features such as `FgasMethod` and `MosNetMetric` require TensorFlow:
-
-```bash
-pip install "the-a-files[ai]"
-```
+See [External dependencies](#dependencies) for system-level prerequisites (C++ build tools, FFmpeg).
 
 <a id="usage"></a>
 
-## ⚡ Usage
+## 3. Usage
 
-Run the bundled evaluation workflow or import the package as `taf`:
-
-```bash
-taf-eval direct-no-metrics
-taf-eval full
-python -c "from taf.methods.factory import SteganographyMethodFactory; from taf.models.types import MethodType; print(SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD).type())"
-```
-
-## 🌐 REST API & web research platform
-
-The toolkit ships a reusable **experiment module** (`taf.experiments`) plus an
-optional FastAPI layer and a Next.js dashboard on top of it.
-
-### Experiment engine (works without the UI)
+The bundled evaluation workflow is exposed through the `taf-eval` entry point, which accepts the name of a packaged
+scenario or a path to a YAML configuration:
 
 ```bash
-pip install -e ".[experiments]"   # FastAPI + pandas + uvicorn
+taf-eval direct-no-metrics   # embedding and decoding only
+taf-eval full                # embedding, attacks and all metrics
 ```
+
+Individual components are available through registry-based factories:
+
+```python
+from taf.methods.factory import SteganographyMethodFactory
+from taf.models.types import MethodType
+
+method = SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD)
+stego = method.encode(cover, message)
+decoded = method.decode(stego, len(message))
+```
+
+<a id="platform"></a>
+
+## 4. Experiment engine, REST API and web platform
+
+### 4.1 Experiment engine
+
+The `taf.experiments` module defines an experiment declaratively and executes it without any user interface:
 
 ```python
 from taf.experiments import ExperimentConfig, ExperimentType, run_experiment
@@ -131,10 +146,10 @@ config = ExperimentConfig(
     experiment_type=ExperimentType.DATASET_BENCHMARK,
     name="lsb-vs-fsvc-vctk",
     dataset_id="vctk",            # example | vctk | librispeech | all | upload:<id>
-    file_limit=4,                 # dataset_path="C:/my/corpus" also works
+    file_limit=4,                 # dataset_path="C:/my/corpus" is also accepted
     methods=["LSB_METHOD", "FSVC_METHOD"],
     metrics=["SNR_METRIC", "PESQ_METRIC"],
-    attacks=["additive_noise"],   # each attack runs next to a no-attack baseline
+    attacks=["additive_noise"],   # each attack is paired with a no-attack baseline
     payload_lengths=[16, 32],
     repetitions=3,
     random_seed=42,
@@ -144,32 +159,33 @@ print(run.status, run.summary["overall"])
 run.to_csv("detailed_results.csv")
 ```
 
-Six experiment types share this one config and one normalized result-row
-format (file, method, payload, attack, BER, bit accuracy, metrics, timings,
-status/error): `dataset_benchmark`, `attack_robustness`, `perceptual_quality`,
-`embedding_capacity`, `method_comparison`, `research_experiment`. Scenario
-analytics (robustness matrix, capacity thresholds, weighted method ranking)
-are computed by `taf.experiments.scenarios`.
+Six experimental designs share one configuration schema and one normalised result-row format (file, method, payload,
+attack and its resolved parameters, BER, bit accuracy, metric values, timings, status and error):
+`dataset_benchmark`, `attack_robustness`, `perceptual_quality`, `embedding_capacity`, `method_comparison` and
+`research_experiment`. Derived analyses — robustness matrices, capacity thresholds and weighted multi-criteria method
+rankings — are computed by `taf.experiments.scenarios`. Fixing `random_seed` makes payload generation and all stochastic
+attacks reproducible.
 
-### REST API
+### 4.2 REST API
 
 ```bash
 uvicorn taf.api.main:app --reload   # or: taf-api
-# http://127.0.0.1:8000 — interactive OpenAPI docs at /docs
+# http://127.0.0.1:8000 — interactive OpenAPI documentation at /docs
 ```
 
-Key endpoints: `GET /api/catalog/{methods,metrics,attacks,datasets}`,
-`POST /api/experiments/preview`, `POST /api/experiments/run`,
-`GET /api/experiments/history`, `GET /api/experiments/{id}/{results,summary,export.csv,export_summary.csv,config.json}`,
-live streams at `/api/experiments/events` and `/api/experiments/{id}/events`
-(Server-Sent Events), dataset upload at `POST /api/datasets/uploads`.
+| Purpose | Endpoints |
+| --- | --- |
+| Catalogue | `GET /api/catalog/{methods,metrics,attacks,datasets}` |
+| Execution | `POST /api/experiments/preview`, `POST /api/experiments/run` |
+| Results | `GET /api/experiments/history`, `GET /api/experiments/{id}/{results,summary,export.csv,export_summary.csv,config.json}` |
+| Progress (Server-Sent Events) | `GET /api/experiments/events`, `GET /api/experiments/{id}/events` |
+| Data | `POST /api/datasets/uploads` |
 
-### Web dashboard
+### 4.3 Web dashboard
 
-A Next.js + TypeScript + Tailwind (shadcn-style) dashboard lives in
-[`web/`](web/README.md) — one page per experiment type, shared experiment
-layout, live progress, summary tables and CSV export. It is **not** part of
-the PyPI distribution:
+A Next.js/TypeScript dashboard in [`web/`](web/README.md) acts as a thin client of the API: it provides one view per
+experimental design, live progress, summary tables and CSV export. All domain logic resides in the Python package. The
+dashboard is not part of the PyPI distribution:
 
 ```bash
 cd web
@@ -179,43 +195,43 @@ npm run dev   # http://localhost:3000
 
 <a id="steganography-algorithms"></a>
 
-## 🔐 Steganography algorithms
+## 5. Steganography and watermarking methods
 
-List of implemented methods:
+Table 1 lists the implemented methods together with the publications on which they are based.
 
-| lp. | Name                                        | Short description                                                       | Reference         |
+**Table 1.** Implemented embedding methods.
+
+| No. | Module                                      | Method                                                                  | Ref.              |
 |-----|---------------------------------------------|-------------------------------------------------------------------------|-------------------|
-| 1   | `LsbMethod.py`                              | Standard LSB coding                                                     | [[1]](#articles)  |
+| 1.  | `LsbMethod.py`                              | Least-significant-bit substitution                                      | [[1]](#articles)  |
 | 2.  | `EchoMethod.py`                             | Echo hiding with a single echo kernel                                   | [[1]](#articles)  |
-| 3.  | `PhaseCodingMethod.py`                      | Phase coding technique                                                  | [[1]](#articles)  |
-| 4.  | `ImprovedPhaseCodingMethod.py`              | Improved phase coding technique                                         | [[19]](#articles) |
+| 3.  | `PhaseCodingMethod.py`                      | Phase coding                                                            | [[1]](#articles)  |
+| 4.  | `ImprovedPhaseCodingMethod.py`              | Improved phase coding                                                   | [[19]](#articles) |
 | 5.  | `DctDeltaLsbMethod.py`                      | DCT delta LSB embedding                                                 | [[1]](#articles)  |
-| 6.  | `DwtLsbMethod.py`                           | DWT-based LSB embedding                                                 | [[1]](#articles)  |
-| 7.  | `DctB1Method.py`                            | First-band DCT coefficient embedding, DCT-b1                            | [[2]](#articles)  |
+| 6.  | `DwtLsbMethod.py`                           | DWT-domain LSB embedding                                                | [[1]](#articles)  |
+| 7.  | `DctB1Method.py`                            | First-band DCT coefficient embedding (DCT-b1)                           | [[2]](#articles)  |
 | 8.  | `PatchworkMultilayerMethod.py`              | Patchwork-based multilayer watermarking                                 | [[3]](#articles)  |
-| 9.  | `NormSpaceMethod.py`                        | Norm-space audio watermarking                                           | [[4]](#articles)  |
-| 10. | `FsvcMethod.py`                             | Frequency singular value coefficient modification, FSVC                 | [[5]](#articles)  |
-| 11. | `DsssMethod.py`                             | Direct sequence spread spectrum embedding                               | [[6]](#articles)  |
-| 12. | `BlindSvdMethod.py`                         | Blind SVD embedding using entropy and log-polar transformation          | [[20]](#articles) |
-| 13. | `PrimeFactorInterpolatedMethod.py`          | Prime factor interpolated embedding                                     | [[21]](#articles) |
-| 14. | `LwtMethod.py`                              | LWT-based embedding                                                     | [[22]](#articles) |
-| 15. | `ForegroundBackgroundSegmentationMethod.py` | Foreground-background segmentation LSB, FBS-LSB                         | [[23]](#articles) |
-| 16. | `FgasMethod.py`                             | Fixed-decoder network with adversarial perturbation generation, FGAS    | [[24]](#articles) |
-| 17. | `AacStcMethod.py`                           | Adaptive +-1 LSB via AAC perceptual residual and syndrome-trellis codes | [[25]](#articles) |
-| 18. | `WirelessDwtLsbMethod.py`                   | Wireless-channel DWT LSB message embedding                              | [[27]](#articles) |
-| 19. | `LearnableEmbeddingGaMethod.py`             | Learnable embedding with genetic optimization                           | [[28]](#articles) |
-| 20. | `QimMethod.py`                              | Quantization index modulation, spread-transform dither modulation       | [[29]](#articles) |
+| 9.  | `NormSpaceMethod.py`                        | Norm-space watermarking                                                 | [[4]](#articles)  |
+| 10. | `FsvcMethod.py`                             | Frequency singular value coefficient modification (FSVC)                | [[5]](#articles)  |
+| 11. | `DsssMethod.py`                             | Direct-sequence spread spectrum (DSSS)                                  | [[6]](#articles)  |
+| 12. | `BlindSvdMethod.py`                         | Blind SVD embedding with entropy and log-polar transformation           | [[20]](#articles) |
+| 13. | `PrimeFactorInterpolatedMethod.py`          | Least-prime-factor interpolated embedding                               | [[21]](#articles) |
+| 14. | `LwtMethod.py`                              | Lifting wavelet transform (LWT) embedding                               | [[22]](#articles) |
+| 15. | `ForegroundBackgroundSegmentationMethod.py` | Foreground-background segmentation LSB (FBS-LSB)                        | [[23]](#articles) |
+| 16. | `FgasMethod.py`                             | Fixed-decoder network with adversarial perturbation generation (FGAS)   | [[24]](#articles) |
+| 17. | `AacStcMethod.py`                           | Adaptive ±1 LSB with AAC perceptual residual and syndrome-trellis codes | [[25]](#articles) |
+| 18. | `WirelessDwtLsbMethod.py`                   | DWT-LSB embedding for wireless channels                                 | [[27]](#articles) |
+| 19. | `LearnableEmbeddingGaMethod.py`             | Learnable embedding with genetic optimisation                           | [[28]](#articles) |
+| 20. | `QimMethod.py`                              | Quantisation index modulation, spread-transform dither modulation       | [[29]](#articles) |
 | 21. | `ImprovedSpreadSpectrumMethod.py`           | Improved spread spectrum with host-interference rejection               | [[30]](#articles) |
 | 22. | `BackwardForwardEchoMethod.py`              | Echo hiding with backward and forward kernels                           | [[32]](#articles) |
 | 23. | `TimeSpreadEchoMethod.py`                   | Time-spread echo with a pseudo-noise kernel                             | [[33]](#articles) |
-| 24. | `HistogramMethod.py`                        | Histogram-based embedding, robust to cropping and time-scaling          | [[34]](#articles) |
-| 25. | `LowFrequencyAmplitudeMethod.py`            | Low-frequency amplitude modification, LFAM                              | [[35]](#articles) |
-| 26. | `AudioSealMethod.py`                        | AudioSeal neural watermarking, pretrained                               | [[36]](#articles) |
-| 27. | `WavMarkMethod.py`                          | WavMark neural watermarking, pretrained                                 | [[37]](#articles) |
+| 24. | `HistogramMethod.py`                        | Histogram-based embedding robust to cropping and time-scale modification | [[34]](#articles) |
+| 25. | `LowFrequencyAmplitudeMethod.py`            | Low-frequency amplitude modification (LFAM)                             | [[35]](#articles) |
+| 26. | `AudioSealMethod.py`                        | AudioSeal neural watermarking (pretrained)                              | [[36]](#articles) |
+| 27. | `WavMarkMethod.py`                          | WavMark neural watermarking (pretrained)                                | [[37]](#articles) |
 
-<a id="metrics"></a>
-
-Each method extend abstract class  ```SteganographyMethod```
+All methods implement the abstract interface `SteganographyMethod`:
 
 ```python
 from abc import abstractmethod, ABC
@@ -238,60 +254,74 @@ class SteganographyMethod(ABC):
         ...
 ```
 
-## 📊 Metrics
+New methods are registered in `taf/methods/factory.py` and in the `MethodType` enumeration, and must satisfy the
+[method contract](#about).
 
-List of implemented metrics:
+<a id="metrics"></a>
+
+## 6. Objective quality metrics
+
+Metrics are computed between the cover `x` and the processed signal. They are grouped by the property they estimate
+(Tables 2–5). Numbering is continuous across the tables.
 
 <a id="ai-based"></a>
 
-#### 🤖 AI Based
+#### 6.1 Data-driven (AI-based) metrics
 
-| lp. | Name              | Short description                                          | Reference         |
+**Table 2.** Learned quality predictors.
+
+| No. | Module            | Metric                                                     | Ref.              |
 |-----|-------------------|------------------------------------------------------------|-------------------|
-| 1.  | `MosNetMetric.py` | MOSNet deep-learning objective voice-conversion assessment | [[16]](#articles) |
+| 1.  | `MosNetMetric.py` | MOSNet, deep-learning mean-opinion-score prediction        | [[16]](#articles) |
 
 <a id="speech-reverberation"></a>
 
-#### 🏛️ Speech Reverberation
+#### 6.2 Speech reverberation
 
-| lp. | Name            | Short description                                     | Reference         |
-|-----|-----------------|-------------------------------------------------------|-------------------|
-| 2.  | `BsdMetric.py`  | Bark spectral distortion, BSD                         | [[7]](#articles)  |
-| 3.  | `SrmrMetric.py` | Speech-to-reverberation modulation energy ratio, SRMR | [[10]](#articles) |
+**Table 3.** Reverberation- and spectral-distortion measures.
+
+| No. | Module          | Metric                                                  | Ref.              |
+|-----|-----------------|---------------------------------------------------------|-------------------|
+| 2.  | `BsdMetric.py`  | Bark spectral distortion (BSD)                          | [[7]](#articles)  |
+| 3.  | `SrmrMetric.py` | Speech-to-reverberation modulation energy ratio (SRMR)  | [[10]](#articles) |
 
 <a id="speech-intelligibility"></a>
 
-#### 🗣️ Speech Intelligibility
+#### 6.3 Speech intelligibility
 
-| lp. | Name            | Short description                                | Reference        |
-|-----|-----------------|--------------------------------------------------|------------------|
-| 4.  | `CsiiMetric.py` | Coherence and speech intelligibility index, CSII | [[7]](#articles) |
-| 5.  | `NcmMetric.py`  | Normalized-covariance measure, NCM               | [[7]](#articles) |
-| 6.  | `StoiMetric.py` | Short-time objective intelligibility, STOI       | [[9]](#articles) |
+**Table 4.** Intelligibility predictors.
+
+| No. | Module          | Metric                                             | Ref.             |
+|-----|-----------------|----------------------------------------------------|------------------|
+| 4.  | `CsiiMetric.py` | Coherence speech intelligibility index (CSII)      | [[7]](#articles) |
+| 5.  | `NcmMetric.py`  | Normalised covariance measure (NCM)                | [[7]](#articles) |
+| 6.  | `StoiMetric.py` | Short-time objective intelligibility (STOI)        | [[9]](#articles) |
 
 <a id="speech-quality"></a>
 
-#### 🎧 Speech Quality
+#### 6.4 Speech quality
 
-| lp. | Name                           | Short description                                                     | Reference         |
-|-----|--------------------------------|-----------------------------------------------------------------------|-------------------|
-| 7.  | `SnrMetric.py`                 | Signal-to-noise ratio, SNR                                            | [[12]](#articles) |
-| 8.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance measure for objective speech quality assessment | [[11]](#articles) |
-| 9.  | `SnrSegMetric.py`              | Segmental signal-to-noise ratio, SNRseg                               | [[7]](#articles)  |
-| 10. | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR, fwSNRseg                            | [[7]](#articles)  |
-| 11. | `CepstrumDistanceMetric.py`    | Cepstrum distance objective speech quality measure, CD                | [[7]](#articles)  |
-| 12. | `LlrMetric.py`                 | Log-likelihood ratio, LLR                                             | [[7]](#articles)  |
-| 13. | `WssMetric.py`                 | Weighted spectral slope, WSS                                          | [[7]](#articles)  |
-| 14. | `PesqMetric.py`                | Perceptual evaluation of speech quality, PESQ                         | [[8]](#articles)  |
-| 15. | `CsigMetric.py`                | Composite speech signal distortion rating, Csig                       | [[13]](#articles) |
-| 16. | `CovlMetric.py`                | Composite overall signal quality rating, Covl                         | [[13]](#articles) |
-| 17. | `CbakMetric.py`                | Composite background-noise intrusiveness rating, Cbak                 | [[13]](#articles) |
-| 18. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index, wSTMI                     | [[14]](#articles) |
-| 19. | `StgiMetric.py`                | Spectro-temporal glimpsing index, STGI                                | [[15]](#articles) |
-| 20. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio, SI-SDR                    | [[17]](#articles) |
-| 21. | `BSSEvalMetric.py`             | BSSEval v4 signal separation evaluation metric                        | [[18]](#articles) |
+**Table 5.** Signal-fidelity and perceptual quality measures.
 
-Each metric extends the abstract class `Metric`.
+| No. | Module                         | Metric                                                   | Ref.              |
+|-----|--------------------------------|----------------------------------------------------------|-------------------|
+| 7.  | `SnrMetric.py`                 | Signal-to-noise ratio (SNR)                              | [[12]](#articles) |
+| 8.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance (MCD)                              | [[11]](#articles) |
+| 9.  | `SnrSegMetric.py`              | Segmental SNR (SNRseg)                                   | [[7]](#articles)  |
+| 10. | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR (fwSNRseg)              | [[7]](#articles)  |
+| 11. | `CepstrumDistanceMetric.py`    | Cepstral distance (CD)                                   | [[7]](#articles)  |
+| 12. | `LlrMetric.py`                 | Log-likelihood ratio (LLR)                               | [[7]](#articles)  |
+| 13. | `WssMetric.py`                 | Weighted spectral slope (WSS)                            | [[7]](#articles)  |
+| 14. | `PesqMetric.py`                | Perceptual evaluation of speech quality (PESQ)           | [[8]](#articles)  |
+| 15. | `CsigMetric.py`                | Composite signal-distortion rating (Csig)                | [[13]](#articles) |
+| 16. | `CovlMetric.py`                | Composite overall-quality rating (Covl)                  | [[13]](#articles) |
+| 17. | `CbakMetric.py`                | Composite background-intrusiveness rating (Cbak)         | [[13]](#articles) |
+| 18. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index (wSTMI)       | [[14]](#articles) |
+| 19. | `StgiMetric.py`                | Spectro-temporal glimpsing index (STGI)                  | [[15]](#articles) |
+| 20. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio (SI-SDR)      | [[17]](#articles) |
+| 21. | `BSSEvalMetric.py`             | BSSEval v4 source-separation measures                    | [[18]](#articles) |
+
+All metrics implement the abstract interface `Metric`:
 
 ```python
 from abc import ABC, abstractmethod
@@ -316,21 +346,19 @@ class Metric(ABC):
         ...
 ```
 
-<a id="attacks"></a>
-
 <a id="steganalysis"></a>
 
-## 🕵️ Steganalysis
+## 7. Steganalysis
 
-Quality metrics say how much a method damages the audio and the attacks say
-how much of the payload survives, but neither answers whether an observer can
-tell that anything was embedded at all - the property that separates
-steganography from watermarking.
+Transparency metrics quantify the perceptual cost of embedding and attacks quantify the survival of the payload, but
+neither establishes whether the *presence* of a payload can be inferred — the criterion that distinguishes
+steganography from watermarking. `taf.steganalysis` estimates this empirically.
 
-`taf.steganalysis` trains a detector to separate covers from stego signals and
-reports how well it does on held-out material. The classifier is an ensemble of
-Fisher discriminants on random feature subspaces [[39]](#articles), over
-residual-Markov and log-spectral features.
+Cover signals are segmented into windows; each window is paired with its stego counterpart, and the pairs are split
+into disjoint training and test sets so that no cover contributes to both. Residual-Markov and log-spectral features
+are extracted, and an ensemble of Fisher linear discriminants trained on random feature subspaces
+[[39]](#articles) is fitted to the training set. The procedure reports test accuracy, false-positive and
+false-negative rates and the out-of-bag error of the ensemble.
 
 ```python
 from taf.steganalysis import measure_detectability
@@ -339,25 +367,24 @@ from taf.models.types import MethodType
 
 result = measure_detectability(
     SteganographyMethodFactory.get(16000, MethodType.LSB_METHOD),
-    covers,                 # a few mono waveforms; they are cut into windows
+    covers,                 # mono waveforms, segmented into windows internally
     message_length=20,
 )
-print(result.accuracy, result.undetectable)
+print(result.accuracy, result.false_positive_rate, result.undetectable)
 ```
 
-An accuracy near `0.5` means the detector is guessing, so the method is
-undetectable by these features; `1.0` means it is trivially detectable.
+A test accuracy of `0.5` corresponds to chance level, i.e. the method is undetectable with respect to this feature set
+(`undetectable` is `True` for accuracy ≤ 0.55); an accuracy of `1.0` indicates perfect detection. The result is a lower
+bound on detectability: a negative outcome does not exclude detection by stronger features or classifiers.
 
 <a id="attacks"></a>
 
-## 🧪 Attacks
+## 8. Attack and channel model
 
-Attacks model what a stego signal goes through between embedding and
-extraction: incidental processing, storage and transmission, format
-conversion, playback and recapture, or a deliberate attempt to remove the
-payload. Each one is a dataclass whose fields are its parameters, applied
-through a common interface that returns the processed audio together with the
-metadata needed to reproduce the run.
+Attacks model the transformations a stego signal may undergo between embedding and extraction: incidental processing,
+storage and transmission, format conversion, acoustic playback and re-recording, and intentional removal attempts. Each
+attack is an immutable dataclass whose fields are its parameters. Applying it returns the processed signal together
+with metadata sufficient to reproduce the trial exactly.
 
 ```python
 from taf.attacks import build
@@ -368,44 +395,48 @@ result.metadata["parameters"]      # {"snr_db": 20.0, "seed": 7, ...}
 result.metadata["measured_snr_db"]
 ```
 
+The following design principles are enforced:
+
+* **Reproducibility** — all stochastic attacks use an explicit seed; the global random state is never used.
+* **Explicit parameters** — a severity label (e.g. `mp3@strong`) resolves to numeric parameters that are stored in
+  every result row, so results are interpretable without consulting the source code.
+* **Sampling-rate awareness** — filter cut-offs and resampling targets are derived from `f_s` and validated against
+  the Nyquist frequency, so a suite is equally valid at 16 kHz and 44.1 kHz.
+* **No self-normalisation** — an attack never rescales its output to compensate for its own effect.
+
+**Table 6.** Attack families.
+
 | Family | Attacks |
 | --- | --- |
 | Codec | `mp3`, `aac`, `opus`, `vorbis` — real FFmpeg encode/decode round trips |
-| Noise | `awgn`, `pink_noise`, `impulse_noise` — specified by target SNR |
+| Noise | `awgn`, `pink_noise`, `impulse_noise` — parameterised by target SNR |
 | Filtering | `low_pass`, `high_pass`, `band_pass`, `notch`, `smoothing` |
 | Resampling | `resample` (round trip), `clock_drift` |
-| Quantization | `bit_depth` |
+| Quantisation | `bit_depth` |
 | Amplitude | `gain` (dB), `clipping`, `compression_dynamic` |
 | Temporal | `time_shift`, `crop`, `zero_padding`, `sample_jitter`, `dropout`, `time_stretch`, `speed`, `pitch_shift` |
 | Acoustic | `echo`, `reverb`, `acoustic_channel` |
 | Pipelines | `streaming_upload`, `voice_call`, `broadcast`, `over_the_air`, `desync_attack` |
 
-A specification may carry parameters (`"awgn:snr_db=20"`), a severity
-(`"mp3@strong"`) or name a pipeline (`"pipeline:name=voice_call"`). Severity
-labels resolve into explicit numbers that are recorded in every result row, so
-results stay reproducible without consulting the source.
-
-Benchmark suites cover the families at several levels:
+An attack specification may carry explicit parameters (`"awgn:snr_db=20"`), a severity level (`"mp3@strong"`) or refer
+to a composite pipeline (`"pipeline:name=voice_call"`). Predefined benchmark suites cover all families at several
+severity levels:
 
 ```yaml
 experiment_type: attack_robustness
 attack_preset: standard     # quick | standard | full
 ```
 
-Filter cutoffs and resampling targets are derived from the sample rate of the
-material, so a suite is valid at 16 kHz and at 44.1 kHz alike.
-
-Compression attacks require FFmpeg on `PATH`. Full details, the audit of the
-previous implementation, the parameter rationale and the known limitations are
-in [docs/attacks.md](docs/attacks.md).
+Codec attacks require FFmpeg on `PATH`. The parameter rationale, an audit of the previous implementation and known
+limitations are documented in [docs/attacks.md](docs/attacks.md).
 
 <a id="references"></a>
 
-## 📚 References
+## 9. References
 
 <a id="articles"></a>
 
-#### 📄 Articles
+#### 9.1 Literature
 
 [1] A. A. Alsabhany, A. H. Ali, F. Ridzuan, A. H. Azni, and M. R. Mokhtar, "Digital Audio Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art," *Computer Science Review*, vol. 38, article 100316, 2020. [doi:10.1016/j.cosrev.2020.100316](https://doi.org/10.1016/j.cosrev.2020.100316)
 
@@ -489,42 +520,42 @@ in [docs/attacks.md](docs/attacks.md).
 
 <a id="links"></a>
 
-#### 🔗 Software Resources
+#### 9.2 Software resources
+
+The following open-source projects served as references for, or are wrapped by, individual components.
 
 | Ref. | Project | Scope |
 | --- | --- | --- |
-| [1] | [audio-watermarking](https://github.com/kosta-pmf/audio-watermarking) | Audio watermarking and steganography implementation reference |
-| [2] | [audio-steganography-algorithms](https://github.com/ktekeli/audio-steganography-algorithms) | Audio steganography algorithm examples |
-| [3] | [pysepm](https://github.com/schmiph2/pysepm) | Objective speech enhancement and quality metrics |
-| [4] | [PESQ](https://github.com/ludlows/PESQ) | Python wrapper for PESQ |
-| [5] | [pystoi](https://github.com/mpariente/pystoi) | STOI implementation for Python |
-| [6] | [SRMRpy](https://github.com/jfsantos/SRMRpy) | SRMR speech reverberation metric implementation |
-| [7] | [mel_cepstral_distance](https://github.com/jasminsternkopf/mel_cepstral_distance) | Mel-cepstral distance implementation |
-| [8] | [semetrics](https://github.com/nglehuy/semetrics) | Speech enhancement metric implementations |
-| [9] | [py-intelligibility](https://github.com/aminEdraki/py-intelligibility) | Speech intelligibility metrics |
-| [10] | [speechmetrics](https://github.com/aliutkus/speechmetrics) | Speech and audio evaluation metrics |
-| [11] | [sigsep-mus-eval](https://github.com/sigsep/sigsep-mus-eval) | BSSEval signal separation metrics |
+| [S1] | [audio-watermarking](https://github.com/kosta-pmf/audio-watermarking) | Audio watermarking and steganography implementations |
+| [S2] | [audio-steganography-algorithms](https://github.com/ktekeli/audio-steganography-algorithms) | Audio steganography algorithm examples |
+| [S3] | [pysepm](https://github.com/schmiph2/pysepm) | Objective speech enhancement and quality measures |
+| [S4] | [PESQ](https://github.com/ludlows/PESQ) | Python wrapper for ITU-T P.862 PESQ |
+| [S5] | [pystoi](https://github.com/mpariente/pystoi) | STOI implementation |
+| [S6] | [SRMRpy](https://github.com/jfsantos/SRMRpy) | SRMR implementation |
+| [S7] | [mel_cepstral_distance](https://github.com/jasminsternkopf/mel_cepstral_distance) | Mel-cepstral distance implementation |
+| [S8] | [semetrics](https://github.com/nglehuy/semetrics) | Speech enhancement measures |
+| [S9] | [py-intelligibility](https://github.com/aminEdraki/py-intelligibility) | wSTMI and STGI intelligibility measures |
+| [S10] | [speechmetrics](https://github.com/aliutkus/speechmetrics) | Speech and audio evaluation measures |
+| [S11] | [sigsep-mus-eval](https://github.com/sigsep/sigsep-mus-eval) | BSSEval v4 |
 
 <a id="licence"></a>
 
-### ⚖️ Licence
+## 10. Licence
 
-The A-Files is an open source software under GPLv3 license.
+The A-Files is free software distributed under the GNU General Public License, version 3 (GPLv3).
 
 <a id="dependencies"></a>
 
-### 🧩 Dependencies
+## 11. External dependencies
 
-PESQ requires Microsoft Visual C++ 14.0 or later. You can install it via Microsoft C++ Build Tools:
-https://visualstudio.microsoft.com/visual-cpp-build-tools/
-
-In some cases, you may also need FFmpeg:
-https://ffmpeg.org/
+* **PESQ** requires Microsoft Visual C++ 14.0 or later, available through the
+  [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+* **FFmpeg** must be available on `PATH` for codec attacks and some format conversions: <https://ffmpeg.org/>.
 
 <a id="authors"></a>
 
-### 👥 Authors
+## 12. Authors
 
-- Paweł Kaczmarek ([@pawel-kaczmarek](https://github.com/pawel-kaczmarek)) - Military University of Technology,
+- Paweł Kaczmarek ([@pawel-kaczmarek](https://github.com/pawel-kaczmarek)) — Military University of Technology,
   Faculty of Electronics
-- Zbigniew Piotrowski - Military University of Technology, Faculty of Electronics
+- Zbigniew Piotrowski — Military University of Technology, Faculty of Electronics
