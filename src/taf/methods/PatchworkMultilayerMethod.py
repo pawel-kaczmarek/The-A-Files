@@ -2,6 +2,7 @@ from typing import List
 import numpy as np
 from scipy.fft import dct, idct
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -27,7 +28,7 @@ class PatchworkMultilayerMethod(SteganographyMethod):
         capacity = (ei + 1 - si) // (2 * self.min_segment_length)
 
         if watermark_length > capacity:
-            raise ValueError(
+            raise CapacityError(
                 f"{name} too long for cover audio: {watermark_length} > {capacity} bits"
             )
 

@@ -3,6 +3,7 @@ from typing import List
 import bitstring
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.background_separator import separate_fg_bg_full
 
@@ -19,6 +20,13 @@ class ForegroundBackgroundSegmentationMethod(SteganographyMethod):
 
         foreground_indices = np.where(fg_mask)[0]
         background_indices = np.where(~fg_mask)[0]
+
+        # Two bits per foreground sample, one per background sample.
+        capacity = 2 * len(foreground_indices) + len(background_indices)
+        if len(message) > capacity:
+            raise CapacityError(
+                f"message too long for cover audio: {len(message)} > {capacity} bits"
+            )
 
         rng = np.random.default_rng(self.seed)
         rng.shuffle(foreground_indices)

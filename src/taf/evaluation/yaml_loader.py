@@ -108,22 +108,34 @@ def config_to_mapping(config: EvaluationConfig) -> dict[str, Any]:
 # --------------------------- coercion helpers ---------------------------
 
 
-def _method(value: Any) -> MethodType:
+def _method(value: Any) -> MethodType | str:
+    """A packaged method as its enum member, a plugin method by its name."""
     if isinstance(value, MethodType):
         return value
     try:
         return MethodType[str(value).upper()]
-    except KeyError as exc:
-        raise ValueError(f"Unknown steganography method: {value!r}") from exc
+    except KeyError:
+        pass
+    from taf.plugins import method_spec_problems
+
+    if not method_spec_problems(str(value)):
+        return str(value)
+    raise ValueError(f"Unknown steganography method: {value!r}")
 
 
-def _metric(value: Any) -> MetricType:
+def _metric(value: Any) -> MetricType | str:
+    """A packaged metric as its enum member, a plugin metric by its name."""
     if isinstance(value, MetricType):
         return value
     try:
         return MetricType[str(value).upper()]
-    except KeyError as exc:
-        raise ValueError(f"Unknown metric: {value!r}") from exc
+    except KeyError:
+        pass
+    from taf.plugins import metric_names
+
+    if str(value) in metric_names():
+        return str(value)
+    raise ValueError(f"Unknown metric: {value!r}")
 
 
 def _target(value: Any) -> DecodeTarget:

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Callable, Dict, List
 
 from taf.metrics.ai_based.mosnet.MosNetMetric import MosNetMetric
 from taf.metrics.speech_intelligibility.CsiiMetric import CsiiMetric
@@ -25,38 +25,43 @@ from taf.models.Metric import Metric
 from taf.models.types import MetricType
 
 
+#: Constructor of every packaged metric. Only the requested metric is built.
+BUILTIN_METRICS: Dict[MetricType, Callable[[], Metric]] = {
+    MetricType.SNR_METRIC: SnrMetric,
+    MetricType.SNR_SEG_METRIC: SnrSegMetric,
+    MetricType.FWSNR_SEG_METRIC: FWSnrSegMetric,
+    MetricType.PESQ_METRIC: PesqMetric,
+    MetricType.WSS_METRIC: WssMetric,
+    MetricType.LLR_METRIC: LlrMetric,
+    MetricType.CEPSTRUM_DISTANCE_METRIC: CepstrumDistanceMetric,
+    MetricType.MEL_CEPSTRAL_DISTANCE_METRIC: MelCepstralDistanceMetric,
+    MetricType.CSII_METRIC: CsiiMetric,
+    MetricType.NCM_METRIC: NcmMetric,
+    MetricType.STOI_METRIC: StoiMetric,
+    MetricType.SRMR_METRIC: SrmrMetric,
+    MetricType.BSD_METRIC: BsdMetric,
+    MetricType.CBAK_METRIC: CbakMetric,
+    MetricType.CSIG_METRIC: CsigMetric,
+    MetricType.COVL_METRIC: CovlMetric,
+    MetricType.STGI_METRIC: StgiMetric,
+    MetricType.WSTMI_METRIC: WstmiMetric,
+    MetricType.SISDR_METRIC: SisdrMetric,
+    MetricType.BSS_EVAL_METRIC: BSSEvalMetric,
+    MetricType.AI_MOSNET_METRIC: MosNetMetric,
+}
+
+
 class MetricFactory:
 
     @staticmethod
     def get(metricType: MetricType) -> Metric:
-        return MetricFactory._all_methods().get(metricType)
+        create = BUILTIN_METRICS.get(metricType)
+        return create() if create is not None else None
 
     @staticmethod
     def get_all() -> List[Metric]:
-        return [value for _, value in MetricFactory._all_methods().items()]
+        return list(MetricFactory._all_methods().values())
 
     @staticmethod
     def _all_methods() -> Dict[MetricType, Metric]:
-        return {
-            MetricType.SNR_METRIC: SnrMetric(),
-            MetricType.SNR_SEG_METRIC: SnrSegMetric(),
-            MetricType.FWSNR_SEG_METRIC: FWSnrSegMetric(),
-            MetricType.PESQ_METRIC: PesqMetric(),
-            MetricType.WSS_METRIC: WssMetric(),
-            MetricType.LLR_METRIC: LlrMetric(),
-            MetricType.CEPSTRUM_DISTANCE_METRIC: CepstrumDistanceMetric(),
-            MetricType.MEL_CEPSTRAL_DISTANCE_METRIC: MelCepstralDistanceMetric(),
-            MetricType.CSII_METRIC: CsiiMetric(),
-            MetricType.NCM_METRIC: NcmMetric(),
-            MetricType.STOI_METRIC: StoiMetric(),
-            MetricType.SRMR_METRIC: SrmrMetric(),
-            MetricType.BSD_METRIC: BsdMetric(),
-            MetricType.CBAK_METRIC: CbakMetric(),
-            MetricType.CSIG_METRIC: CsigMetric(),
-            MetricType.COVL_METRIC: CovlMetric(),
-            MetricType.STGI_METRIC: StgiMetric(),
-            MetricType.WSTMI_METRIC: WstmiMetric(),
-            MetricType.SISDR_METRIC: SisdrMetric(),
-            MetricType.BSS_EVAL_METRIC: BSSEvalMetric(),
-            MetricType.AI_MOSNET_METRIC: MosNetMetric()
-        }
+        return {metric_type: create() for metric_type, create in BUILTIN_METRICS.items()}

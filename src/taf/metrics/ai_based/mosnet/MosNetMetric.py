@@ -13,6 +13,10 @@ os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 
 
 class MosNetMetric(Metric):
+    higher_is_better = True
+    # Predicted MOS of the cover (a reference) and of the processed signal.
+    components = ("cover", "processed")
+    component_directions = (None, True)
 
     def calculate(self,
                   samples_original: np.ndarray,
@@ -50,7 +54,7 @@ class MosNetMetric(Metric):
             n_fft=self.FFT_SIZE,
             hop_length=self.HOP_LENGTH,
             win_length=self.WIN_LENGTH,
-            window=scipy.signal.hamming,
+            window=scipy.signal.windows.hamming,
         )
 
         # magnitude spectrogram

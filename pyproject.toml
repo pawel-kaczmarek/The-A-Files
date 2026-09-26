@@ -83,6 +83,18 @@ experiments = [
     "python-multipart>=0.0.9",
     "uvicorn[standard]>=0.29",
 ]
+platform = [
+    # The research platform: REST API with PostgreSQL persistence and the
+    # corpus library. Install with: pip install "the-a-files[platform]"
+    "alembic>=1.13",
+    "fastapi>=0.110",
+    "pandas>=2.0",
+    "psycopg[binary]>=3.2",
+    "python-multipart>=0.0.9",
+    "requests>=2.31",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.29",
+]
 
 [project.urls]
 Homepage = "https://github.com/pawel-kaczmarek/The-A-Files"
@@ -110,6 +122,7 @@ include = ["taf*"]
 ]
 "taf.resources.models.mosnet" = ["*.h5"]
 "taf.configs" = ["*.yaml", "*.md"]
+"taf.persistence.migrations" = ["*.mako"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

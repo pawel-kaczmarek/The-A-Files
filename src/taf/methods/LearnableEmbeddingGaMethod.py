@@ -29,6 +29,7 @@ from typing import List
 
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -118,7 +119,7 @@ class LearnableEmbeddingGaMethod(SteganographyMethod):
     def _validate_capacity(self, sample_count: int, watermark_length: int, name: str) -> None:
         capacity = sample_count // self.min_samples_per_bit
         if watermark_length > capacity:
-            raise ValueError(
+            raise CapacityError(
                 f"{name} too long for cover audio: {watermark_length} > {capacity} bits"
             )
 
@@ -141,6 +142,11 @@ class LearnableEmbeddingGaMethod(SteganographyMethod):
         """
         rng = np.random.default_rng((self.seed, segment_index))
         carrier = rng.integers(0, 2, length).astype(np.float64) * 2.0 - 1.0
+        if length > 1 and np.all(carrier == carrier[0]):
+            # A constant draw (probability 2**(1 - length)) has no zero-mean
+            # component left to carry the bit. Flipping half of it keeps the
+            # key-derived sequence and every non-degenerate carrier unchanged.
+            carrier[length // 2:] *= -1.0
         if bit == 0:
             carrier *= -1.0
         carrier -= float(np.mean(carrier))

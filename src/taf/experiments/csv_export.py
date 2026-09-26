@@ -90,33 +90,56 @@ def export_detailed_csv(rows: Sequence[ExperimentResultRow]) -> str:
 
 
 def summary_to_dataframe(summary: dict[str, Any]) -> pd.DataFrame:
-    """Flatten the per-group tables of a scenario summary into one frame."""
+    """Flatten a scenario summary into one long frame.
+
+    Every list of objects becomes its own group of records, labelled by its
+    path in the summary (``statistics.ber_baseline.pairwise``); nested scalar
+    values become columns named by their path (``ber_stats:mean``). Tables
+    nested at any depth, such as the pairwise tests inside a comparison, are
+    therefore exported instead of being stringified.
+    """
     records: list[dict[str, Any]] = []
     for section, value in summary.items():
-        if isinstance(value, list) and value and isinstance(value[0], dict):
-            for entry in value:
-                flat = {"section": section}
-                for key, item in entry.items():
-                    if isinstance(item, dict):
-                        for sub_key, sub_value in item.items():
-                            flat[f"{key}:{sub_key}"] = sub_value
-                    elif isinstance(item, list):
-                        flat[key] = ";".join(str(v) for v in item)
-                    else:
-                        flat[key] = item
-                records.append(flat)
-        elif isinstance(value, dict):
-            flat = {"section": section}
-            for key, item in value.items():
-                if isinstance(item, dict):
-                    for sub_key, sub_value in item.items():
-                        flat[f"{key}:{sub_key}"] = sub_value
-                else:
-                    flat[key] = item
-            records.append(flat)
-        else:
-            records.append({"section": section, "value": value})
+        _emit(section, value, records)
     return pd.DataFrame.from_records(records)
+
+
+def _is_table(value: Any) -> bool:
+    return isinstance(value, list) and bool(value) and all(isinstance(item, dict) for item in value)
+
+
+def _emit(section: str, value: Any, records: list[dict[str, Any]]) -> None:
+    if _is_table(value):
+        for entry in value:
+            flat: dict[str, Any] = {"section": section}
+            _flatten_into(flat, "", entry, section, records)
+            records.append(flat)
+    elif isinstance(value, dict):
+        flat = {"section": section}
+        _flatten_into(flat, "", value, section, records)
+        if len(flat) > 1:
+            records.append(flat)
+    else:
+        records.append({"section": section, "value": _scalar(value)})
+
+
+def _flatten_into(
+    flat: dict[str, Any], prefix: str, value: dict[str, Any], section: str, records: list[dict[str, Any]]
+) -> None:
+    for key, item in value.items():
+        name = f"{prefix}:{key}" if prefix else str(key)
+        if _is_table(item):
+            _emit(f"{section}.{name.replace(':', '.')}", item, records)
+        elif isinstance(item, dict):
+            _flatten_into(flat, name, item, section, records)
+        else:
+            flat[name] = _scalar(item)
+
+
+def _scalar(value: Any) -> Any:
+    if isinstance(value, list):
+        return ";".join(str(item) for item in value)
+    return value
 
 
 def export_summary_csv(summary: dict[str, Any]) -> str:

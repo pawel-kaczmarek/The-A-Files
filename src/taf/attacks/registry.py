@@ -118,16 +118,40 @@ def resolve_name(name: str) -> str:
     return LEGACY_ALIASES.get(name, name)
 
 
+def attack_classes() -> dict[str, type[Attack]]:
+    """Packaged attack classes plus those registered by other distributions.
+
+    Plugins come from the ``taf.attacks`` entry-point group (see
+    ``taf.plugins``). An entry that is not an ``Attack`` subclass, or that
+    reuses a packaged name, is skipped with a warning.
+    """
+    from loguru import logger
+
+    from taf.plugins import ATTACK_GROUP, load_entry_points
+
+    merged = dict(ATTACK_CLASSES)
+    for name, cls in load_entry_points(ATTACK_GROUP).items():
+        if name in merged or name in ATTACK_FACTORIES or name in LEGACY_ALIASES:
+            logger.warning("Attack plugin {!r} shadows a packaged name; ignored", name)
+            continue
+        if not (isinstance(cls, type) and issubclass(cls, Attack)):
+            logger.warning("Attack plugin {!r} is not an Attack subclass; ignored", name)
+            continue
+        merged[name] = cls
+    return merged
+
+
 def available_attacks() -> list[str]:
     """Every attack name the registry can build, sorted."""
-    return sorted(set(ATTACK_CLASSES) | set(ATTACK_FACTORIES))
+    return sorted(set(attack_classes()) | set(ATTACK_FACTORIES))
 
 
 def attack_class(name: str) -> type[Attack]:
     """The class implementing ``name``, following codec and legacy aliases."""
     name = resolve_name(name)
-    if name in ATTACK_CLASSES:
-        return ATTACK_CLASSES[name]
+    classes = attack_classes()
+    if name in classes:
+        return classes[name]
     if name in ATTACK_FACTORIES:
         return CodecCompression
     raise AttackError(f"unknown attack {name!r}; known: {available_attacks()}")
@@ -136,10 +160,11 @@ def attack_class(name: str) -> type[Attack]:
 def create(name: str, **parameters: Any) -> Attack:
     """Build an attack by name (canonical or legacy) with explicit parameters."""
     name = resolve_name(name)
+    classes = attack_classes()
     if name in ATTACK_FACTORIES:
         factory = ATTACK_FACTORIES[name]
-    elif name in ATTACK_CLASSES:
-        factory = ATTACK_CLASSES[name]
+    elif name in classes:
+        factory = classes[name]
     else:
         raise AttackError(f"unknown attack {name!r}; known: {available_attacks()}")
 
@@ -255,16 +280,56 @@ def build_all(specs: Iterable[str | Attack], sample_rate: int | None = None) -> 
     return [build(spec, sample_rate) for spec in specs]
 
 
+def has_explicit_seed(spec: str | Attack) -> bool:
+    """Whether a specification pins its own seed (``"awgn:seed=7"``)."""
+    if isinstance(spec, Attack):
+        return True
+    _, parameters, _ = parse_spec(spec)
+    return "seed" in parameters
+
+
+def reseed(attack: Attack, seed: int) -> Attack:
+    """A copy of ``attack`` whose random draws follow ``seed``.
+
+    An attack built from a specification keeps the seed of its dataclass
+    default, so every trial of an experiment would otherwise see the same
+    noise realisation. The evaluation derives one seed per trial and applies
+    it here. Deterministic attacks have no ``seed`` field and are returned
+    unchanged; each stage of a pipeline gets its own child seed, so two noise
+    stages in one pipeline do not draw the same sequence.
+    """
+    from dataclasses import fields, replace
+
+    import numpy as np
+
+    from taf.attacks.pipeline import AttackPipeline
+
+    if isinstance(attack, AttackPipeline):
+        children = np.random.SeedSequence(seed).spawn(len(attack.stages))
+        stages = tuple(
+            reseed(stage, int(child.generate_state(1)[0]))
+            for stage, child in zip(attack.stages, children)
+        )
+        return replace(attack, stages=stages)
+
+    if any(field.name == "seed" for field in fields(attack)):
+        return replace(attack, seed=seed)
+    return attack
+
+
 __all__ = [
     "ATTACK_CLASSES",
     "ATTACK_FACTORIES",
     "LEGACY_ALIASES",
     "resolve_name",
     "attack_class",
+    "attack_classes",
     "available_attacks",
     "build",
     "build_all",
     "create",
+    "has_explicit_seed",
     "parse_spec",
+    "reseed",
     "unknown_specs",
 ]

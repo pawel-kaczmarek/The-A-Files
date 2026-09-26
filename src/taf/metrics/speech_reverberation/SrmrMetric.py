@@ -6,6 +6,12 @@ from taf.models.Metric import Metric
 
 
 class SrmrMetric(Metric):
+    higher_is_better = True
+    # SRMR is non-intrusive: the score of the cover is a reference, only the
+    # score of the processed signal describes it.
+    components = ("cover", "processed")
+    component_directions = (None, True)
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

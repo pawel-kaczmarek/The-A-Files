@@ -28,6 +28,7 @@ from typing import List, Tuple
 import numpy as np
 import soundfile as sf
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -302,9 +303,9 @@ class AacStcMethod(SteganographyMethod):
 
     def _choose_w(self, n: int, k: int) -> int:
         if k <= 0:
-            raise ValueError("message must be non-empty")
+            raise CapacityError("message must be non-empty")
         if k > n:
-            raise ValueError(f"too many bits: k={k} > n={n}")
+            raise CapacityError(f"too many bits: k={k} > n={n}")
         return n // k
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:

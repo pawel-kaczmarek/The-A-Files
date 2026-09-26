@@ -1,181 +1,271 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
-import { FileJson } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useState, type ReactNode } from "react";
+import { AlertTriangle, Archive, ArchiveRestore, Copy, Loader2, Pencil, Play, Trash2 } from "lucide-react";
 
-import { PageHeader } from "@/components/layout/PageHeader";
-import { CsvExportButton } from "@/components/experiments/CsvExportButton";
-import { ExperimentResultsTable } from "@/components/experiments/ExperimentResultsTable";
-import { ExperimentSummaryCards } from "@/components/experiments/ExperimentSummaryCards";
-import { RobustnessMatrix, SummarySectionTable } from "@/components/experiments/SummaryTables";
-import { Badge } from "@/components/ui/badge";
+import {
+  Chip,
+  EmptyState,
+  ErrorNotice,
+  KeyValues,
+  LoadingLine,
+  PageHeader,
+  PropertyTag,
+  RunStatusBadge,
+  Section,
+  Spec,
+  formatDuration,
+  runDuration,
+} from "@/components/common";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { experimentLabel } from "@/lib/experimentLabels";
-import type { JobSummary, ResultRow, ScenarioSummary } from "@/lib/types";
+import { useAsync, useCatalog, useInterval } from "@/lib/hooks";
+import { useI18n } from "@/lib/i18n";
+import type { ExperimentConfig } from "@/lib/types";
 
-const SECTIONS: { key: string; title: string }[] = [
-  { key: "comparison", title: "Method ranking" },
-  { key: "robustness_ranking", title: "Robustness ranking (attacked rows only)" },
-  { key: "per_attack", title: "Per attack" },
-  { key: "quality_ranking", title: "Quality ranking" },
-  { key: "capacity_by_method", title: "Capacity by method" },
-  { key: "by_method", title: "By method" },
-  { key: "by_method_payload", title: "By method and payload length" },
-];
+function SpecList({ items }: { items: string[] }) {
+  const { t } = useI18n();
+  if (!items.length) return <span className="text-muted-foreground">{t("common.none")}</span>;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((item) => (
+        <Spec key={item}>{item}</Spec>
+      ))}
+    </div>
+  );
+}
 
-export default function ExperimentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function ExperimentPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [job, setJob] = useState<JobSummary | null>(null);
-  const [rows, setRows] = useState<ResultRow[]>([]);
-  const [summary, setSummary] = useState<ScenarioSummary | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const sourceRef = useRef<EventSource | null>(null);
+  const { t, date } = useI18n();
+  const router = useRouter();
+  const catalog = useCatalog();
+  const experiment = useAsync(() => api.experiment(id), [id]);
+  const runs = useAsync(() => api.experimentRuns(id), [id]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  const active = runs.data?.some((run) => run.status === "running" || run.status === "queued") ?? false;
+  useInterval(runs.reload, 2000, active);
 
-    function finish() {
-      api.summary(id).then((r) => !cancelled && setSummary(r.summary)).catch(() => {});
-      api.experiment(id).then((j) => !cancelled && setJob(j)).catch(() => {});
-      sourceRef.current?.close();
+  async function act(name: string, action: () => Promise<void>) {
+    setBusy(name);
+    setActionError(null);
+    try {
+      await action();
+    } catch (reason) {
+      setActionError((reason as Error).message);
+    } finally {
+      setBusy(null);
     }
+  }
 
-    api
-      .experiment(id)
-      .then((summaryRow) => {
-        if (cancelled) return;
-        setJob(summaryRow);
-        api.results(id).then((r) => !cancelled && setRows(r)).catch(() => {});
-        if (summaryRow.status === "completed" || summaryRow.status === "failed") {
-          api.summary(id).then((r) => !cancelled && setSummary(r.summary)).catch(() => {});
-          return;
-        }
-        const source = new EventSource(api.eventsUrl(id));
-        sourceRef.current = source;
-        source.addEventListener("row", (event) => {
-          setRows((previous) => [...previous, JSON.parse((event as MessageEvent).data)]);
-        });
-        source.addEventListener("status", (event) => {
-          setJob(JSON.parse((event as MessageEvent).data));
-        });
-        source.addEventListener("done", () => finish());
-        source.onerror = () => finish();
-      })
-      .catch((err: Error) => setError(err.message));
-
-    return () => {
-      cancelled = true;
-      sourceRef.current?.close();
-    };
-  }, [id]);
-
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!job) return <Skeleton className="h-64 w-full" />;
-
-  const progress = job.total_tasks > 0 ? Math.min(100, (rows.length / job.total_tasks) * 100) : 0;
+  if (experiment.error) return <ErrorNotice error={experiment.error} onRetry={experiment.reload} />;
+  if (!experiment.data) return <LoadingLine />;
+  const current = experiment.data;
+  const config = current.config as ExperimentConfig;
+  const design = catalog.data?.designs.find((entry) => entry.type === current.experiment_type);
 
   return (
-    <div className="space-y-6">
+    <>
       <PageHeader
-        title={job.name}
-        description={
-          <>
-            {experimentLabel(job.experiment_type)} · {job.dataset} · {job.methods.length} method(s)
-            · payloads [{job.payload_lengths.join(", ")}] · {job.repetitions} repetition(s)
-            {job.attacks.length > 0 && <> · attacks: {job.attacks.join(", ")}</>}
-          </>
+        eyebrow={
+          <span className="flex items-center gap-3">
+            <span>{t(`designs.${current.experiment_type}.title`)}</span>
+            {design && <PropertyTag property={design.property} />}
+            <span className="num normal-case tracking-normal">{t("experiment.version", { version: current.version })}</span>
+          </span>
         }
+        title={current.name}
+        subtitle={t(`designs.${current.experiment_type}.question`)}
         actions={
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={
-                job.status === "completed"
-                  ? "success"
-                  : job.status === "failed"
-                    ? "destructive"
-                    : "default"
+          <>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/experiments/${id}/edit`}>
+                <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
+              </Link>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy !== null}
+              onClick={() =>
+                act("duplicate", async () => {
+                  const copy = await api.duplicateExperiment(id);
+                  router.push(`/experiments/${copy.id}/edit`);
+                })
               }
             >
-              {job.status}
-            </Badge>
-            <CsvExportButton experimentId={job.experiment_id} disabled={rows.length === 0} />
-            <Button asChild variant="outline" size="sm">
-              <a href={api.exportConfigUrl(job.experiment_id)} download>
-                <FileJson className="h-4 w-4" /> Config
-              </a>
+              <Copy className="h-3.5 w-3.5" /> {t("common.duplicate")}
             </Button>
-          </div>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy !== null}
+              onClick={() =>
+                act("archive", async () => {
+                  await api.archiveExperiment(id, !current.archived);
+                  experiment.reload();
+                })
+              }
+            >
+              {current.archived ? <ArchiveRestore className="h-3.5 w-3.5" /> : <Archive className="h-3.5 w-3.5" />}
+              {current.archived ? t("common.unarchive") : t("common.archive")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy !== null}
+              onClick={() => {
+                if (!window.confirm(t("common.confirmDelete"))) return;
+                void act("delete", async () => {
+                  await api.deleteExperiment(id);
+                  router.push("/experiments");
+                });
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> {t("common.delete")}
+            </Button>
+            <Button
+              size="sm"
+              disabled={busy !== null || current.problems.length > 0}
+              onClick={() =>
+                act("run", async () => {
+                  const run = await api.startRun(id);
+                  router.push(`/runs/${run.id}`);
+                })
+              }
+            >
+              {busy === "run" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              {current.run_count ? t("common.runAgain") : t("common.run")}
+            </Button>
+          </>
         }
       />
 
-      {job.error && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Run failed</CardTitle>
-            <CardDescription>{job.error}</CardDescription>
-          </CardHeader>
-        </Card>
+      {actionError && <ErrorNotice error={actionError} />}
+      {current.problems.length > 0 && (
+        <Alert variant="warning" className="mb-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="font-medium">{t("experiment.notRunnable")}</div>
+            <ul className="mt-1 list-disc pl-4">
+              {current.problems.map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {job.status === "running" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              Progress — {rows.length}/{job.total_tasks || "?"} rows
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Progress value={progress} />
-          </CardContent>
-        </Card>
-      )}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        <div className="space-y-6">
+          <Section title={t("experiment.protocol")}>
+            <div className="space-y-4 text-sm">
+              <div>
+                <div className="eyebrow mb-1">{t("experiment.question")}</div>
+                <p className="leading-relaxed">{current.research_question || <span className="text-muted-foreground">–</span>}</p>
+              </div>
+              <div>
+                <div className="eyebrow mb-1">{t("experiment.hypothesis")}</div>
+                <p className="leading-relaxed">{current.hypothesis || <span className="text-muted-foreground">–</span>}</p>
+              </div>
+              {current.description && (
+                <div>
+                  <div className="eyebrow mb-1">{t("experiment.notes")}</div>
+                  <p className="whitespace-pre-line leading-relaxed text-muted-foreground">{current.description}</p>
+                </div>
+              )}
+              {current.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {current.tags.map((tag) => (
+                    <Chip key={tag}>{tag}</Chip>
+                  ))}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                {t("common.created")} {date(current.created_at)} · {t("common.updated")} {date(current.updated_at)}
+              </div>
+            </div>
+          </Section>
 
-      {summary && <ExperimentSummaryCards summary={summary} />}
+          <Section title={t("experiment.configuration")}>
+            <KeyValues
+              items={[
+                [t("experiment.dataset"), <Spec key="d">{`${config.dataset_id}${config.file_limit ? ` · ${config.file_limit} ${t("common.files")}` : ""}`}</Spec>],
+                [t("experiment.methods"), <SpecList key="m" items={config.methods ?? []} />],
+                ...(config.method_sweep
+                  ? [[t("experiment.sweep"), <Spec key="ms">{`${config.method_sweep.target} · ${config.method_sweep.parameter} = ${config.method_sweep.values.join(", ")}`}</Spec>] as [string, ReactNode]]
+                  : []),
+                ...(config.attack_sweep
+                  ? [[t("experiment.sweep"), <Spec key="as">{`${config.attack_sweep.target} · ${config.attack_sweep.parameter} = ${config.attack_sweep.values.join(", ")}`}</Spec>] as [string, ReactNode]]
+                  : []),
+                [
+                  t("experiment.attacks"),
+                  config.attack_preset ? <Spec key="p">{`suite: ${config.attack_preset}`}</Spec> : <SpecList key="a" items={config.attacks ?? []} />,
+                ],
+                [t("experiment.metrics"), <SpecList key="x" items={config.metrics ?? []} />],
+                [t("experiment.payloads"), <span key="pl" className="num">{config.payload_lengths.join(", ")} {t("units.bits")}</span>],
+                [t("experiment.repetitions"), <span key="r" className="num">{config.repetitions}</span>],
+                [t("experiment.seed"), <span key="s" className="num">{config.random_seed ?? "–"}</span>],
+              ]}
+            />
+          </Section>
+        </div>
 
-      {summary && Array.isArray(summary.matrix) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Robustness matrix</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RobustnessMatrix cells={summary.matrix as never} />
-          </CardContent>
-        </Card>
-      )}
-
-      {summary &&
-        SECTIONS.filter(
-          ({ key }) => Array.isArray(summary[key]) && (summary[key] as unknown[]).length > 0
-        ).map(({ key, title }) => (
-          <Card key={key}>
-            <CardHeader>
-              <CardTitle>{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <SummarySectionTable rows={summary[key] as Record<string, unknown>[]} />
-            </CardContent>
-          </Card>
-        ))}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Results</CardTitle>
-          <CardDescription>
-            One row per file × method × payload × repetition × attack variant.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ExperimentResultsTable rows={rows} />
-        </CardContent>
-      </Card>
-    </div>
+        <Section title={t("experiment.runs")}>
+          {runs.error && <ErrorNotice error={runs.error} onRetry={runs.reload} />}
+          {!runs.data ? (
+            <LoadingLine />
+          ) : !runs.data.length ? (
+            <EmptyState>{t("experiment.noRuns")}</EmptyState>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-xs text-muted-foreground">
+                  <th className="py-2 pr-3 font-medium">#</th>
+                  <th className="py-2 pr-3 font-medium">{t("common.status")}</th>
+                  <th className="py-2 pr-3 font-medium">{t("common.version")}</th>
+                  <th className="py-2 pr-3 font-medium">{t("experiment.trials")}</th>
+                  <th className="py-2 pr-3 font-medium">{t("experiment.started")}</th>
+                  <th className="py-2 text-right font-medium">{t("experiment.duration")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {runs.data.map((run) => (
+                  <tr key={run.id} className="border-b last:border-0 hover:bg-accent/40">
+                    <td className="num py-2.5 pr-3">
+                      <Link href={`/runs/${run.id}`} className="font-medium hover:underline">
+                        #{run.number}
+                      </Link>
+                    </td>
+                    <td className="py-2.5 pr-3">
+                      <RunStatusBadge status={run.status} />
+                    </td>
+                    <td className="num py-2.5 pr-3 text-muted-foreground">v{run.experiment_version}</td>
+                    <td className="py-2.5 pr-3">
+                      <div className="num text-xs">
+                        {run.total_rows || run.completed_rows ? `${run.completed_rows}/${run.total_rows || "?"}` : "–"}
+                      </div>
+                      {run.status === "running" && run.total_rows > 0 && (
+                        <Progress value={(run.completed_rows / run.total_rows) * 100} className="mt-1 h-1" />
+                      )}
+                    </td>
+                    <td className="py-2.5 pr-3 text-xs text-muted-foreground">{date(run.started_at ?? run.created_at)}</td>
+                    <td className="num py-2.5 text-right text-xs text-muted-foreground">
+                      {formatDuration(runDuration(run.started_at, run.finished_at))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </Section>
+      </div>
+    </>
   );
 }

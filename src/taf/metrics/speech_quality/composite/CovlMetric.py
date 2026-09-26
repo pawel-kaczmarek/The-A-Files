@@ -6,6 +6,7 @@ from taf.metrics.speech_quality.composite.CompositeSpeechEnhancementMetric impor
 
 
 class CovlMetric(BaseSpeechEnhancementMetric):
+    higher_is_better = True
 
     def calculate(self,
                   samples_original: np.ndarray,

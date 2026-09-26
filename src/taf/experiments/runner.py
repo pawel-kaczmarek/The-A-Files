@@ -9,6 +9,7 @@ normalized result rows plus a scenario-specific summary.
 from __future__ import annotations
 
 import asyncio
+import secrets
 import tempfile
 import uuid
 from dataclasses import dataclass, field
@@ -19,9 +20,10 @@ from typing import Any, Callable, Sequence
 from loguru import logger
 
 from taf.experiments import registry
+from taf.experiments.analysis import min_blocks_for_significance
+from taf.experiments.provenance import build_manifest
 from taf.experiments.results import ExperimentResultRow, normalize_row
 from taf.experiments.schema import (
-    UPLOAD_DATASET_PREFIX,
     ExperimentConfig,
     ExperimentPlan,
     ExperimentType,
@@ -42,6 +44,8 @@ class ExperimentRun:
     status: str = "pending"
     rows: list[ExperimentResultRow] = field(default_factory=list)
     summary: dict[str, Any] = field(default_factory=dict)
+    #: Versions, input digests and resolved seed (``taf.experiments.provenance``).
+    manifest: dict[str, Any] = field(default_factory=dict)
     started_at: datetime | None = None
     finished_at: datetime | None = None
     error: str | None = None
@@ -67,7 +71,12 @@ def _resolved_attacks(config: ExperimentConfig) -> list[str]:
     Nyquist frequency of 16 kHz speech. Explicitly listed attacks are kept
     and come first.
     """
+    from taf.experiments.sweeps import attack_sweep_specs
+
     specs = list(config.attacks)
+    for spec, _ in attack_sweep_specs(config.attack_sweep):
+        if spec not in specs:
+            specs.append(spec)
     if not config.attack_preset:
         return specs
 
@@ -97,12 +106,44 @@ def _dataset_sample_rate(config: ExperimentConfig) -> int:
     return 16000
 
 
+#: Dataset-id prefix -> function returning the directory of that dataset.
+_DATASET_RESOLVERS: dict[str, Callable[[str], Path | None]] = {}
+
+
+def register_dataset_resolver(prefix: str, resolver: Callable[[str], Path | None]) -> None:
+    """Let ``dataset_id="<prefix><key>"`` name a directory found by ``resolver(key)``.
+
+    The platform registers its library this way, so the engine can run on
+    library datasets without depending on the database.
+    """
+    _DATASET_RESOLVERS[prefix] = resolver
+
+
+def dataset_directory(config: ExperimentConfig) -> Path | None:
+    """The directory a configuration reads from, if it is not a packaged set."""
+    if config.dataset_path is not None:
+        return Path(config.dataset_path)
+    for prefix, resolver in _DATASET_RESOLVERS.items():
+        if config.dataset_id and config.dataset_id.startswith(prefix):
+            return resolver(config.dataset_id[len(prefix):])
+    return None
+
+
+def _is_external(config: ExperimentConfig) -> bool:
+    return config.dataset_path is not None or bool(
+        config.dataset_id and ":" in config.dataset_id
+    )
+
+
 def validate_config(config: ExperimentConfig) -> list[str]:
     """All scenario-independent + scenario-specific validation problems."""
     problems = validate_for_scenario(config)
-    if not registry.dataset_exists(config.dataset_id, config.dataset_path):
-        source = config.dataset_path or config.dataset_id
-        problems.append(f"Dataset not found: {source!r}")
+    if _is_external(config):
+        directory = dataset_directory(config)
+        if directory is None or not directory.is_dir():
+            problems.append(f"Dataset not found: {config.dataset_path or config.dataset_id!r}")
+    elif not registry.dataset_exists(config.dataset_id, None):
+        problems.append(f"Dataset not found: {config.dataset_id!r}")
     return problems
 
 
@@ -112,16 +153,11 @@ def load_dataset_files(config: ExperimentConfig):
     from taf.evaluation.workflow import load_files, load_resource_files
     from taf.resources.paths import example_wav_path, packaged_dataset_audio_paths
 
-    if config.dataset_path is not None:
-        files = load_files(config.dataset_path)
-    elif config.dataset_id is not None and config.dataset_id.startswith(UPLOAD_DATASET_PREFIX):
-        from taf.api.uploads import upload_registry
-
-        upload_id = config.dataset_id[len(UPLOAD_DATASET_PREFIX):]
-        uploaded = upload_registry.get(upload_id)
-        if uploaded is None:
-            raise ValueError(f"Uploaded dataset not found: {upload_id}")
-        files = load_resource_files(uploaded.files)
+    if _is_external(config):
+        directory = dataset_directory(config)
+        if directory is None:
+            raise ValueError(f"Dataset not found: {config.dataset_id!r}")
+        files = load_files(directory, recursive=True)
     elif config.dataset_id == "example":
         with example_wav_path() as path:
             files = [load_audio(path)]
@@ -145,18 +181,11 @@ def _dataset_file_count(config: ExperimentConfig) -> int:
     """File count for previews without loading audio into memory."""
     from taf.resources.paths import packaged_dataset_audio_paths
 
-    if config.dataset_path is not None:
-        directory = Path(config.dataset_path)
-        names = [
-            p.name
-            for p in directory.iterdir()
-            if p.is_file() and p.suffix.lower() in {".wav", ".flac"}
-        ] if directory.is_dir() else []
-    elif config.dataset_id is not None and config.dataset_id.startswith(UPLOAD_DATASET_PREFIX):
-        from taf.api.uploads import upload_registry
+    if _is_external(config):
+        from taf.evaluation.workflow import audio_file_paths
 
-        uploaded = upload_registry.get(config.dataset_id[len(UPLOAD_DATASET_PREFIX):])
-        names = [p.name for p in uploaded.files] if uploaded else []
+        directory = dataset_directory(config)
+        names = [p.name for p in audio_file_paths(directory, recursive=True)] if directory and directory.is_dir() else []
     elif config.dataset_id == "example":
         names = ["example.wav"]
     else:
@@ -184,7 +213,8 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
     unsupported_metrics: list[str] = []
 
     tensorflow = registry.tensorflow_available()
-    for method in config.methods:
+    methods = config.resolved_methods()
+    for method in methods:
         if method in registry.TENSORFLOW_METHODS and not tensorflow:
             unsupported_methods.append(method)
             warnings.append(
@@ -234,16 +264,51 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
     file_count = _dataset_file_count(config)
     if file_count == 0:
         warnings.append(PlanWarning(code="empty_dataset", message="No audio files matched this selection."))
+    elif (
+        len(methods) > 1
+        and config.experiment_type != ExperimentType.DETECTABILITY
+        and file_count < (needed := min_blocks_for_significance(len(methods)))
+    ):
+        warnings.append(
+            PlanWarning(
+                code="few_files",
+                message=(
+                    f"Only {file_count} file(s): methods are compared per file, and with "
+                    f"{len(methods)} methods no Holm-corrected pairwise test can reach "
+                    f"p < 0.05 with fewer than {needed} files."
+                ),
+            )
+        )
+    if config.max_workers > 1 and config.experiment_type == ExperimentType.METHOD_COMPARISON:
+        warnings.append(
+            PlanWarning(
+                code="concurrent_timing",
+                message=(
+                    f"max_workers={config.max_workers}: trials share the CPU, so encode/decode "
+                    "times are not comparable and speed is left out of the comparison. "
+                    "Use max_workers=1 to measure it."
+                ),
+            )
+        )
 
     attack_variants = 1 + len(dict.fromkeys(_resolved_attacks(config)))
-    encode_operations = (
-        file_count * len(config.methods) * len(config.payload_lengths) * config.repetitions
-    )
+    encode_operations = file_count * len(methods) * len(config.payload_lengths) * config.repetitions
     estimated_rows = encode_operations * attack_variants
+    if config.experiment_type == ExperimentType.DETECTABILITY:
+        # One steganalysis per (method, payload), reported in the summary;
+        # the run produces no per-trial rows and ignores metrics.
+        attack_variants, encode_operations, estimated_rows = 1, 0, 0
+        if config.metrics:
+            warnings.append(
+                PlanWarning(
+                    code="ignored_selection",
+                    message="Detectability does not compute quality metrics; the selection is ignored.",
+                )
+            )
     return ExperimentPlan(
         experiment_type=config.experiment_type,
         file_count=file_count,
-        method_count=len(config.methods),
+        method_count=len(methods),
         payload_length_count=len(config.payload_lengths),
         repetitions=config.repetitions,
         attack_variant_count=attack_variants,
@@ -262,7 +327,6 @@ def build_evaluation_config(config: ExperimentConfig):
     from taf.audio.formats import DecodeTarget
     from taf.evaluation.config import EvaluationConfig
     from taf.evaluation.messages import RandomMessageSpec
-    from taf.models.types import MethodType, MetricType
 
     experiment_id = config.experiment_id or uuid.uuid4().hex[:12]
     output_dir = (
@@ -271,12 +335,16 @@ def build_evaluation_config(config: ExperimentConfig):
         else Path(tempfile.gettempdir()) / "taf-experiments" / experiment_id
     )
     return EvaluationConfig(
-        methods=[MethodType[name] for name in config.methods],
-        metrics=[MetricType[name] for name in config.metrics],
+        # Catalogue names resolve packaged and plugin components alike.
+        methods=config.resolved_methods(),
+        metrics=list(config.metrics),
         target=DecodeTarget.DIRECT,
         output_dir=output_dir,
         random_messages=[
-            RandomMessageSpec(length=length, count=config.repetitions, seed=config.random_seed)
+            # No per-length seed: the engine derives one from ``random_seed``
+            # and the length, so messages of different lengths are independent
+            # draws rather than prefixes of one another.
+            RandomMessageSpec(length=length, count=config.repetitions)
             for length in config.payload_lengths
         ],
         random_seed=config.random_seed,
@@ -295,6 +363,10 @@ async def run_experiment_async(
 
     if config.experiment_id is None:
         config = config.model_copy(update={"experiment_id": uuid.uuid4().hex[:12]})
+    if config.random_seed is None:
+        # Draw the seed now and keep it in the config, so the exported
+        # configuration reproduces this run instead of drawing another one.
+        config = config.model_copy(update={"random_seed": secrets.randbits(32)})
     run = ExperimentRun(config=config, started_at=datetime.now(timezone.utc), status="running")
 
     problems = validate_config(config)
@@ -320,9 +392,18 @@ async def run_experiment_async(
 
     try:
         files = await asyncio.to_thread(load_dataset_files, config)
-        evaluation_config = build_evaluation_config(config)
-        await evaluate_files_async(files, evaluation_config, on_row=handle_row)
-        run.summary = summarize_for_scenario(run.rows, config)
+        if config.experiment_type == ExperimentType.DETECTABILITY:
+            from taf.experiments.detectability import run_detectability
+
+            run.manifest = await asyncio.to_thread(build_manifest, config, files, [])
+            run.summary = await asyncio.to_thread(run_detectability, config, files)
+        else:
+            evaluation_config = build_evaluation_config(config)
+            run.manifest = await asyncio.to_thread(
+                build_manifest, config, files, list(evaluation_config.attacks)
+            )
+            await evaluate_files_async(files, evaluation_config, on_row=handle_row)
+            run.summary = summarize_for_scenario(run.rows, config)
         run.status = "completed"
     except Exception as error:  # dataset/setup level failure
         logger.exception("Experiment {} failed: {}", config.experiment_id, error)
@@ -343,6 +424,8 @@ def run_experiment(
 
 __all__ = [
     "ExperimentRun",
+    "dataset_directory",
+    "register_dataset_resolver",
     "build_evaluation_config",
     "load_dataset_files",
     "preview_experiment",

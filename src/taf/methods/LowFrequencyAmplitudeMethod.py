@@ -23,6 +23,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -58,7 +59,7 @@ class LowFrequencyAmplitudeMethod(SteganographyMethod):
         segment_length = sample_count // bit_count
         if segment_length < self.min_segment_length:
             capacity = sample_count // self.min_segment_length
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
         return segment_length

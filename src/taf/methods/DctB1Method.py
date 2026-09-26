@@ -4,6 +4,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.fft import dct, idct
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -75,7 +76,7 @@ class DctB1Method(SteganographyMethod):
 
         capacity = num_frames * bits_per_frame
         if len(message) > capacity:
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {len(message)} > {capacity} bits"
             )
 

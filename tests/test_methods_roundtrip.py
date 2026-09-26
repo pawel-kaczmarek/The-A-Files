@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from taf.methods.factory import SteganographyMethodFactory
+from taf.models.errors import CapacityError
 from taf.models.types import MethodType
 
 
@@ -97,7 +98,28 @@ def test_method_preserves_the_cover(
     )
 
 
-@pytest.mark.parametrize("method_type", list(MethodType), ids=lambda m: m.name)
+# The learnable-embedding method accepts up to one bit per 16 samples, but at
+# that density the speech host outweighs the carrier in loud segments and
+# about 8% of the bits flip. A random-carrier crash used to hide this.
+_UNRELIABLE_AT_DECLARED_CAPACITY = {MethodType.LEARNABLE_EMBEDDING_GA_METHOD}
+
+
+@pytest.mark.parametrize(
+    "method_type",
+    [
+        pytest.param(
+            method,
+            marks=pytest.mark.xfail(
+                strict=True,
+                reason="declared capacity exceeds the reliable capacity on speech",
+            ),
+        )
+        if method in _UNRELIABLE_AT_DECLARED_CAPACITY
+        else method
+        for method in MethodType
+    ],
+    ids=lambda m: m.name,
+)
 def test_method_rejects_an_over_capacity_message(
     method_type: MethodType,
     sample_rate: int,
@@ -107,7 +129,8 @@ def test_method_rejects_an_over_capacity_message(
 
     Several methods used to embed what fitted and drop the rest without a
     word, which reads as a very high bit error rate rather than as the
-    capacity error it is.
+    capacity error it is. The error must be ``CapacityError`` so that an
+    evaluation can tell "over capacity" apart from a crash.
     """
     method = SteganographyMethodFactory.get(sample_rate, method_type)
     # Well past the capacity of every frame-based method, while staying small
@@ -119,11 +142,39 @@ def test_method_rejects_an_over_capacity_message(
         encoded = method.encode(speech_cover.copy(), message)
     except ImportError as exc:
         pytest.skip(f"{method_type.name} requires an optional dependency: {exc}")
-    except (ValueError, MemoryError):
+    except CapacityError:
         return
 
     decoded = [int(bit) for bit in method.decode(np.asarray(encoded), len(message))]
     assert decoded == message, (
         f"{method_type.name} silently truncated an over-capacity message "
-        f"instead of raising ValueError"
+        f"instead of raising CapacityError"
     )
+
+
+@pytest.mark.parametrize("method_type", list(MethodType), ids=lambda m: m.name)
+def test_method_rejects_more_bits_than_any_method_can_carry(
+    method_type: MethodType,
+    sample_rate: int,
+    speech_cover: np.ndarray,
+) -> None:
+    """More than four bits per sample exceeds every packaged method.
+
+    The densest packaged method is the wireless DWT-LSB scheme at its default
+    settings: eight bits in each level-1 approximation coefficient, i.e. four
+    bits per sample.
+
+    The 5000-bit probe above fits into the sample-domain methods, so it never
+    exercised their capacity checks; phase coding and norm-space methods
+    returned garbage at this size instead of raising.
+    """
+    method = SteganographyMethodFactory.get(sample_rate, method_type)
+    message = [1, 0] * (2 * len(speech_cover)) + [1]
+
+    try:
+        method.encode(speech_cover.copy(), message)
+    except ImportError as exc:
+        pytest.skip(f"{method_type.name} requires an optional dependency: {exc}")
+    except CapacityError:
+        return
+    pytest.fail(f"{method_type.name} accepted {len(message)} bits in {len(speech_cover)} samples")

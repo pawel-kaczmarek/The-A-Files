@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from taf.experiments.schema import UPLOAD_DATASET_PREFIX
 
 _DEFAULT_SAMPLE_RATE = 16000
 
@@ -70,41 +69,90 @@ class AttackSpec:
     description: str
     parameters: list[AttackParameter] = field(default_factory=list)
     changes_length_or_rate: bool = False
+    #: Physical phenomenon the attack models (module of its class).
+    family: str = ""
+    #: Default robustness-curve sweep, if the attack has one.
+    sweep: dict[str, Any] | None = None
+    stochastic: bool = False
+    #: Whether severity levels ("mp3@strong") are defined for the attack.
+    has_severity: bool = False
 
 
 def list_methods() -> list[dict[str, Any]]:
-    from taf.methods.factory import SteganographyMethodFactory
+    """Packaged methods and those registered by plugins, with their metadata."""
+    from taf.methods.catalog import METHOD_METADATA, method_abbreviation
+    from taf.models.types import MethodType
+    from taf.plugins import is_packaged_method, method_parameters, method_sources
 
-    methods = SteganographyMethodFactory._all_methods(_DEFAULT_SAMPLE_RATE)
-    return [
-        {
-            "name": method_type.name,
-            "class_name": method.__class__.__name__,
-            "description": _safe_method_description(method),
-            "requires_tensorflow": method_type.name in TENSORFLOW_METHODS,
-            "needs_long_input": method_type.name in LONG_INPUT_METHODS,
-        }
-        for method_type, method in sorted(methods.items(), key=lambda item: item[0].name)
-    ]
+    rows: list[dict[str, Any]] = []
+    for name, source in sorted(method_sources().items()):
+        try:
+            method = create_method_safely(name)
+        except Exception:  # noqa: BLE001 - a plugin that cannot be built is still listed
+            method = None
+        metadata = METHOD_METADATA.get(MethodType[name]) if name in MethodType.__members__ else None
+        description = _safe_method_description(method) if method is not None else ""
+        rows.append(
+            {
+                "name": name,
+                "class_name": getattr(source, "__name__", type(source).__name__),
+                "description": description,
+                "abbreviation": method_abbreviation(name, description),
+                "packaged": is_packaged_method(name),
+                "family": metadata.family if metadata else None,
+                "purpose": metadata.purpose if metadata else None,
+                "reference": metadata.reference if metadata else None,
+                "year": metadata.year if metadata else None,
+                "doi": metadata.doi if metadata else None,
+                "strength_parameter": metadata.strength_parameter if metadata else None,
+                "parameters": method_parameters(name),
+                "requires_tensorflow": name in TENSORFLOW_METHODS,
+                "needs_long_input": name in LONG_INPUT_METHODS,
+            }
+        )
+    return rows
+
+
+def create_method_safely(name: str):
+    from taf.plugins import create_method
+
+    return create_method(name, _DEFAULT_SAMPLE_RATE)
 
 
 def list_metrics() -> list[dict[str, Any]]:
-    from taf.metrics.factory import MetricFactory
+    """Packaged metrics and those registered by plugins, with their direction."""
+    from taf.metrics.catalog import METRIC_METADATA
+    from taf.models.types import MetricType
+    from taf.plugins import metric_factories
 
-    metrics = MetricFactory._all_methods()
-    return [
-        {
-            "name": metric_type.name,
-            "class_name": metric.__class__.__name__,
-            "category": _metric_category(metric.__class__.__module__),
-            "requires_tensorflow": metric_type.name in TENSORFLOW_METRICS,
-            # All packaged metrics compare original vs processed samples and
-            # require both signals to share length/sample rate.
-            "compares_original": True,
-            "supports_attacked_audio": True,
-        }
-        for metric_type, metric in sorted(metrics.items(), key=lambda item: item[0].name)
-    ]
+    rows: list[dict[str, Any]] = []
+    for name, create in sorted(metric_factories().items()):
+        metric = create()
+        metadata = METRIC_METADATA.get(MetricType[name]) if name in MetricType.__members__ else None
+        rows.append(
+            {
+                "name": name,
+                "label": metric.name(),
+                "class_name": metric.__class__.__name__,
+                "category": _metric_category(metric.__class__.__module__),
+                "packaged": name in MetricType.__members__,
+                "requires_tensorflow": name in TENSORFLOW_METRICS,
+                # True: higher means closer to the original; False: lower does.
+                "higher_is_better": metric.higher_is_better,
+                # Named entries of a multi-valued result, reported separately.
+                "components": list(metric.components),
+                "abbreviation": metadata.abbreviation if metadata else name,
+                "scale": metadata.scale if metadata else None,
+                "reference": metadata.reference if metadata else None,
+                "year": metadata.year if metadata else None,
+                "intrusive": metadata.intrusive if metadata else True,
+                # All packaged metrics compare original vs processed samples and
+                # require both signals to share length/sample rate.
+                "compares_original": True,
+                "supports_attacked_audio": True,
+            }
+        )
+    return rows
 
 
 def _safe_method_description(method: object) -> str:
@@ -140,10 +188,12 @@ def list_attacks() -> list[AttackSpec]:
     """
     from dataclasses import MISSING, fields
 
-    from taf.attacks.registry import ATTACK_CLASSES, ATTACK_FACTORIES, attack_class
+    from taf.attacks.presets import sweep_presets
+    from taf.attacks.registry import ATTACK_FACTORIES, attack_class, available_attacks
 
+    sweeps = sweep_presets(_DEFAULT_SAMPLE_RATE)
     specs: list[AttackSpec] = []
-    for name in sorted(set(ATTACK_CLASSES) | set(ATTACK_FACTORIES)):
+    for name in available_attacks():
         cls = attack_class(name)
         parameters = [
             AttackParameter(
@@ -160,9 +210,43 @@ def list_attacks() -> list[AttackSpec]:
                 description=_ATTACK_DESCRIPTIONS.get(name, ""),
                 parameters=parameters,
                 changes_length_or_rate=bool(getattr(cls, "changes_length_or_rate", False)),
+                family=cls.__module__.rsplit(".", 1)[-1],
+                sweep=sweeps.get(name),
+                stochastic=any(parameter.name == "seed" for parameter in parameters),
+                has_severity=_has_severity(name),
             )
         )
     return specs
+
+
+def _has_severity(name: str) -> bool:
+    from taf.attacks.base import Severity
+    from taf.attacks.presets import severity_parameters
+
+    try:
+        severity_parameters(name, Severity.MILD, _DEFAULT_SAMPLE_RATE)
+    except Exception:  # noqa: BLE001 - no preset for this attack
+        return False
+    return True
+
+
+def list_designs() -> list[dict[str, Any]]:
+    """Experimental designs (``ExperimentType``) with their scientific structure."""
+    from taf.experiments.scenarios import describe_designs
+
+    return describe_designs()
+
+
+def attack_presets(sample_rate: int = _DEFAULT_SAMPLE_RATE) -> dict[str, Any]:
+    """Benchmark suites and sweep ladders resolved for a sampling rate."""
+    from taf.attacks.presets import PIPELINES, SUITES, benchmark_suite, sweep_presets
+
+    return {
+        "sample_rate": sample_rate,
+        "suites": {name: benchmark_suite(name, sample_rate) for name in SUITES},
+        "sweeps": sweep_presets(sample_rate),
+        "pipelines": {name: list(stages) for name, stages in PIPELINES.items()},
+    }
 
 
 def tensorflow_available() -> bool:
@@ -200,23 +284,6 @@ def list_datasets() -> list[dict[str, Any]]:
                 "formats": ["flac"],
             }
         )
-    # Uploaded datasets are owned by the API layer; imported lazily so the
-    # experiments package stays usable without the api extra installed.
-    try:
-        from taf.api.uploads import upload_registry
-
-        for uploaded in upload_registry.list():
-            datasets.append(
-                {
-                    "id": f"{UPLOAD_DATASET_PREFIX}{uploaded.id}",
-                    "label": uploaded.name,
-                    "kind": "uploaded",
-                    "file_count": len(uploaded.files),
-                    "formats": sorted({path.suffix.lstrip(".").lower() for path in uploaded.files}),
-                }
-            )
-    except Exception:  # pragma: no cover - api extra not installed
-        pass
     return datasets
 
 
@@ -230,6 +297,8 @@ def dataset_exists(dataset_id: str | None, dataset_path: str | None) -> bool:
 
 __all__ = [
     "AttackParameter",
+    "attack_presets",
+    "list_designs",
     "AttackSpec",
     "LONG_INPUT_METHODS",
     "TENSORFLOW_METHODS",

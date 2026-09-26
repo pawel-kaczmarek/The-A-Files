@@ -21,6 +21,7 @@ from typing import List
 
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 # AudioSeal's generator runs through torch.compile, which shells out to a C++
@@ -82,7 +83,7 @@ class AudioSealMethod(SteganographyMethod):
         chunk_count = int(np.ceil(bit_count / _PAYLOAD_BITS))
         if sample_count // chunk_count < self.min_chunk_length:
             capacity = (sample_count // self.min_chunk_length) * _PAYLOAD_BITS
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
         return np.linspace(0, sample_count, chunk_count + 1, dtype=np.int64)

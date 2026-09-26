@@ -4,6 +4,7 @@ import numpy as np
 from scipy.fftpack import dct, idct
 from scipy.linalg import svd
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -69,7 +70,7 @@ class BlindSvdMethod(SteganographyMethod):
     def _check_capacity(self, frame_count: int, watermark_length: int, name: str) -> None:
         """One bit per frame; the surplus used to be dropped without warning."""
         if watermark_length > frame_count:
-            raise ValueError(
+            raise CapacityError(
                 f"{name} too long for cover audio: {watermark_length} > {frame_count} bits "
                 f"({self.frame_size}-sample frames)"
             )

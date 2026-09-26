@@ -6,6 +6,11 @@ from taf.models.Metric import Metric
 
 
 class BSSEvalMetric(Metric):
+    higher_is_better = True
+    components = ("sdr", "isr", "sir", "sar", "perm")
+    # The permutation index identifies sources; it is not a score.
+    component_directions = (True, True, True, True, None)
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

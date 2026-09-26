@@ -17,6 +17,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
@@ -184,7 +185,7 @@ class FgasMethod(SteganographyMethod):
         """
         capacity = sample_count // (2 * self.radius + 1)
         if watermark_length > capacity:
-            raise ValueError(
+            raise CapacityError(
                 f"{name} too long for cover audio: {watermark_length} > {capacity} bits"
             )
 

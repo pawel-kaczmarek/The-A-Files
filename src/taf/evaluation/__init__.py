@@ -1,6 +1,6 @@
 from taf.evaluation.config import EvaluationConfig, FailurePolicy
 from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec
-from taf.evaluation.result import EvaluationResult, EvaluationRow
+from taf.evaluation.result import EvaluationResult, EvaluationRow, FailureKind
 from taf.evaluation.workflow import (
     evaluate_files,
     evaluate_files_async,
@@ -19,6 +19,7 @@ __all__ = [
     "EvaluationMessage",
     "EvaluationResult",
     "EvaluationRow",
+    "FailureKind",
     "FailurePolicy",
     "RandomMessageSpec",
     "config_from_mapping",

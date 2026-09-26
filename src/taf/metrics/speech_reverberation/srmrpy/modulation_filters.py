@@ -13,8 +13,8 @@ import scipy.signal as sig
 def make_modulation_filter(w0, Q):
     W0 = np.tan(w0 / 2)
     B0 = W0 / Q
-    b = np.array([B0, 0, -B0], dtype=np.float)
-    a = np.array([(1 + B0 + W0**2), (2 * W0**2 - 2), (1 - B0 + W0**2)], dtype=np.float)
+    b = np.array([B0, 0, -B0], dtype=float)
+    a = np.array([(1 + B0 + W0**2), (2 * W0**2 - 2), (1 - B0 + W0**2)], dtype=float)
     return b, a
 
 
@@ -32,7 +32,7 @@ def compute_modulation_cfs(min_cf, max_cf, n):
 
 
 def modfilt(F, x):
-    y = np.zeros((len(F), len(x)), dtype=np.float)
+    y = np.zeros((len(F), len(x)), dtype=float)
     for k, f in enumerate(F):
         y[k] = sig.lfilter(f[0], f[1], x)
     return y

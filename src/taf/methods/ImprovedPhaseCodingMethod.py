@@ -2,6 +2,7 @@ from typing import List
 
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -16,6 +17,13 @@ class ImprovedPhaseCodingMethod(SteganographyMethod):
 
         # Calculate the number of segments needed
         original_length = len(data)
+        if seg_len > original_length:
+            # A segment longer than the cover would be mostly padding, and the
+            # padding is dropped from the output together with its bits.
+            raise CapacityError(
+                f"message too long for cover audio: a {msg_len}-bit message needs a "
+                f"{seg_len}-sample segment, the cover has {original_length} samples"
+            )
         seg_num = int(np.ceil(original_length / seg_len))
 
         # Zero-pad a copy up to a whole number of segments. Resizing `data`

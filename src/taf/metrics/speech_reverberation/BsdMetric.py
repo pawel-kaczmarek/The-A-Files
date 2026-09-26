@@ -8,6 +8,8 @@ from taf.models.Metric import Metric
 
 
 class BsdMetric(Metric):
+    higher_is_better = False
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

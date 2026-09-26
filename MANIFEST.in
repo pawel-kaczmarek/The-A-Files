@@ -2,6 +2,7 @@ include LICENSE
 include README.md
 recursive-include src/taf/resources *.wav *.flac *.h5
 recursive-include src/taf/configs *.yaml *.md
+recursive-include src/taf/persistence/migrations *.mako
 prune web
 global-exclude __pycache__
 global-exclude *.py[cod]

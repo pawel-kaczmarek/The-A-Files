@@ -4,6 +4,7 @@ import numpy as np
 from numpy.linalg import svd
 from scipy.fft import dct, idct
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -56,6 +57,13 @@ class FsvcMethod(SteganographyMethod):
         """
         gamma1 = self.gamma1 * self.sr / 44100
         gamma2 = self.gamma2 * self.sr / 44100
+
+        # Each frame is halved and the halves compared, so a frame needs at
+        # least two samples.
+        if 2 * len(message) > len(data):
+            raise CapacityError(
+                f"message too long for cover audio: {len(message)} > {len(data) // 2} bits"
+            )
 
         # Split the audio data into frames based on the watermark message length
         frames = np.array_split(data, len(message))

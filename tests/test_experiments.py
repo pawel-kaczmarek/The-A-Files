@@ -53,8 +53,12 @@ def test_config_requires_dataset_source():
 
 
 def test_config_rejects_unknown_selections():
-    with pytest.raises(ValidationError, match="Unknown method"):
+    with pytest.raises(ValidationError, match="unknown method"):
         _config(methods=["NOPE"])
+    with pytest.raises(ValidationError, match="has no parameter"):
+        _config(methods=["QIM_METHOD:no_such_knob=1"])
+    # Two settings of one method are two treatments.
+    assert _config(methods=["QIM_METHOD:step_scale=0.1", "QIM_METHOD:step_scale=0.3"]).methods
     with pytest.raises(ValidationError, match="Unknown metric"):
         _config(metrics=["NOPE"])
     with pytest.raises(ValidationError, match="Unknown attack"):
@@ -64,10 +68,12 @@ def test_config_rejects_unknown_selections():
 
 
 def test_payload_length_validation():
-    with pytest.raises(ValidationError, match="between 4 and 120"):
+    with pytest.raises(ValidationError, match="between 4 and 8192"):
         _config(payload_lengths=[2])
-    with pytest.raises(ValidationError, match="between 4 and 120"):
-        _config(payload_lengths=[500])
+    with pytest.raises(ValidationError, match="between 4 and 8192"):
+        _config(payload_lengths=[10000])
+    # Capacity sweeps need payloads far beyond the old 120-bit ceiling.
+    assert _config(payload_lengths=[500, 4096]).payload_lengths == [500, 4096]
     with pytest.raises(ValidationError, match="unique"):
         _config(payload_lengths=[8, 8])
     with pytest.raises(ValidationError, match="At least one payload length"):
@@ -82,7 +88,14 @@ def test_scenario_specific_validation():
     assert any("metric" in p.lower() for p in validate_for_scenario(quality))
 
     comparison = _config(experiment_type=ExperimentType.METHOD_COMPARISON)
-    assert any("two methods" in p for p in validate_for_scenario(comparison))
+    assert any("at least 2 methods" in p for p in validate_for_scenario(comparison))
+
+    curve = _config(experiment_type=ExperimentType.ROBUSTNESS_CURVE)
+    assert any("attack sweep" in p for p in validate_for_scenario(curve))
+
+    tradeoff = _config(experiment_type=ExperimentType.TRADEOFF_CURVE)
+    problems = validate_for_scenario(tradeoff)
+    assert any("method sweep" in p for p in problems) and any("metric" in p.lower() for p in problems)
 
     capacity = _config(experiment_type=ExperimentType.EMBEDDING_CAPACITY)
     assert any("two payload lengths" in p for p in validate_for_scenario(capacity))

@@ -1,6 +1,7 @@
 from typing import List
 import numpy as np
 import pywt
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -35,7 +36,7 @@ class DwtLsbMethod(SteganographyMethod):
         positions = [self.spacing * (i + 1) for i in range(bit_count)]
         if positions and positions[-1] >= coeff_count:
             capacity = max(coeff_count // self.spacing - 1, 0)
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
         return positions

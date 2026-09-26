@@ -6,6 +6,8 @@ from taf.models.Metric import Metric
 
 
 class SnrMetric(Metric):
+    higher_is_better = True
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

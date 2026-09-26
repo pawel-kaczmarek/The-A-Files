@@ -3,6 +3,7 @@ from typing import List
 import numpy as np
 import pywt
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -22,7 +23,7 @@ class LwtMethod(SteganographyMethod):
 
         message_flat = np.array(message).flatten()
         if len(message_flat) > num_blocks:
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {len(message_flat)} > {num_blocks} bits"
             )
 

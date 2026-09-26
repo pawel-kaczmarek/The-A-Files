@@ -443,6 +443,52 @@ def benchmark_suite(preset: str = "standard", sample_rate: int | None = None) ->
     return SUITES[key](sample_rate)
 
 
+def sweep_presets(sample_rate: int | None = None) -> dict[str, dict[str, Any]]:
+    """Default parameter ladders for robustness curves, mildest setting first.
+
+    A robustness curve sweeps one parameter of one attack and plots the bit
+    error rate against it. The ladders span the range from inaudible or
+    near-transparent processing to the point where most methods fail, so
+    that the curve shows where each method breaks down. The ordering matters:
+    the breakdown point is the first setting, in this order, at which a
+    method exceeds the usable BER. Frequencies are derived from the Nyquist
+    frequency and resampling targets from the source rate.
+    """
+    rate = int(sample_rate or DEFAULT_SAMPLE_RATE)
+    nyquist = rate / 2
+    snr_ladder = [40, 35, 30, 25, 20, 15, 10, 5, 0]
+    return {
+        "awgn": {"parameter": "snr_db", "values": snr_ladder, "unit": "dB SNR"},
+        "pink_noise": {"parameter": "snr_db", "values": snr_ladder, "unit": "dB SNR"},
+        "impulse_noise": {"parameter": "snr_db", "values": [40, 30, 20, 15, 10, 5], "unit": "dB SNR"},
+        "mp3": {"parameter": "bitrate_kbps", "values": [320, 256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
+        "aac": {"parameter": "bitrate_kbps", "values": [256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
+        "opus": {"parameter": "bitrate_kbps", "values": [128, 96, 64, 48, 32, 24, 16, 12], "unit": "kbit/s"},
+        "vorbis": {"parameter": "bitrate_kbps", "values": [256, 192, 128, 96, 64], "unit": "kbit/s"},
+        "low_pass": {
+            "parameter": "cutoff_hz",
+            "values": [round(nyquist * fraction) for fraction in (0.9, 0.75, 0.6, 0.5, 0.4, 0.3, 0.2)],
+            "unit": "Hz",
+        },
+        "high_pass": {"parameter": "cutoff_hz", "values": [50, 100, 200, 300, 500, 800, 1000], "unit": "Hz"},
+        "bit_depth": {"parameter": "bits", "values": [16, 12, 10, 8, 6, 4], "unit": "bits"},
+        "resample": {"parameter": "intermediate_hz", "values": resampling_targets(rate)[::-1], "unit": "Hz"},
+        "gain": {"parameter": "gain_db", "values": [0, -6, -12, -18, -24, -30], "unit": "dB"},
+        "clipping": {"parameter": "threshold", "values": [0.99, 0.9, 0.8, 0.6, 0.4, 0.2], "unit": "× peak"},
+        "compression_dynamic": {"parameter": "ratio", "values": [2.0, 4.0, 8.0, 16.0], "unit": ": 1"},
+        "smoothing": {"parameter": "window_length", "values": [3, 5, 7, 11, 15], "unit": "samples"},
+        "dropout": {"parameter": "fraction", "values": [0.001, 0.005, 0.01, 0.02, 0.05, 0.1], "unit": "fraction"},
+        "crop": {"parameter": "fraction", "values": [0.01, 0.02, 0.05, 0.1, 0.2], "unit": "fraction"},
+        "sample_jitter": {"parameter": "events", "values": [1, 5, 10, 20, 50], "unit": "events"},
+        "time_stretch": {"parameter": "rate", "values": [1.005, 1.01, 1.02, 1.05, 1.1], "unit": "×"},
+        "speed": {"parameter": "rate", "values": [1.005, 1.01, 1.02, 1.05, 1.1], "unit": "×"},
+        "pitch_shift": {"parameter": "semitones", "values": [0.1, 0.25, 0.5, 1.0, 2.0], "unit": "semitones"},
+        "clock_drift": {"parameter": "offset_ppm", "values": [10, 50, 100, 500, 1000], "unit": "ppm"},
+        "echo": {"parameter": "attenuation", "values": [0.1, 0.25, 0.5, 0.75], "unit": "gain"},
+        "reverb": {"parameter": "rt60_seconds", "values": [0.1, 0.3, 0.5, 0.8, 1.2], "unit": "s RT60"},
+    }
+
+
 __all__ = [
     "DEFAULT_SAMPLE_RATE",
     "PIPELINES",
@@ -456,4 +502,5 @@ __all__ = [
     "severity_parameters",
     "severity_sweep",
     "standard_suite",
+    "sweep_presets",
 ]

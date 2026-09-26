@@ -3,6 +3,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.fft import dct, idct
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.split import to_frames, to_samples
 
@@ -157,7 +158,7 @@ class DctDeltaLsbMethod(SteganographyMethod):
     def _check_capacity(self, frame_count: int, watermark_length: int, name: str) -> None:
         """One bit per frame; refuse instead of raising IndexError mid-loop."""
         if watermark_length > frame_count:
-            raise ValueError(
+            raise CapacityError(
                 f"{name} too long for cover audio: {watermark_length} > {frame_count} bits "
                 f"({self.frame_length_in_ms} ms frames)"
             )

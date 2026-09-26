@@ -2,11 +2,12 @@ from numbers import Number
 
 import numpy as np
 
-from taf.metrics.common.metrics_helper import log_mel_spectrogram, sgbfb
+from taf.metrics.common.metrics_helper import log_mel_spectrogram, resample_to_10khz, sgbfb
 from taf.models.Metric import Metric
 
 
 class StgiMetric(Metric):
+    higher_is_better = True
 
     def calculate(self,
                   samples_original: np.ndarray,
@@ -16,9 +17,12 @@ class StgiMetric(Metric):
                   overlap: float = 0.75) -> Number | np.ndarray:
 
         if fs != 10000:
-            raise ValueError(
-                f"STGI only supports 10 kHz sampling rate (got fs={fs})."
+            # STGI is defined on 10 kHz speech. As STOI does, other rates are
+            # resampled first instead of being rejected.
+            samples_original, samples_processed = resample_to_10khz(
+                samples_original, samples_processed, fs
             )
+            fs = 10000
 
         STM_channels = np.ones((11, 4))
         thresholds = [[0.252, 0.347, 0.275, 0.189],

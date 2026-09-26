@@ -9,6 +9,8 @@ from taf.models.Metric import Metric
 
 # https://ieeexplore.ieee.org/document/407206
 class MelCepstralDistanceMetric(Metric):
+    higher_is_better = False
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

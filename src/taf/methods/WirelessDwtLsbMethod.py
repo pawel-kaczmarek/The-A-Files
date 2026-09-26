@@ -20,6 +20,7 @@ from typing import List
 import numpy as np
 import pywt
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -102,7 +103,7 @@ class WirelessDwtLsbMethod(SteganographyMethod):
 
         if len(packed) > len(ll_band):
             capacity = len(ll_band) * self.lsb_depth
-            raise ValueError(f"message too long for cover audio: {len(message)} > {capacity} bits")
+            raise CapacityError(f"message too long for cover audio: {len(message)} > {capacity} bits")
 
         mask = (1 << self.lsb_depth) - 1
         quantized = np.rint(ll_band * self.coefficient_scale).astype(np.int64)
@@ -127,7 +128,7 @@ class WirelessDwtLsbMethod(SteganographyMethod):
 
         if packed_count > len(ll_band):
             capacity = len(ll_band) * self.lsb_depth
-            raise ValueError(f"watermark too long for stego audio: {watermark_length} > {capacity} bits")
+            raise CapacityError(f"watermark too long for stego audio: {watermark_length} > {capacity} bits")
 
         mask = (1 << self.lsb_depth) - 1
         quantized = np.rint(ll_band[:packed_count] * self.coefficient_scale).astype(np.int64)

@@ -2,29 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
-
-from taf.experiments.results import (
-    ExperimentResultRow,
-    by_method,
-    by_method_attack,
-    by_method_payload,
-    group_stats,
-)
 from taf.experiments.scenarios.base import Scenario
-from taf.experiments.schema import ExperimentConfig, ExperimentType
-
-
-def _summarize(rows: Sequence[ExperimentResultRow], config: ExperimentConfig) -> dict[str, Any]:
-    summary: dict[str, Any] = {
-        "overall": group_stats(rows),
-        "by_method": by_method(rows),
-        "by_method_payload": by_method_payload(rows),
-    }
-    if config.attacks:
-        summary["by_method_attack"] = by_method_attack(rows)
-    return summary
-
+from taf.experiments.scenarios.dataset_benchmark import benchmark_summary
+from taf.experiments.schema import ExperimentType
 
 SCENARIO = Scenario(
     experiment_type=ExperimentType.RESEARCH_EXPERIMENT,
@@ -34,5 +14,9 @@ SCENARIO = Scenario(
         "scenarios: any combination of datasets, methods, metrics, attacks, payloads "
         "and output options."
     ),
-    summarize=_summarize,
+    property="multi_criteria",
+    factors=("method", "payload_length", "attack", "repetition"),
+    measures=("ber", "quality_metrics", "attack_metrics", "time"),
+    analyses=("cluster_bootstrap_ci", "friedman_holm_wilcoxon", "pareto_front"),
+    summarize=benchmark_summary,
 )

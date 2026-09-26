@@ -2,6 +2,7 @@ from typing import List
 import numpy as np
 from scipy.fft import fft, ifft
 from scipy.signal import lfilter
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.mixer import mixer
 
@@ -36,7 +37,7 @@ class EchoMethod(SteganographyMethod):
         frame_length = sample_count // bit_count
         if frame_length < self.min_frame_length:
             capacity = sample_count // self.min_frame_length
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
         return frame_length

@@ -36,8 +36,10 @@ Podsekcje:
   i LibriSpeech, które pozwalają powtarzać eksperymenty bez pobierania danych.
 * **Method contract** — cztery własności weryfikowane automatycznym testem dla każdej metody: bezbłędne odtworzenie
   wiadomości przez *nową* instancję dekodera, brak modyfikacji sygnału wejściowego i jego długości, zgłoszenie
-  `ValueError` przy przekroczeniu pojemności oraz stabilność na sygnałach syntetycznych. Wyjaśnia też, dlaczego siły
-  osadzenia są definiowane względnie (np. względem normy ramki), a nie jako stałe bezwzględne.
+  `CapacityError` (podklasa `ValueError`) przy przekroczeniu pojemności oraz stabilność na sygnałach syntetycznych.
+  Silnik eksperymentów korzysta z dwóch z nich: dekoduje zawsze nową instancją, a `CapacityError` zapisuje jako
+  przekroczenie pojemności, a nie jako awarię. Sekcja wyjaśnia też, dlaczego siły osadzenia są definiowane względnie
+  (np. względem normy ramki), a nie jako stałe bezwzględne.
 
 ## 2. Instalacja ([Installation](../README.md#install))
 
@@ -45,7 +47,8 @@ Instalacja pakietu z PyPI (`pip install the-a-files`) oraz tabela opcjonalnych r
 
 * `neural` — wytrenowane sieci do znakowania wodnego (AudioSeal, WavMark; PyTorch);
 * `ai` — metoda FGAS i metryka MOSNet (TensorFlow);
-* `experiments` — silnik eksperymentów i REST API;
+* `experiments` — silnik eksperymentów;
+* `platform` — platforma badawcza: REST API z bazą PostgreSQL i biblioteką korpusów;
 * `dev` — narzędzia do testów i budowania pakietu.
 
 ## 3. Użycie ([Usage](../README.md#usage))
@@ -57,13 +60,51 @@ i odczyt wiadomości.
 ## 4. Silnik eksperymentów, REST API i platforma webowa ([Experiment engine, REST API and web platform](../README.md#platform))
 
 * **4.1 Silnik eksperymentów** — deklaratywna definicja eksperymentu (`ExperimentConfig`): zbiór danych, metody,
-  metryki, ataki, długości wiadomości, liczba powtórzeń i ziarno losowości. Opisuje sześć typów eksperymentów
-  współdzielących jeden format wierszy wynikowych oraz analizy pochodne (macierz odporności, progi pojemności,
-  ranking metod).
-* **4.2 REST API** — uruchomienie serwera FastAPI i tabela punktów końcowych (katalog, uruchamianie, wyniki, postęp
-  przez Server-Sent Events, wgrywanie danych).
-* **4.3 Panel webowy** — aplikacja Next.js w katalogu `web/`, będąca cienkim klientem API; cała logika dziedzinowa
-  pozostaje w pakiecie Pythona. Panel nie jest częścią dystrybucji PyPI.
+  metryki, ataki, długości wiadomości, liczba powtórzeń i ziarno losowości. Tabela przypisuje dziewięć projektów
+  eksperymentów do czterech cech systemu ukrywania informacji:
+  * niepostrzegalność — `perceptual_quality`;
+  * odporność — `attack_robustness` oraz `robustness_curve` (krzywa dawka–odpowiedź BER względem siły jednego ataku,
+    z punktem załamania);
+  * pojemność — `embedding_capacity`;
+  * bezpieczeństwo — `detectability` (steganaliza);
+  * wielokryterialne — `tradeoff_curve` (krzywa kompromisu jakość–BER względem parametru metody, z frontem Pareto),
+    `method_comparison` i `dataset_benchmark`;
+  * eksploracyjny — `research_experiment`.
+
+  Wszystkie projekty poza `detectability` wykonują pełny układ czynnikowy (pliki × metody × długości wiadomości ×
+  powtórzenia × warianty ataków) i różnią się ustalonymi czynnikami oraz analizą. Metodę podaje się nazwą z katalogu
+  albo specyfikacją z parametrami konstruktora (np. `"QIM_METHOD:step_scale=0.1"`). Obie krzywe definiuje
+  `ParameterSweep` (cel, parametr, wartości od łagodnych do ostrych). Sekcja ma cztery podsekcje:
+  * **Experimental protocol** — zasady prowadzenia prób:
+    * jedno ziarno eksperymentu, zapisywane nawet wtedy, gdy zostało wylosowane;
+    * wiadomości różnych długości są niezależne;
+    * ziarno ataku zależy od pliku, powtórzenia i ataku, ale nie od metody, więc każda metoda trafia na ten sam szum
+      (*common random numbers*);
+    * dekodowanie odbywa się nową instancją metody;
+    * metryki osadzenia są oddzielone od metryk szkody wyrządzonej przez atak;
+    * awaria to nie błąd bitowy: ma własną kategorię i nie ma BER.
+  * **Statistical analysis** — jednostką replikacji jest plik:
+    * przedziały ufności z bootstrapu klastrowego po plikach;
+    * sparowane testy rangowe (Wilcoxon albo Friedman z korektą Holma, wielkość efektu, różnica krytyczna Nemenyiego);
+    * front Pareto zamiast arbitralnego wyniku ważonego;
+    * pojemność liczona per plik, w bitach i w b/s.
+  * **Provenance** — manifest przebiegu: wersje pakietów i FFmpeg, commit źródeł, skróty SHA-256 plików wejściowych,
+    rozwinięte ziarno oraz informacja, czy pomiary czasu są porównywalne.
+  * **Reproduction of single trials and reports** — każdą zapisaną próbę da się dokładnie odtworzyć z ziarna (sygnał
+    oryginalny, stego, po ataku i różnicowy). Raport z przebiegu powstaje w LaTeX-u (booktabs) lub w Markdownie, razem
+    z akapitem *Experimental setup*.
+* **4.2 Platforma badawcza** — eksperymenty (wersjonowane protokoły z pytaniem badawczym i hipotezą), przebiegi,
+  wiersze wyników i zbiory danych są przechowywane w PostgreSQL. Bazę uruchamia `docker compose up -d db`, a API
+  polecenie `taf-api`. Migracje są stosowane przy starcie, a konfigurację ustawiają zmienne `TAF_DATABASE_URL`,
+  `TAF_DATA_DIR` i `TAF_MAX_CONCURRENT_RUNS`. Sekcja zawiera tabelę punktów końcowych (katalog, eksperymenty, przebiegi,
+  eksporty i raporty, inspektor prób, postęp przez Server-Sent Events, zbiory danych). Klient webowy w `web/`
+  (Next.js; angielski i polski; motyw jasny i ciemny) jest cienkim klientem API i nie należy do dystrybucji PyPI.
+  Podsekcja **Evaluation corpora** opisuje katalog standardowych korpusów: mowę, mowę syntetyczną, muzykę i dźwięki
+  otoczenia, z licencją, cytowaniem i DOI. Z otwartych korpusów platforma przygotowuje odtwarzalne podzbiory według
+  zapisanej reguły: losowanie z ziarnem, równoważenie mówców, mono, resampling, FLAC i manifest SHA-256.
+* **4.3 Rozszerzenia przez wtyczki** — metody, metryki i ataki z innych pakietów rejestrowane przez *entry points*
+  (`taf.methods`, `taf.metrics`, `taf.attacks`) bez modyfikowania tego pakietu. Nazwy wbudowane mają pierwszeństwo.
+  Automatyczny test pilnuje warstw: elementy składowe nie importują silnika, a silnik nie importuje warstwy HTTP.
 
 ## 5. Metody steganografii i znakowania wodnego ([Steganography and watermarking methods](../README.md#steganography-algorithms))
 
@@ -72,8 +113,9 @@ w dziedzinie czasu (LSB, echo, histogram, modyfikacja amplitudy niskich częstot
 (DCT, DWT, LWT, SVD), rozpraszanie widma (DSSS, Improved Spread Spectrum), modulację indeksem kwantyzacji (QIM),
 kodowanie fazy, metody adaptacyjne (AAC + kody STC) oraz metody neuronowe (FGAS, AudioSeal, WavMark).
 
-Sekcja pokazuje też abstrakcyjny interfejs `SteganographyMethod` (`encode`, `decode`, `type`) i przypomina, że nowe
-metody trzeba zarejestrować w fabryce oraz w typie `MethodType`, a także spełnić kontrakt z sekcji 1.
+Sekcja pokazuje też abstrakcyjny interfejs `SteganographyMethod` (`encode`, `decode`, `type`). Przypomina, że metody
+wbudowane rejestruje się w fabryce i w typie `MethodType`, a zewnętrzne jako wtyczki (sekcja 4.3). Każda musi spełniać
+kontrakt z sekcji 1.
 
 ## 6. Obiektywne metryki jakości ([Objective quality metrics](../README.md#metrics))
 
@@ -86,6 +128,17 @@ metody trzeba zarejestrować w fabryce oraz w typie `MethodType`, a także speł
 * **6.4 Jakość mowy** — miary wierności sygnału i jakości percepcyjnej: SNR, SNRseg, fwSNRseg, LLR, WSS, odległości
   cepstralne (CD, MCD), PESQ, metryki złożone (Csig, Cbak, Covl), wSTMI, STGI, SI-SDR i BSSEval.
 
+Wstęp sekcji wyjaśnia, że każda metryka deklaruje swój kierunek (`higher_is_better`), zamiast zgadywać go z nazwy.
+Metryka zwracająca kilka liczb deklaruje nazwy składowych (`components`), a każda składowa jest raportowana osobno,
+nie uśredniana. Przykłady:
+
+* BSSEval: SDR, ISR, SIR, SAR oraz indeks permutacji, który nie jest rangowany;
+* PESQ: surowy wynik P.862 i MOS-LQO;
+* CSII: trzy indeksy;
+* SRMR i MOSNet: wynik sygnału nośnego jako odniesienie.
+
+STGI i wSTMI przy częstotliwości innej niż 10 kHz wykonują resampling.
+
 Na końcu sekcji znajduje się abstrakcyjny interfejs `Metric` (`calculate`, `name`).
 
 ## 7. Steganaliza ([Steganalysis](../README.md#steganalysis))
@@ -96,16 +149,20 @@ podział sygnałów na okna, parowanie okien nośnych z ich wersjami stego, roz�
 ekstrakcję cech (resztowe cechy Markowa i cechy log-widmowe) oraz klasyfikator zespołowy z dyskryminantami Fishera
 na losowych podprzestrzeniach cech.
 
-Interpretacja wyniku: dokładność bliska `0.5` oznacza zgadywanie (metoda niewykrywalna tymi cechami, próg `≤ 0.55`),
-`1.0` — wykrywanie bezbłędne. Wynik jest dolnym ograniczeniem wykrywalności: brak wykrycia nie wyklucza skuteczności
-silniejszych cech lub klasyfikatorów.
+Interpretacja wyniku: dokładność bliska `0.5` oznacza zgadywanie, a `1.0` wykrywanie bezbłędne. Wynik zawiera 95%
+przedział Wilsona oraz jednostronny dokładny test dwumianowy względem zgadywania (`significantly_detectable`). Starszy
+znacznik `undetectable` (dokładność ≤ 0.55) to heurystyka na estymacie punktowej i przy małym zbiorze testowym może
+się z testem nie zgadzać. Wynik jest dolnym ograniczeniem wykrywalności: brak wykrycia nie wyklucza skuteczności
+silniejszych cech lub klasyfikatorów. Typ eksperymentu `detectability` uruchamia tę analizę dla wybranych metod
+i długości wiadomości.
 
 ## 8. Model ataków i kanału ([Attack and channel model](../README.md#attacks))
 
 Ataki modelują to, co spotyka sygnał stego między osadzeniem a odczytem: przetwarzanie, kompresję, transmisję,
 odtworzenie i ponowne nagranie oraz celowe próby usunięcia wiadomości. Sekcja przedstawia zasady projektowe:
 
-* **powtarzalność** — każdy atak losowy ma jawne ziarno;
+* **powtarzalność** — każdy atak losowy ma jawne ziarno, a w eksperymencie ziarno jest wyprowadzane dla każdej próby
+  (chyba że specyfikacja podaje własne);
 * **jawne parametry** — etykiety siły (np. `mp3@strong`) są zamieniane na konkretne wartości zapisywane w wynikach;
 * **zależność od częstotliwości próbkowania** — częstotliwości graniczne są wyliczane z `f_s` i sprawdzane względem
   częstotliwości Nyquista;

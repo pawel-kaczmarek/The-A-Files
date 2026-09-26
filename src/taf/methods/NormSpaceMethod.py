@@ -3,11 +3,16 @@ import numpy as np
 import pywt
 from scipy.fft import dct, idct
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.split import to_frames
 
 
 class NormSpaceMethod(SteganographyMethod):
+
+    #: Each bit needs a segment whose DWT approximation, split into even and
+    #: odd DCT coefficients, leaves both sub-vectors non-empty.
+    MIN_SAMPLES_PER_BIT = 4
 
     def __init__(self, sr: int, delta: float = 0.05):
         """
@@ -22,6 +27,11 @@ class NormSpaceMethod(SteganographyMethod):
         self.delta = delta
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
+        if len(message) * self.MIN_SAMPLES_PER_BIT > len(data):
+            raise CapacityError(
+                f"message too long for cover audio: {len(message)} > "
+                f"{len(data) // self.MIN_SAMPLES_PER_BIT} bits"
+            )
         segments, last_frame = to_frames(data, self.sr, len(data) / self.sr / len(message) * 1000)
         segments = segments.copy()
         rsegments = []

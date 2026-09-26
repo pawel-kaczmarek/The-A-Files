@@ -33,11 +33,26 @@ class DetectabilityResult:
     train_size: int
     test_size: int
     out_of_bag_error: Optional[float]
+    #: 95% Wilson interval of the test accuracy.
+    accuracy_ci95_low: Optional[float] = None
+    accuracy_ci95_high: Optional[float] = None
+    #: One-sided exact binomial test of "accuracy > 0.5" on the test set.
+    p_value: Optional[float] = None
 
     @property
     def undetectable(self) -> bool:
-        """True when the classifier does no better than a coin toss."""
+        """True when the point estimate is within 0.05 of a coin toss.
+
+        A heuristic on the point estimate only; with a small test set an
+        accuracy of 0.6 can still be chance. ``significantly_detectable``
+        accounts for the size of the test set.
+        """
         return self.accuracy <= 0.55
+
+    @property
+    def significantly_detectable(self) -> bool:
+        """True when the detector beats chance at the 5% level."""
+        return self.p_value is not None and self.p_value < 0.05
 
 
 def _windows(audio: np.ndarray, window_length: int, stride: Optional[int] = None) -> List[np.ndarray]:
@@ -118,13 +133,31 @@ def measure_detectability(
 
     covers_mask = truth == 0
     stego_mask = truth == 1
+    correct = int(np.sum(predictions == truth))
+    low, high = _wilson_interval(correct, len(truth))
+
+    from scipy.stats import binomtest
 
     return DetectabilityResult(
         method=method.type(),
-        accuracy=float(np.mean(predictions == truth)),
+        accuracy=correct / len(truth),
         false_positive_rate=float(np.mean(predictions[covers_mask] == 1)),
         false_negative_rate=float(np.mean(predictions[stego_mask] == 0)),
         train_size=len(train_rows),
         test_size=len(test_rows),
         out_of_bag_error=model.oob_error,
+        accuracy_ci95_low=low,
+        accuracy_ci95_high=high,
+        p_value=float(binomtest(correct, len(truth), 0.5, alternative="greater").pvalue),
     )
+
+
+def _wilson_interval(successes: int, trials: int, z: float = 1.959963984540054) -> tuple[float, float]:
+    """Wilson score interval, which stays inside [0, 1] for small test sets."""
+    if trials == 0:
+        return 0.0, 1.0
+    proportion = successes / trials
+    denominator = 1 + z ** 2 / trials
+    centre = (proportion + z ** 2 / (2 * trials)) / denominator
+    half_width = z * np.sqrt(proportion * (1 - proportion) / trials + z ** 2 / (4 * trials ** 2)) / denominator
+    return float(max(0.0, centre - half_width)), float(min(1.0, centre + half_width))

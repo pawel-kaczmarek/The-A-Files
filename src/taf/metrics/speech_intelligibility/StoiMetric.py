@@ -7,6 +7,8 @@ from taf.models.Metric import Metric
 
 
 class StoiMetric(Metric):
+    higher_is_better = True
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

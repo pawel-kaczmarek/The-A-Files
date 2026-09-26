@@ -20,8 +20,10 @@ class FailurePolicy(str, Enum):
 
 @dataclass
 class EvaluationConfig:
-    methods: Sequence[MethodType | SteganographyMethod | Callable[[int], SteganographyMethod]] | None = None
-    metrics: Sequence[MetricType | Metric | Callable[[], Metric]] | None = None
+    #: Packaged enum members, catalogue names (packaged or plugin, see
+    #: ``taf.plugins``), instances, or constructors.
+    methods: Sequence[MethodType | str | SteganographyMethod | Callable[[int], SteganographyMethod]] | None = None
+    metrics: Sequence[MetricType | str | Metric | Callable[[], Metric]] | None = None
     target: DecodeTarget = DecodeTarget.DIRECT
     formats: Sequence[AudioFileFormat | str] = (AudioFileFormat.WAV,)
     output_dir: Path = Path("artifacts") / "evaluation"

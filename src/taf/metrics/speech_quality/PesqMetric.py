@@ -7,6 +7,10 @@ from taf.models.Metric import Metric
 
 
 class PesqMetric(Metric):
+    higher_is_better = True
+    # Raw P.862 score (narrowband only; NaN at 16 kHz) and MOS-LQO.
+    components = ("p862_raw", "mos_lqo")
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

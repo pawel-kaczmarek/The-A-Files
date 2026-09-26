@@ -60,6 +60,16 @@ def resample_matlab_like(x_orig, p, q):
     return y
 
 
+def resample_to_10khz(samples_original, samples_processed, fs):
+    """Both signals resampled from ``fs`` to 10 kHz, as the reference code does."""
+
+    def resample(x):
+        column = np.asarray(x, dtype=np.float64).reshape(-1, 1)
+        return resample_matlab_like(column, 10000, int(fs)).ravel()
+
+    return resample(samples_original), resample(samples_processed)
+
+
 def lpcoeff(speech_frame, model_order):
     eps = np.finfo(np.float64).eps
     # ----------------------------------------------------------

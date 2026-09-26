@@ -8,11 +8,18 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from taf.experiments.sweeps import ParameterSweep
+
 MIN_PAYLOAD_BITS = 4
-MAX_PAYLOAD_BITS = 120
+# High enough for a capacity sweep of the sample-domain methods, which carry
+# thousands of bits in a few seconds of speech; 120 bits measured reliability
+# at small payloads rather than capacity.
+MAX_PAYLOAD_BITS = 8192
 
 BUILTIN_DATASETS = ("example", "vctk", "librispeech", "all")
-UPLOAD_DATASET_PREFIX = "upload:"
+#: Datasets of the platform library (``taf.persistence``), resolved to a
+#: directory by a resolver registered with ``taf.experiments.runner``.
+LIBRARY_DATASET_PREFIX = "library:"
 
 
 class ExperimentType(str, Enum):
@@ -22,6 +29,9 @@ class ExperimentType(str, Enum):
     EMBEDDING_CAPACITY = "embedding_capacity"
     METHOD_COMPARISON = "method_comparison"
     RESEARCH_EXPERIMENT = "research_experiment"
+    DETECTABILITY = "detectability"
+    ROBUSTNESS_CURVE = "robustness_curve"
+    TRADEOFF_CURVE = "tradeoff_curve"
 
 
 class ExperimentConfig(BaseModel):
@@ -52,6 +62,11 @@ class ExperimentConfig(BaseModel):
     #: sample rate of the material, so its filter cutoffs and resampling
     #: targets are valid for the dataset at hand.
     attack_preset: str | None = None
+    #: One attack parameter varied over ordered values (robustness curve).
+    attack_sweep: ParameterSweep | None = None
+    #: One method parameter varied over ordered values (trade-off curve); the
+    #: methods it produces are added to ``methods``.
+    method_sweep: ParameterSweep | None = None
 
     payload_lengths: list[int] = Field(default_factory=lambda: [16])
     repetitions: int = Field(default=1, ge=1, le=50)
@@ -73,20 +88,26 @@ class ExperimentConfig(BaseModel):
     @field_validator("methods")
     @classmethod
     def _known_methods(cls, values: list[str]) -> list[str]:
-        from taf.models.types import MethodType
+        """Names or specifications with constructor parameters.
 
-        known = {member.name for member in MethodType}
-        unknown = [value for value in values if value not in known]
-        if unknown:
-            raise ValueError(f"Unknown method(s): {unknown}. Known: {sorted(known)}")
+        ``"QIM_METHOD:step_scale=0.2"`` is the QIM method with a larger
+        quantisation step; two settings of one method may appear side by side.
+        """
+        from taf.plugins import method_spec_problems
+
+        problems = [f"{value}: {problem}" for value in values for problem in method_spec_problems(value)]
+        if problems:
+            raise ValueError(f"Invalid method(s): {problems}")
+        if len(set(values)) != len(values):
+            raise ValueError("Methods must be unique.")
         return values
 
     @field_validator("metrics")
     @classmethod
     def _known_metrics(cls, values: list[str]) -> list[str]:
-        from taf.models.types import MetricType
+        from taf.plugins import metric_names
 
-        known = {member.name for member in MetricType}
+        known = set(metric_names())
         unknown = [value for value in values if value not in known]
         if unknown:
             raise ValueError(f"Unknown metric(s): {unknown}. Known: {sorted(known)}")
@@ -139,20 +160,43 @@ class ExperimentConfig(BaseModel):
     @field_validator("dataset_id")
     @classmethod
     def _known_dataset(cls, value: str | None) -> str | None:
-        if value is None or value in BUILTIN_DATASETS or value.startswith(UPLOAD_DATASET_PREFIX):
+        if value is None or value in BUILTIN_DATASETS or value.startswith(LIBRARY_DATASET_PREFIX):
             return value
         raise ValueError(
             f"Unknown dataset id: {value!r}. Use one of {list(BUILTIN_DATASETS)} "
-            f"or '{UPLOAD_DATASET_PREFIX}<id>' for an uploaded dataset."
+            f"or '{LIBRARY_DATASET_PREFIX}<id>' for a dataset of the platform library."
         )
 
     @model_validator(mode="after")
     def _dataset_source_present(self) -> "ExperimentConfig":
         if self.dataset_id is None and self.dataset_path is None:
             raise ValueError("Either dataset_id or dataset_path is required.")
-        if not self.methods:
+        if not self.methods and self.method_sweep is None:
             raise ValueError("At least one method is required.")
         return self
+
+    @model_validator(mode="after")
+    def _valid_sweeps(self) -> "ExperimentConfig":
+        from taf.experiments.sweeps import attack_sweep_problems, method_sweep_problems
+
+        problems: list[str] = []
+        if self.attack_sweep is not None:
+            problems += [f"attack_sweep: {p}" for p in attack_sweep_problems(self.attack_sweep)]
+        if self.method_sweep is not None:
+            problems += [f"method_sweep: {p}" for p in method_sweep_problems(self.method_sweep)]
+        if problems:
+            raise ValueError("; ".join(problems))
+        return self
+
+    def resolved_methods(self) -> list[str]:
+        """``methods`` followed by the settings of the swept method, if any."""
+        from taf.experiments.sweeps import method_sweep_specs
+
+        specs = list(self.methods)
+        for spec, _ in method_sweep_specs(self.method_sweep):
+            if spec not in specs:
+                specs.append(spec)
+        return specs
 
 
 class PlanWarning(BaseModel):
@@ -181,11 +225,12 @@ class ExperimentPlan(BaseModel):
 
 __all__ = [
     "BUILTIN_DATASETS",
+    "ParameterSweep",
     "ExperimentConfig",
     "ExperimentPlan",
     "ExperimentType",
     "MAX_PAYLOAD_BITS",
     "MIN_PAYLOAD_BITS",
     "PlanWarning",
-    "UPLOAD_DATASET_PREFIX",
+    "LIBRARY_DATASET_PREFIX",
 ]

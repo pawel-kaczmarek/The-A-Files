@@ -16,6 +16,7 @@
 2. [Installation](#install)
 3. [Usage](#usage)
 4. [Experiment engine, REST API and web platform](#platform)
+    1. [Extension through plugins](#plugins)
 5. [Steganography and watermarking methods](#steganography-algorithms)
 6. [Objective quality metrics](#metrics)
     1. [Data-driven (AI-based) metrics](#ai-based)
@@ -82,8 +83,11 @@ decouples each method's `encode`/`decode` interface from the storage format.
 Every method is subject to an automated conformance test on real speech from the bundled VCTK subset. The test asserts
 that (i) the payload is recovered bit-exactly by a *fresh* decoder instance, so no state is shared between encoder and
 decoder; (ii) `encode` neither modifies the caller's cover nor changes its length; (iii) a payload exceeding the
-method's capacity raises `ValueError` instead of being silently truncated; and (iv) encoding and decoding are
-numerically stable on synthetic signals. Embedding strengths and quantisation steps are defined relative to signal
+method's capacity raises `CapacityError` (a subclass of `ValueError`, in `taf.models.errors`) instead of being silently
+truncated, both just above the capacity of frame-based methods and above four bits per sample, which no packaged method
+can carry; and (iv) encoding and decoding are numerically stable on synthetic signals. The experiment engine relies on
+(i) and (iii): extraction always runs on a new instance, and `CapacityError` is recorded as an over-capacity outcome
+rather than as a crash. Embedding strengths and quantisation steps are defined relative to signal
 quantities the decoder can recompute (frame norm, band RMS, mean amplitude), which makes the methods invariant to global
 gain and usable on low-level recordings.
 
@@ -103,7 +107,8 @@ Optional components are provided as extras:
 | --- | --- | --- |
 | `neural` | `pip install "the-a-files[neural]"` | Pretrained neural watermarking baselines (`AudioSealMethod`, `WavMarkMethod`; PyTorch) |
 | `ai` | `pip install "the-a-files[ai]"` | `FgasMethod` and `MosNetMetric` (TensorFlow ≥ 2.15) |
-| `experiments` | `pip install "the-a-files[experiments]"` | Experiment engine and REST API (pandas, FastAPI, Uvicorn) |
+| `experiments` | `pip install "the-a-files[experiments]"` | Experiment engine (pandas) |
+| `platform` | `pip install "the-a-files[platform]"` | Research platform: REST API with PostgreSQL persistence and the corpus library (FastAPI, SQLAlchemy, Alembic, psycopg) |
 | `dev` | `pip install -e ".[dev]"` | Test and build tooling (pytest, build, twine) |
 
 See [External dependencies](#dependencies) for system-level prerequisites (C++ build tools, FFmpeg).
@@ -145,7 +150,7 @@ from taf.experiments import ExperimentConfig, ExperimentType, run_experiment
 config = ExperimentConfig(
     experiment_type=ExperimentType.DATASET_BENCHMARK,
     name="lsb-vs-fsvc-vctk",
-    dataset_id="vctk",            # example | vctk | librispeech | all | upload:<id>
+    dataset_id="vctk",            # example | vctk | librispeech | all (library:<id> within the platform)
     file_limit=4,                 # dataset_path="C:/my/corpus" is also accepted
     methods=["LSB_METHOD", "FSVC_METHOD"],
     metrics=["SNR_METRIC", "PESQ_METRIC"],
@@ -159,39 +164,164 @@ print(run.status, run.summary["overall"])
 run.to_csv("detailed_results.csv")
 ```
 
-Six experimental designs share one configuration schema and one normalised result-row format (file, method, payload,
-attack and its resolved parameters, BER, bit accuracy, metric values, timings, status and error):
-`dataset_benchmark`, `attack_robustness`, `perceptual_quality`, `embedding_capacity`, `method_comparison` and
-`research_experiment`. Derived analyses — robustness matrices, capacity thresholds and weighted multi-criteria method
-rankings — are computed by `taf.experiments.scenarios`. Fixing `random_seed` makes payload generation and all stochastic
-attacks reproducible.
+Nine experimental designs share one configuration schema. Each answers one research question about one of the four
+properties of an information-hiding system:
 
-### 4.2 REST API
+| Property | Design | Question | Primary analysis |
+| --- | --- | --- | --- |
+| Imperceptibility | `perceptual_quality` | How much does embedding degrade the audio? | Per-metric ranks, mean rank, Friedman + Holm–Wilcoxon |
+| Robustness | `attack_robustness` | Which method survives a battery of attacks? | Method × attack BER matrix, paired comparison per attack |
+| Robustness | `robustness_curve` | At which attack strength does each method break down? | Dose–response curve of BER with bands, breakdown point |
+| Capacity | `embedding_capacity` | What is the largest payload a method carries reliably? | Per-file capacity (bits, bit/s), bootstrap interval |
+| Security | `detectability` | Can a steganalyser tell stego from cover? | Ensemble steganalysis, Wilson interval, binomial test |
+| Multi-criteria | `tradeoff_curve` | How does embedding strength trade transparency for robustness? | Quality–BER curve over a method parameter, Pareto front |
+| Multi-criteria | `method_comparison` | Which methods are not beaten on every criterion at once? | Pareto front, paired tests per criterion |
+| Multi-criteria | `dataset_benchmark` | How do methods perform across a dataset? | Summary per method, clean and under attack |
+| — | `research_experiment` | Any combination of factors (exploratory) | Every analysis that applies |
+
+All designs except `detectability` execute a full factorial design (files × methods × payload lengths × repetitions ×
+attack variants, each attack next to a no-attack baseline) and differ in the factors they fix and the analysis applied.
+Their results are normalised rows: file, method with its parameters, payload in bits and bits per second, attack with
+its resolved parameters, BER, bit accuracy, metric values, timings, status and failure kind. The `detectability` design
+runs the steganalysis of Section [7](#steganalysis) for every method and payload length.
+
+Methods are named by catalogue name or by a specification that sets constructor parameters, e.g.
+`"QIM_METHOD:step_scale=0.1"`; the label and the parameters are recorded in every row. The two curve designs generate
+their conditions from one parameter:
+
+```python
+from taf.experiments.sweeps import ParameterSweep
+
+# robustness_curve: one attack parameter from mild to harsh, read in the given order
+attack_sweep = ParameterSweep(target="awgn", parameter="snr_db", values=[40, 30, 20, 15, 10, 5, 0])
+# tradeoff_curve: one method parameter, usually the one the catalogue marks as the embedding strength
+method_sweep = ParameterSweep(target="QIM_METHOD", parameter="step_scale", values=[0.025, 0.05, 0.1, 0.2, 0.4])
+```
+
+The breakdown point of a robustness curve is where, in sweep order, the BER first exceeds the usable threshold (0.10),
+linearly interpolated between the last usable and the first unusable setting; it is reported as `never` or `always`
+when the curve does not cross.
+
+#### Experimental protocol
+
+* **Randomness.** A single experiment seed determines every random quantity. When none is given, one is drawn and
+  stored in the exported configuration. Messages are seeded by their length, so messages of different lengths are
+  independent draws and adding a payload length leaves the others unchanged. Attack realisations are seeded by file,
+  repetition and attack, but not by method: repetitions sample the channel independently, while every method meets
+  the same noise realisation within a trial (common random numbers), which keeps comparisons between methods paired.
+* **Blind extraction.** Decoding runs on a fresh method instance that has seen neither the cover nor the message.
+* **Separation of effects.** Cover-to-stego metrics (imperceptibility) are computed once per embedded signal and are
+  never mixed with stego-to-attacked metrics (attack damage). Multi-valued metrics are reported per named component.
+* **Failures are not bit errors.** A trial that yields no decoded message is labelled `over_capacity`, `encode_error`,
+  `io_error`, `attack_error` or `decode_error`, and has no BER. Bit-level statistics use completed trials and are
+  reported together with the completion rate. Where one robustness figure must include failures, they are scored at
+  chance level (BER = 0.5).
+
+#### Statistical analysis
+
+The file is the unit of replication, because rows of one file (payloads, repetitions, attacks) are correlated.
+
+* **Uncertainty.** 95% intervals come from a cluster bootstrap that resamples whole files.
+* **Method comparison.** Methods are compared on per-file means in a paired design. Two methods are compared with the
+  Wilcoxon signed-rank test; more than two with the Friedman test followed by Holm-corrected pairwise Wilcoxon tests,
+  rank-biserial effect sizes and the Nemenyi critical difference (Demšar, 2006). Below a certain number of files, no
+  Holm-corrected pairwise test can reach p < 0.05, whatever the data: 6 files for two methods, 7 for three and 14 for
+  all 27. The preview warns when the dataset is smaller than that.
+* **Multi-criteria summary.** Methods are summarised by their Pareto front over bit accuracy, robustness and every
+  metric with a declared direction. A weighted score is computed only when weights are supplied, because it depends on
+  the weights and, through normalisation, on the set of compared methods.
+* **Capacity.** Capacity is determined per file as the largest tested payload below the first failing one, where a
+  payload passes when all trials complete and the bit-accuracy and BER thresholds are met. It is reported in bits and in
+  bits per second, and summarised across files with a bootstrap interval. Payloads of up to 8192 bits can be tested.
+
+#### Provenance
+
+Every run produces a manifest (`ExperimentRun.manifest`, `GET /api/runs/{id}/manifest.json`). It records the
+package version and source commit (with a flag for uncommitted changes), the Python, platform, numerical-library and
+FFmpeg versions, the SHA-256 digest, sampling rate and duration of every input file, the resolved seed and the
+expanded attack list. It also states whether timings are comparable: timings are comparable only with
+`max_workers = 1`, and speed is otherwise excluded from method comparisons.
+
+#### Reproduction of single trials and reports
+
+Because every random quantity is derived from the run seed, any stored trial can be re-synthesised exactly
+(`taf.experiments.inspector.resynthesize`): cover, stego, attacked signal and residual (stego − cover), with the decoded
+message checked against the stored one. `taf.experiments.reporting.build_report` summarises a run as a LaTeX (booktabs)
+or Markdown report: an *Experimental setup* paragraph generated from the configuration and manifest, the result tables
+with 95% intervals, and the statistical tests.
+
+### 4.2 Research platform: persistence, REST API and web client
+
+The platform stores experiments, runs, result rows and datasets in PostgreSQL. An *experiment* is a versioned protocol
+(title, research question, hypothesis, configuration); a *run* executes one version and keeps a snapshot of the
+configuration, the summary and the manifest, so results remain interpretable after the protocol changes.
 
 ```bash
-uvicorn taf.api.main:app --reload   # or: taf-api
-# http://127.0.0.1:8000 — interactive OpenAPI documentation at /docs
+docker compose up -d db          # PostgreSQL 17 on localhost:5432 (user, password and database: taf)
+pip install "the-a-files[platform]"
+taf-api                          # http://127.0.0.1:8000 — OpenAPI documentation at /docs
 ```
+
+Migrations (Alembic) are applied when the API starts. `TAF_DATABASE_URL` overrides the connection string
+(`postgresql+psycopg://taf:taf@localhost:5432/taf`), `TAF_DATA_DIR` (default `~/.taf`) holds prepared corpora and
+uploads, and `TAF_MAX_CONCURRENT_RUNS` limits parallel runs.
 
 | Purpose | Endpoints |
 | --- | --- |
-| Catalogue | `GET /api/catalog/{methods,metrics,attacks,datasets}` |
-| Execution | `POST /api/experiments/preview`, `POST /api/experiments/run` |
-| Results | `GET /api/experiments/history`, `GET /api/experiments/{id}/{results,summary,export.csv,export_summary.csv,config.json}` |
-| Progress (Server-Sent Events) | `GET /api/experiments/events`, `GET /api/experiments/{id}/events` |
-| Data | `POST /api/datasets/uploads` |
+| Catalogue | `GET /api/catalog/{methods,metrics,attacks,designs,presets,corpora,datasets}` |
+| Experiments | `GET, POST /api/experiments`, `GET, PUT, DELETE /api/experiments/{id}`, `POST /api/experiments/{id}/{duplicate,archive}`, `POST /api/experiments/preview` |
+| Runs | `POST /api/experiments/{id}/runs`, `GET /api/runs`, `GET /api/runs/{id}/{summary,rows,facets,manifest.json,config.json}`, `POST /api/runs/{id}/cancel` |
+| Exports and reports | `GET /api/runs/{id}/{export.csv,export_summary.csv,report.tex,report.md}` |
+| Trial inspector | `GET /api/runs/{id}/rows/{row}/inspect`, `GET /api/runs/{id}/rows/{row}/audio/{cover,stego,attacked,residual}.wav` |
+| Progress (Server-Sent Events) | `GET /api/runs/events`, `GET /api/runs/{id}/events` |
+| Datasets | `GET /api/datasets`, `POST /api/datasets/{prepare,local,upload,synthetic}`, `GET, DELETE /api/datasets/{id}` |
 
-### 4.3 Web dashboard
-
-A Next.js/TypeScript dashboard in [`web/`](web/README.md) acts as a thin client of the API: it provides one view per
-experimental design, live progress, summary tables and CSV export. All domain logic resides in the Python package. The
-dashboard is not part of the PyPI distribution:
+The web client in [`web/`](web/README.md) (Next.js, TypeScript; English and Polish; light and dark theme) is a thin
+client of this API. It offers a design gallery grouped by property, a step-by-step protocol editor with an execution
+plan, live runs, result figures with table views, critical-difference diagrams, the trial inspector and report
+downloads. It is not part of the PyPI distribution:
 
 ```bash
 cd web
 npm install
 npm run dev   # http://localhost:3000
 ```
+
+#### Evaluation corpora
+
+`taf.corpora` catalogues standard corpora with licence, citation and DOI: speech (LibriSpeech, Mini LibriSpeech,
+VCTK 0.92, TSP, LJSpeech, LibriTTS-R, EARS, TIMIT, Common Voice, NOIZEUS), synthetic speech (ASVspoof 5, MLAAD), music
+(MUSDB18-HQ, GTZAN) and environmental sound (ESC-50). Corpora with an open download are prepared on the server as
+reproducible subsets by a recorded rule: a seeded selection balanced across speakers, conversion to mono, polyphase
+resampling to the target rate, optional excerpts, 16-bit FLAC, and a manifest with the SHA-256 digest of the archive and
+of every file. Licensed corpora are registered from a local copy. Uploads, local directories and a set of synthetic test
+signals (tones, sweep, white and pink noise, tone bursts, square wave, low-level noise) complete the library. The
+packaged VCTK and LibriSpeech subsets remain available without download.
+
+<a id="plugins"></a>
+
+### 4.3 Extension through plugins
+
+Methods, metrics and attacks from other distributions are discovered through entry points, without modifying this
+package. A registered component appears in the catalogue, in the API and in experiments under its entry-point name, and
+is subject to the same method contract:
+
+```toml
+# pyproject.toml of the distribution that provides the components
+[project.entry-points."taf.methods"]
+MY_METHOD = "my_package.method:MyMethod"      # callable taking the sampling rate
+
+[project.entry-points."taf.metrics"]
+MY_METRIC = "my_package.metric:MyMetric"      # callable taking no arguments
+
+[project.entry-points."taf.attacks"]
+my_attack = "my_package.attack:MyAttack"      # Attack subclass
+```
+
+Packaged names take precedence, so a published result that names a packaged method always refers to the packaged
+implementation (`taf.plugins`). An automated test enforces the package layering: the building blocks (`methods`,
+`metrics`, `attacks`, `models`, `audio`, `steganalysis`) never import the evaluation engine, the experiment layer or the
+HTTP layer. The engine in turn never imports the HTTP layer.
 
 <a id="steganography-algorithms"></a>
 
@@ -254,8 +384,8 @@ class SteganographyMethod(ABC):
         ...
 ```
 
-New methods are registered in `taf/methods/factory.py` and in the `MethodType` enumeration, and must satisfy the
-[method contract](#about).
+Packaged methods are registered in `taf/methods/factory.py` and in the `MethodType` enumeration. External methods are
+registered as [plugins](#plugins). Both must satisfy the [method contract](#about).
 
 <a id="metrics"></a>
 
@@ -263,6 +393,13 @@ New methods are registered in `taf/methods/factory.py` and in the `MethodType` e
 
 Metrics are computed between the cover `x` and the processed signal. They are grouped by the property they estimate
 (Tables 2–5). Numbering is continuous across the tables.
+
+Each metric declares its direction (`higher_is_better`), which rankings and significance tests use instead of inferring
+it from the metric name. A metric that returns several numbers declares their names (`components`), and each is
+reported separately rather than averaged. For example, BSSEval reports SDR, ISR, SIR and SAR, and a permutation index
+that is never ranked. PESQ reports the raw P.862 score and MOS-LQO. CSII reports its high-, mid- and low-level indices.
+For the non-intrusive SRMR and MOSNet, only the score of the processed signal is ranked, and the cover score is reported
+as a reference. STGI and wSTMI, which are defined at 10 kHz, resample other rates first, as STOI does.
 
 <a id="ai-based"></a>
 
@@ -373,9 +510,12 @@ result = measure_detectability(
 print(result.accuracy, result.false_positive_rate, result.undetectable)
 ```
 
-A test accuracy of `0.5` corresponds to chance level, i.e. the method is undetectable with respect to this feature set
-(`undetectable` is `True` for accuracy ≤ 0.55); an accuracy of `1.0` indicates perfect detection. The result is a lower
-bound on detectability: a negative outcome does not exclude detection by stronger features or classifiers.
+A test accuracy of `0.5` corresponds to chance level and `1.0` to perfect detection. The result carries a 95% Wilson
+interval of the accuracy and a one-sided exact binomial test against chance; `significantly_detectable` is `True` when
+p < 0.05. The older `undetectable` flag (accuracy ≤ 0.55) is a heuristic on the point estimate, and with a small test
+set it can disagree with the test. The result is a lower bound on detectability: a negative outcome does not exclude
+detection by stronger features or classifiers. The `detectability` experiment type runs this analysis for every
+selected method and payload length. Its window length and test fraction are set through `advanced_options`.
 
 <a id="attacks"></a>
 
@@ -397,7 +537,9 @@ result.metadata["measured_snr_db"]
 
 The following design principles are enforced:
 
-* **Reproducibility** — all stochastic attacks use an explicit seed; the global random state is never used.
+* **Reproducibility** — all stochastic attacks use an explicit seed; the global random state is never used. Within
+  an experiment the seed is derived per trial (see [Experimental protocol](#platform)) unless the specification pins
+  one.
 * **Explicit parameters** — a severity label (e.g. `mp3@strong`) resolves to numeric parameters that are stored in
   every result row, so results are interpretable without consulting the source code.
 * **Sampling-rate awareness** — filter cut-offs and resampling targets are derived from `f_s` and validated against

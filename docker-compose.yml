@@ -1,0 +1,27 @@
+# PostgreSQL for the research platform (taf.api + web/).
+#
+#   docker compose up -d db
+#   export TAF_DATABASE_URL=postgresql+psycopg://taf:taf@localhost:5432/taf
+#
+# The API applies the database migrations on startup.
+services:
+  db:
+    image: postgres:17
+    container_name: taf-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taf
+      POSTGRES_PASSWORD: taf
+      POSTGRES_DB: taf
+    ports:
+      - "5432:5432"
+    volumes:
+      - taf-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taf -d taf"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  taf-postgres:

@@ -9,6 +9,29 @@ from taf.audio.formats import DecodeTarget
 from taf.evaluation.messages import EvaluationMessage
 
 
+class FailureKind:
+    """Why a trial produced no decoded message.
+
+    A failure is not a bit error: it says nothing about how many bits a
+    decoder would have got right. Keeping the reason lets an analysis report
+    failures separately from the bit error rate instead of folding them into
+    it.
+    """
+
+    #: The payload exceeds what the cover can carry (``CapacityError``).
+    OVER_CAPACITY = "over_capacity"
+    #: ``encode()`` raised for any other reason.
+    ENCODE_ERROR = "encode_error"
+    #: Writing or re-reading the stego file failed.
+    IO_ERROR = "io_error"
+    #: The attack itself raised.
+    ATTACK_ERROR = "attack_error"
+    #: ``decode()`` raised.
+    DECODE_ERROR = "decode_error"
+
+    ALL = (OVER_CAPACITY, ENCODE_ERROR, IO_ERROR, ATTACK_ERROR, DECODE_ERROR)
+
+
 @dataclass
 class EvaluationRow:
     input_path: Path
@@ -23,6 +46,13 @@ class EvaluationRow:
     output_path: Path | None = None
     decoded_message: list[int] | None = None
     error: str | None = None
+    #: One of ``FailureKind``; ``None`` when the trial completed.
+    failure_kind: str | None = None
+    #: Index of the message within its length, i.e. the repetition.
+    repetition: int | None = None
+    #: Catalogue name and constructor parameters of the method, when named.
+    method_name: str | None = None
+    method_parameters: dict[str, Any] = field(default_factory=dict)
     is_lossy: bool = False
     transformation_name: str | None = None
     codec_options: dict[str, Any] = field(default_factory=dict)
@@ -53,6 +83,10 @@ class EvaluationRow:
             "output_path": str(self.output_path) if self.output_path is not None else None,
             "decoded_message": self.decoded_message,
             "error": self.error,
+            "failure_kind": self.failure_kind,
+            "repetition": self.repetition,
+            "method_name": self.method_name,
+            "method_parameters": self.method_parameters,
             "is_lossy": self.is_lossy,
             "transformation_name": self.transformation_name,
             "codec_options": self.codec_options,
@@ -95,4 +129,4 @@ class EvaluationResult:
         return [row.to_dict() for row in self.rows]
 
 
-__all__ = ["EvaluationRow", "EvaluationResult"]
+__all__ = ["EvaluationResult", "EvaluationRow", "FailureKind"]

@@ -17,6 +17,7 @@ from typing import List
 
 import numpy as np
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 _INT16_MAX = 32767
@@ -91,7 +92,7 @@ class PrimeFactorInterpolatedMethod(SteganographyMethod):
             stego[position] = np.clip(interpolated + payload, _INT16_MIN, _INT16_MAX)
 
         if bit_index < len(bits):
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {len(bits)} > {bit_index} bits"
             )
 

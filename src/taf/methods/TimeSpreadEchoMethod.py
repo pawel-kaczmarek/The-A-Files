@@ -20,6 +20,7 @@ from typing import List
 import numpy as np
 from scipy.fft import fft, ifft
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -68,7 +69,7 @@ class TimeSpreadEchoMethod(SteganographyMethod):
         needed = max(self.min_frame_length, self.d0 + self.pn_length, self.d1 + self.pn_length)
         if frame_length < needed:
             capacity = sample_count // needed
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
         return frame_length

@@ -6,7 +6,7 @@ import hashlib
 import re
 import time
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -17,8 +17,10 @@ from taf.audio.formats import AudioFileFormat, DecodeTarget
 from taf.audio.io import load_audio, save_audio
 from taf.evaluation.config import EvaluationConfig, FailurePolicy
 from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec
-from taf.evaluation.result import EvaluationResult, EvaluationRow
+from taf.evaluation.result import EvaluationResult, EvaluationRow, FailureKind
+from taf.evaluation.seeding import attack_seed, message_seed
 from taf.models.Metric import Metric
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.models.WavFile import WavFile
 from taf.models.types import MethodType, MetricType
@@ -28,6 +30,9 @@ from taf.models.types import MethodType, MetricType
 class _MethodSpec:
     label: str
     create: Callable[[int], SteganographyMethod]
+    #: Catalogue name and constructor parameters, when the method was named.
+    name: str | None = None
+    parameters: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -36,15 +41,22 @@ class _MetricSpec:
     create: Callable[[], Metric]
 
 
-def load_files(path: str | Path) -> list[WavFile]:
+def audio_file_paths(path: str | Path, recursive: bool = False) -> list[Path]:
+    """WAV and FLAC files of a directory, in name order."""
     directory = Path(path)
-    logger.debug("Scanning directory for audio files: {}", directory)
-    files = sorted(
+    candidates = directory.rglob("*") if recursive else directory.iterdir()
+    return sorted(
         file_path
-        for file_path in directory.iterdir()
+        for file_path in candidates
         if file_path.is_file()
         and file_path.suffix.lower() in {AudioFileFormat.FLAC.extension, AudioFileFormat.WAV.extension}
     )
+
+
+def load_files(path: str | Path, recursive: bool = False) -> list[WavFile]:
+    directory = Path(path)
+    logger.debug("Scanning directory for audio files: {}", directory)
+    files = audio_file_paths(directory, recursive=recursive)
     logger.debug("Loading {} audio file(s) from {}", len(files), directory)
     return [WavFile.load(file_path) for file_path in files]
 
@@ -141,6 +153,24 @@ def _evaluate_file_method_message(
     attack_variants: Sequence[str | None],
     config: EvaluationConfig,
 ) -> list[EvaluationRow]:
+    rows = _encode_and_evaluate(
+        wav_file, method_spec, message, metric_specs, targets, attack_variants, config
+    )
+    for row in rows:
+        row.method_name = method_spec.name
+        row.method_parameters = dict(method_spec.parameters)
+    return rows
+
+
+def _encode_and_evaluate(
+    wav_file: WavFile,
+    method_spec: _MethodSpec,
+    message: EvaluationMessage,
+    metric_specs: Sequence[_MetricSpec],
+    targets: Sequence[AudioFileFormat | DecodeTarget],
+    attack_variants: Sequence[str | None],
+    config: EvaluationConfig,
+) -> list[EvaluationRow]:
     method = method_spec.create(wav_file.samplerate)
     method_label = _method_label(method, method_spec)
 
@@ -156,13 +186,25 @@ def _evaluate_file_method_message(
     try:
         encoded_samples = method.encode(wav_file.samples.copy(), list(message.bits))
     except Exception as error:
-        logger.exception(
-            "Encode failed | file={} | method={} | message={} | error={}",
-            wav_file.path,
-            method_label,
-            message.name,
-            error,
-        )
+        if isinstance(error, CapacityError):
+            # Expected in a capacity sweep: the outcome of the trial, not a fault.
+            failure_kind = FailureKind.OVER_CAPACITY
+            logger.info(
+                "Over capacity | file={} | method={} | message={} | {}",
+                wav_file.path,
+                method_label,
+                message.name,
+                error,
+            )
+        else:
+            failure_kind = FailureKind.ENCODE_ERROR
+            logger.exception(
+                "Encode failed | file={} | method={} | message={} | error={}",
+                wav_file.path,
+                method_label,
+                message.name,
+                error,
+            )
         if config.failure_policy == FailurePolicy.RAISE:
             raise
         return [
@@ -172,6 +214,7 @@ def _evaluate_file_method_message(
                 message=message,
                 target=target,
                 error=error,
+                failure_kind=failure_kind,
                 attack=attack,
                 encode_time=time.perf_counter() - encode_start,
             )
@@ -188,32 +231,44 @@ def _evaluate_file_method_message(
         len(encoded_samples),
     )
 
+    # Extraction is blind: it runs on a fresh instance that has seen neither
+    # the cover nor the message, so no state kept by encode() can help it.
+    decoder = method_spec.create(wav_file.samplerate)
     encoded = WavFile(samplerate=wav_file.samplerate, samples=encoded_samples, path=wav_file.path)
-    return [
-        _evaluate_target(
-            wav_file, encoded, method, method_label, message, metric_specs, target, attack, config, encode_elapsed
+    rows: list[EvaluationRow] = []
+    for target in targets:
+        rows.extend(
+            _evaluate_target(
+                wav_file,
+                encoded,
+                decoder,
+                method_label,
+                message,
+                metric_specs,
+                target,
+                attack_variants,
+                config,
+                encode_elapsed,
+            )
         )
-        for target in targets
-        for attack in attack_variants
-    ]
+    return rows
 
 
 def _evaluate_target(
     original: WavFile,
     encoded: WavFile,
-    method: SteganographyMethod,
+    decoder: SteganographyMethod,
     method_label: str,
     message: EvaluationMessage,
     metric_specs: Sequence[_MetricSpec],
     target: AudioFileFormat | DecodeTarget,
-    attack: str | None,
+    attack_variants: Sequence[str | None],
     config: EvaluationConfig,
     encode_time: float | None = None,
-) -> EvaluationRow:
+) -> list[EvaluationRow]:
+    """Every attack variant of one encoded message delivered through one target."""
     output_path = _output_path(original.path, method_label, message.name, target, config)
     target_label = _format_value(target) or _decode_mode(target)
-    attack_elapsed: float | None = None
-    attack_metadata: dict[str, Any] = {}
 
     try:
         if isinstance(target, DecodeTarget):
@@ -224,7 +279,7 @@ def _evaluate_target(
                 message.name,
                 target_label,
             )
-            decode_input = encoded
+            stego = encoded
             output_path = None
         else:
             if output_path.exists() and not config.overwrite:
@@ -237,104 +292,125 @@ def _evaluate_target(
                 options or "<defaults>",
             )
             saved_path = save_audio(encoded, output_path, target, options)
-            decode_input = load_audio(saved_path)
+            stego = load_audio(saved_path)
             logger.debug(
                 "Reloaded after save | path={} | samples={} | samplerate={}",
                 saved_path,
-                len(decode_input.samples),
-                decode_input.samplerate,
+                len(stego.samples),
+                stego.samplerate,
             )
             if not config.keep_files:
                 _remove_file(saved_path)
                 logger.debug("Removed transient audio artifact: {}", saved_path)
                 output_path = None
+    except Exception as error:
+        logger.exception(
+            "Target preparation failed | file={} | method={} | message={} | target={} | error={}",
+            original.path,
+            method_label,
+            message.name,
+            target_label,
+            error,
+        )
+        if config.failure_policy == FailurePolicy.RAISE:
+            raise
+        return [
+            _error_row(
+                original,
+                method_label,
+                message,
+                target,
+                error,
+                output_path,
+                failure_kind=FailureKind.IO_ERROR,
+                attack=attack,
+                encode_time=encode_time,
+            )
+            for attack in attack_variants
+        ]
 
-        decode_samples = decode_input.samples
-        stego_samples = decode_input.samples
+    # Imperceptibility and robustness are different measurements and are kept
+    # apart. `metrics` always compares the cover with the stego signal, so it
+    # answers "how much did embedding change the audio". It does not depend on
+    # the attack, so it is computed once here and shared by every attack
+    # variant, and it is kept even when extraction later fails. Attack damage
+    # is reported separately, against the stego signal the attacker received,
+    # so the two effects are never summed into one number.
+    metrics, metric_errors = _calculate_metrics(
+        original.samples, stego.samples, original.samplerate, metric_specs
+    )
+    return [
+        _evaluate_attack_variant(
+            original,
+            stego,
+            decoder,
+            method_label,
+            message,
+            metric_specs,
+            target,
+            attack,
+            config,
+            encode_time,
+            output_path,
+            metrics,
+            metric_errors,
+        )
+        for attack in attack_variants
+    ]
+
+
+def _evaluate_attack_variant(
+    original: WavFile,
+    stego: WavFile,
+    decoder: SteganographyMethod,
+    method_label: str,
+    message: EvaluationMessage,
+    metric_specs: Sequence[_MetricSpec],
+    target: AudioFileFormat | DecodeTarget,
+    attack: str | None,
+    config: EvaluationConfig,
+    encode_time: float | None,
+    output_path: Path | None,
+    metrics: dict[str, Any],
+    metric_errors: dict[str, str],
+) -> EvaluationRow:
+    target_label = _format_value(target) or _decode_mode(target)
+    stego_samples = stego.samples
+    decode_samples = stego_samples
+    attack_elapsed: float | None = None
+    attack_metadata: dict[str, Any] = {}
+    failure_kind = FailureKind.ATTACK_ERROR
+
+    try:
         if attack is not None:
+            from taf.attacks.registry import has_explicit_seed
+
+            seed = None if has_explicit_seed(attack) else attack_seed(
+                _base_seed(config), _file_key(original.path), _repetition(message), attack
+            )
             logger.debug(
-                "Applying attack | file={} | method={} | message={} | target={} | attack={}",
+                "Applying attack | file={} | method={} | message={} | target={} | attack={} | seed={}",
                 original.path,
                 method_label,
                 message.name,
                 target_label,
                 attack,
+                seed if seed is not None else "<from specification>",
             )
             attack_start = time.perf_counter()
             decode_samples, _, attack_metadata = _apply_attack(
-                decode_samples, decode_input.samplerate, attack
+                decode_samples, stego.samplerate, attack, seed
             )
             attack_elapsed = time.perf_counter() - attack_start
 
+        failure_kind = FailureKind.DECODE_ERROR
         decode_start = time.perf_counter()
-        decoded_message = method.decode(decode_samples, message.length)
+        decoded_message = decoder.decode(decode_samples, message.length)
         decode_elapsed = time.perf_counter() - decode_start
-        success = bool(np.array_equal(list(message.bits), decoded_message))
-        logger.debug(
-            "Decode done  | file={} | method={} | message={} | target={} | attack={} | took={:.3f}s | success={}",
-            original.path,
-            method_label,
-            message.name,
-            target_label,
-            attack or "none",
-            decode_elapsed,
-            success,
-        )
-        # Imperceptibility and robustness are different measurements and are
-        # kept apart. `metrics` always compares the cover with the stego
-        # signal, so it answers "how much did embedding change the audio" and
-        # is identical across the attack variants of one encode. Attack damage
-        # is reported separately, against the stego signal the attacker
-        # received, so the two effects are never summed into one number.
-        metrics, metric_errors = _calculate_metrics(
-            original.samples, stego_samples, original.samplerate, metric_specs
-        )
-        attack_metrics: dict[str, Any] = {}
-        attack_metric_errors: dict[str, str] = {}
-        if attack is not None:
-            if len(decode_samples) == len(stego_samples):
-                attack_metrics, attack_metric_errors = _calculate_metrics(
-                    stego_samples, decode_samples, original.samplerate, metric_specs
-                )
-            else:
-                # Cropping, stretching and padding change the length, and the
-                # packaged metrics all require two signals of equal length.
-                attack_metric_errors = {
-                    "*": (
-                        f"attack changed the signal length "
-                        f"({len(stego_samples)} -> {len(decode_samples)} samples); "
-                        "sample-aligned quality metrics do not apply"
-                    )
-                }
-        return EvaluationRow(
-            input_path=original.path,
-            method=method_label,
-            message_name=message.name,
-            message_length=message.length,
-            decode_mode=_decode_mode(target),
-            format=_format_value(target),
-            success=success,
-            metrics=metrics,
-            metric_errors=metric_errors,
-            attack_metrics=attack_metrics,
-            attack_metric_errors=attack_metric_errors,
-            output_path=output_path,
-            decoded_message=list(decoded_message),
-            is_lossy=_is_lossy(target),
-            transformation_name=_transformation_name(target),
-            codec_options=config.codec_options.get(_format_value(target) or "", {}),
-            attack=attack,
-            attack_parameters=attack_metadata,
-            message_bits=list(message.bits),
-            sample_rate=original.samplerate,
-            duration_seconds=len(original.samples) / original.samplerate if original.samplerate else None,
-            encode_time_seconds=encode_time,
-            decode_time_seconds=decode_elapsed,
-            attack_time_seconds=attack_elapsed,
-        )
     except Exception as error:
         logger.exception(
-            "Target evaluation failed | file={} | method={} | message={} | target={} | attack={} | error={}",
+            "{} | file={} | method={} | message={} | target={} | attack={} | error={}",
+            failure_kind,
             original.path,
             method_label,
             message.name,
@@ -345,8 +421,92 @@ def _evaluate_target(
         if config.failure_policy == FailurePolicy.RAISE:
             raise
         return _error_row(
-            original, method_label, message, target, error, output_path, attack=attack, encode_time=encode_time
+            original,
+            method_label,
+            message,
+            target,
+            error,
+            output_path,
+            failure_kind=failure_kind,
+            attack=attack,
+            encode_time=encode_time,
+            attack_time=attack_elapsed,
+            attack_parameters=attack_metadata,
+            metrics=metrics,
+            metric_errors=metric_errors,
         )
+
+    success = bool(np.array_equal(list(message.bits), decoded_message))
+    logger.debug(
+        "Decode done  | file={} | method={} | message={} | target={} | attack={} | took={:.3f}s | success={}",
+        original.path,
+        method_label,
+        message.name,
+        target_label,
+        attack or "none",
+        decode_elapsed,
+        success,
+    )
+
+    attack_metrics: dict[str, Any] = {}
+    attack_metric_errors: dict[str, str] = {}
+    if attack is not None:
+        if len(decode_samples) == len(stego_samples):
+            attack_metrics, attack_metric_errors = _calculate_metrics(
+                stego_samples, decode_samples, original.samplerate, metric_specs
+            )
+        else:
+            # Cropping, stretching and padding change the length, and the
+            # packaged metrics all require two signals of equal length.
+            attack_metric_errors = {
+                "*": (
+                    f"attack changed the signal length "
+                    f"({len(stego_samples)} -> {len(decode_samples)} samples); "
+                    "sample-aligned quality metrics do not apply"
+                )
+            }
+    return EvaluationRow(
+        input_path=original.path,
+        method=method_label,
+        message_name=message.name,
+        message_length=message.length,
+        decode_mode=_decode_mode(target),
+        format=_format_value(target),
+        success=success,
+        metrics=metrics,
+        metric_errors=metric_errors,
+        attack_metrics=attack_metrics,
+        attack_metric_errors=attack_metric_errors,
+        output_path=output_path,
+        decoded_message=list(decoded_message),
+        repetition=message.index,
+        is_lossy=_is_lossy(target),
+        transformation_name=_transformation_name(target),
+        codec_options=config.codec_options.get(_format_value(target) or "", {}),
+        attack=attack,
+        attack_parameters=attack_metadata,
+        message_bits=list(message.bits),
+        sample_rate=original.samplerate,
+        duration_seconds=len(original.samples) / original.samplerate if original.samplerate else None,
+        encode_time_seconds=encode_time,
+        decode_time_seconds=decode_elapsed,
+        attack_time_seconds=attack_elapsed,
+    )
+
+
+def _base_seed(config: EvaluationConfig) -> int:
+    """The experiment seed; 0 keeps attack realisations reproducible without one."""
+    return config.random_seed if config.random_seed is not None else 0
+
+
+def _file_key(path: Path) -> str:
+    # The file name rather than the full path, so a dataset moved to another
+    # directory or machine reproduces the same attack realisations.
+    return Path(path).name
+
+
+def _repetition(message: EvaluationMessage) -> int:
+    return message.index if message.index is not None else 0
 
 
 def _calculate_metrics(
@@ -373,7 +533,14 @@ def _calculate_metrics(
             errors[name] = str(error)
             logger.warning("Metric '{}' raised: {}", name, error)
             continue
-        metrics[name] = value
+        # Multi-valued metrics are split into named components here, where the
+        # metric that knows their meaning is at hand; averaging them later
+        # would mix unrelated quantities.
+        try:
+            metrics.update(metric.labelled_values(value))
+        except (TypeError, ValueError) as error:
+            errors[name] = f"non-numeric result: {error}"
+            continue
         logger.debug(
             "Metric ok    | name={} | took={:.3f}s | value={}",
             name,
@@ -446,6 +613,8 @@ def _method_specs(config: EvaluationConfig) -> list[_MethodSpec]:
     for method in config.methods:
         if isinstance(method, MethodType):
             specs.append(_method_type_spec(method))
+        elif isinstance(method, str):
+            specs.append(_named_method_spec(method))
         elif isinstance(method, SteganographyMethod):
             label = method.type()
             specs.append(_MethodSpec(label=label, create=lambda sr, original=method: copy.deepcopy(original)))
@@ -466,6 +635,8 @@ def _metric_specs(config: EvaluationConfig) -> list[_MetricSpec]:
     for metric in config.metrics:
         if isinstance(metric, MetricType):
             specs.append(_metric_type_spec(metric))
+        elif isinstance(metric, str):
+            specs.append(_named_metric_spec(metric))
         elif isinstance(metric, Metric):
             specs.append(_MetricSpec(label=metric.name(), create=lambda original=metric: copy.deepcopy(original)))
         elif callable(metric):
@@ -484,7 +655,7 @@ def _method_type_spec(method_type: MethodType) -> _MethodSpec:
             raise ValueError(f"Unknown steganography method: {method_type}")
         return method
 
-    return _MethodSpec(label=method_type.name, create=create)
+    return _MethodSpec(label=method_type.name, create=create, name=method_type.name)
 
 
 def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
@@ -497,6 +668,31 @@ def _metric_type_spec(metric_type: MetricType) -> _MetricSpec:
         return metric
 
     return _MetricSpec(label=metric_type.name, create=create)
+
+
+def _named_method_spec(spec: str) -> _MethodSpec:
+    """A method by catalogue name or specification (``"QIM_METHOD:step_scale=0.2"``)."""
+    from taf.plugins import create_method, method_spec_problems, parse_method_spec
+
+    problems = method_spec_problems(spec)
+    if problems:
+        raise ValueError(f"Invalid steganography method {spec!r}: {'; '.join(problems)}")
+    name, parameters = parse_method_spec(spec)
+    return _MethodSpec(
+        label=spec,
+        create=lambda samplerate: create_method(spec, samplerate),
+        name=name,
+        parameters=parameters,
+    )
+
+
+def _named_metric_spec(name: str) -> _MetricSpec:
+    """A metric by catalogue name: packaged (``"SNR_METRIC"``) or plugin."""
+    from taf.plugins import create_metric, metric_names
+
+    if name not in metric_names():
+        raise ValueError(f"Unknown metric: {name!r}")
+    return _MetricSpec(label=name, create=lambda: create_metric(name))
 
 
 def available_attack_names() -> list[str]:
@@ -533,17 +729,20 @@ def _resolve_attack_variants(config: EvaluationConfig) -> list[str | None]:
 
 
 def _apply_attack(
-    samples: np.ndarray, samplerate: int, attack: str
+    samples: np.ndarray, samplerate: int, attack: str, seed: int | None = None
 ) -> tuple[np.ndarray, int, dict[str, Any]]:
     """Apply one attack specification, returning the audio and its metadata.
 
     The metadata is what makes a benchmark row reproducible: it carries the
     resolved parameters, the seed, the input and output rates and lengths, and
-    any clipping or length correction the attack performed.
+    any clipping or length correction the attack performed. ``seed``, when
+    given, replaces the seed of every random stage of the attack.
     """
-    from taf.attacks.registry import build
+    from taf.attacks.registry import build, reseed
 
     built = build(attack, sample_rate=samplerate)
+    if seed is not None:
+        built = reseed(built, seed)
     result = built.apply(np.asarray(samples), samplerate)
     return np.asarray(result.audio), result.sample_rate, dict(result.metadata)
 
@@ -601,8 +800,13 @@ def _error_row(
     target: AudioFileFormat | DecodeTarget,
     error: Exception,
     output_path: Path | None = None,
+    failure_kind: str | None = None,
     attack: str | None = None,
     encode_time: float | None = None,
+    attack_time: float | None = None,
+    attack_parameters: dict[str, Any] | None = None,
+    metrics: dict[str, Any] | None = None,
+    metric_errors: dict[str, str] | None = None,
 ) -> EvaluationRow:
     return EvaluationRow(
         input_path=wav_file.path,
@@ -612,23 +816,38 @@ def _error_row(
         decode_mode=_decode_mode(target),
         format=_format_value(target),
         success=False,
+        metrics=dict(metrics or {}),
+        metric_errors=dict(metric_errors or {}),
         output_path=output_path if not isinstance(target, DecodeTarget) else None,
         error=str(error),
+        failure_kind=failure_kind or FailureKind.ENCODE_ERROR,
+        repetition=message.index,
         is_lossy=_is_lossy(target),
         transformation_name=_transformation_name(target),
         attack=attack,
+        attack_parameters=dict(attack_parameters or {}),
         message_bits=list(message.bits),
         sample_rate=wav_file.samplerate,
         duration_seconds=len(wav_file.samples) / wav_file.samplerate if wav_file.samplerate else None,
         encode_time_seconds=encode_time,
+        attack_time_seconds=attack_time,
     )
 
 
 def _method_label(method: SteganographyMethod, method_spec: _MethodSpec) -> str:
+    """The method's own name, plus its parameters when they differ from defaults.
+
+    Two settings of one method are different treatments; without the
+    parameters in the label their rows would be pooled into one group.
+    """
     try:
-        return method.type()
+        label = method.type()
     except Exception:
         return method_spec.label
+    if method_spec.parameters:
+        rendered = ", ".join(f"{key}={value}" for key, value in method_spec.parameters.items())
+        label = f"{label} ({rendered})"
+    return label
 
 
 def _decode_mode(target: AudioFileFormat | DecodeTarget) -> str:
@@ -677,12 +896,21 @@ def _normalize_message(message: EvaluationMessage) -> EvaluationMessage:
 
 
 def _generated_seeds(specs: Sequence[RandomMessageSpec], base_seed: int | None) -> list[int | None]:
-    if not specs:
-        return []
+    """One seed per message specification, keyed by its length.
+
+    Keying by length rather than by position keeps the messages of one length
+    fixed when other lengths are added to or removed from a sweep; two
+    specifications of the same length are told apart by their order.
+    """
     if base_seed is None:
         return [None for _ in specs]
-    seed_sequence = np.random.SeedSequence(base_seed)
-    return [int(child.generate_state(1)[0]) for child in seed_sequence.spawn(len(specs))]
+    seeds: list[int | None] = []
+    occurrences: dict[int, int] = {}
+    for spec in specs:
+        occurrence = occurrences.get(spec.length, 0)
+        occurrences[spec.length] = occurrence + 1
+        seeds.append(message_seed(base_seed, spec.length, occurrence))
+    return seeds
 
 
 def _validate_unique_message_names(messages: Sequence[EvaluationMessage]) -> None:

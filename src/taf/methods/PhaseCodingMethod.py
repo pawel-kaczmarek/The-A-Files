@@ -1,5 +1,6 @@
 from typing import List
 import numpy as np
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -8,6 +9,13 @@ class PhaseCodingMethod(SteganographyMethod):
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         msg_length = len(message)
         chunk_size = int(2 * 2 ** np.ceil(np.log2(2 * msg_length)))
+        if chunk_size > data.shape[0]:
+            # The whole message sits in the first chunk; a chunk longer than
+            # the cover would be cut off when the output is trimmed.
+            raise CapacityError(
+                f"message too long for cover audio: a {msg_length}-bit message needs a "
+                f"{chunk_size}-sample chunk, the cover has {data.shape[0]} samples"
+            )
         num_chunks = int(np.ceil(data.shape[0] / chunk_size))
         data_with_watermark = data.copy()
 

@@ -8,6 +8,10 @@ from taf.metrics.common.metrics_helper import extract_overlapped_windows
 
 
 class CsiiMetric(Metric):
+    higher_is_better = True
+    # Separate indices for high-, mid- and low-level speech segments.
+    components = ("high", "mid", "low")
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

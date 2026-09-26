@@ -21,6 +21,7 @@ from typing import List, Tuple
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -85,7 +86,7 @@ class HistogramMethod(SteganographyMethod):
         # carry a population relation at all.
         capacity = len(audio) // (3 * self.min_samples_per_bin)
         if bit_count > capacity:
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {bit_count} > {capacity} bits"
             )
 

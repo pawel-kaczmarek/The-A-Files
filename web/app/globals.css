@@ -2,68 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens. Neutral, warm-gray chrome so that the data carries the colour;
+ * one blue accent; the categorical and sequential chart palettes are the
+ * validated reference palette (see the dataviz method), stepped separately for
+ * the light and the dark surface.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --background: 60 15.8% 96.3%;
+    --foreground: 0 0% 4.3%;
+    --card: 60 14.3% 98.6%;
+    --card-foreground: 0 0% 4.3%;
+    --primary: 213.1 67.5% 44.7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 11.8% 93.3%;
+    --secondary-foreground: 0 0% 4.3%;
+    --muted: 45 11.8% 93.3%;
+    --muted-foreground: 45 2.5% 31.4%;
+    --accent: 45 11.8% 93.3%;
+    --accent-foreground: 0 0% 4.3%;
+    --destructive: 0 61.3% 52.4%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 100% 19.4%;
+    --warning: 40.8 95.7% 53.9%;
+    --border: 52.5 11.8% 86.7%;
+    --input: 52.5 11.8% 86.7%;
+    --ring: 213.1 67.5% 44.7%;
+    --radius: 0.375rem;
 
-    /* Chart tokens — validated categorical palette (light surface). */
-    --chart-1: #2a78d6;
-    --chart-2: #1baf7a;
-    --chart-3: #eda100;
-    --chart-4: #008300;
-    --chart-5: #4a3aa7;
-    --chart-6: #e34948;
+    /* Chart surface and chrome. */
+    --chart-surface: #fcfcfb;
     --chart-grid: #e1e0d9;
     --chart-axis: #c3c2b7;
     --chart-muted: #898781;
+    --chart-ink: #0b0b0b;
+    --chart-ink-2: #52514e;
+
+    /* Categorical slots, fixed order (validated: light surface). */
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+
+    /* Sequential blue, light -> dark. */
+    --seq-100: #cde2fb;
+    --seq-200: #9ec5f4;
+    --seq-300: #6da7ec;
+    --seq-400: #3987e5;
+    --seq-500: #256abf;
+    --seq-600: #184f95;
+    --seq-700: #0d366b;
+    /* Ink for text inside a sequential cell, chosen by the cell's luminance. */
+    --seq-ink-100: #0b0b0b;
+    --seq-ink-200: #0b0b0b;
+    --seq-ink-300: #0b0b0b;
+    --seq-ink-400: #ffffff;
+    --seq-ink-500: #ffffff;
+    --seq-ink-600: #ffffff;
+    --seq-ink-700: #ffffff;
+
+    /* Status (never used for series). */
+    --status-good: #0ca30c;
+    --status-warning: #fab219;
+    --status-serious: #ec835a;
+    --status-critical: #d03b3b;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --background: 0 0% 5.1%;
+    --foreground: 50 18.7% 93.7%;
+    --card: 60 2% 10%;
+    --card-foreground: 50 18.7% 93.7%;
+    --primary: 212.8 76.8% 56.1%;
+    --primary-foreground: 0 0% 5.1%;
+    --secondary: 60 2.7% 14.5%;
+    --secondary-foreground: 50 18.7% 93.7%;
+    --muted: 60 2.7% 14.5%;
+    --muted-foreground: 55 9.1% 74.1%;
+    --accent: 60 2.7% 14.5%;
+    --accent-foreground: 50 18.7% 93.7%;
+    --destructive: 0 61.3% 52.4%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 120 86.3% 34.3%;
+    --warning: 40.8 95.7% 53.9%;
+    --border: 60 2.3% 16.9%;
+    --input: 60 2.3% 16.9%;
+    --ring: 212.8 76.8% 56.1%;
 
-    /* Chart tokens — same hues stepped for the dark surface. */
-    --chart-1: #3987e5;
-    --chart-2: #199e70;
-    --chart-3: #c98500;
-    --chart-4: #008300;
-    --chart-5: #9085e9;
-    --chart-6: #e66767;
+    --chart-surface: #1a1a19;
     --chart-grid: #2c2c2a;
     --chart-axis: #383835;
     --chart-muted: #898781;
+    --chart-ink: #f2f1ec;
+    --chart-ink-2: #c3c2b7;
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+
+    /* Sequential blue for the dark surface: from just above the surface
+       (near zero recedes) to light (more). */
+    --seq-100: #1b2533;
+    --seq-200: #17345a;
+    --seq-300: #1c5cab;
+    --seq-400: #2a78d6;
+    --seq-500: #5598e7;
+    --seq-600: #86b6ef;
+    --seq-700: #cde2fb;
+    --seq-ink-100: #ffffff;
+    --seq-ink-200: #ffffff;
+    --seq-ink-300: #ffffff;
+    --seq-ink-400: #ffffff;
+    --seq-ink-500: #0b0b0b;
+    --seq-ink-600: #0b0b0b;
+    --seq-ink-700: #0b0b0b;
   }
 }
 
@@ -71,7 +133,30 @@
   * {
     @apply border-border;
   }
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "kern", "liga";
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* A section title in the manner of a paper: small caps label above content. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+  .spec {
+    @apply font-mono text-[12px];
   }
 }

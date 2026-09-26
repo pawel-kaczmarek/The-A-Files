@@ -209,6 +209,18 @@ clipping or length correction, and — for codecs — the encoder and the FFmpeg
 version. Repeating a run with the same input, configuration and seed produces
 identical audio; this is asserted in `tests/test_attacks_dsp.py`.
 
+Inside an experiment the seed written in a specification is only a default.
+Unless the specification pins one (`"awgn:seed=7"`), the evaluation replaces
+it with a seed derived from the experiment seed, the file, the repetition and
+the attack (`taf.evaluation.seeding`, applied with `registry.reseed`). Each
+stage of a pipeline gets its own child seed. As a result:
+
+- repetitions and files sample the channel independently, so the spread of
+  the results includes the randomness of the attack; with a fixed seed every
+  repetition used to see the same noise realisation;
+- every method meets the same realisation in a given trial (common random
+  numbers), which keeps the comparison between methods paired and fair.
+
 ## Limitations
 
 - **Codec attacks require FFmpeg** and their results depend on the build and

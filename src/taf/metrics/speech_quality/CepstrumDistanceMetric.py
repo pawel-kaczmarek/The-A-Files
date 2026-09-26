@@ -7,6 +7,8 @@ from taf.metrics.common.metrics_helper import extract_overlapped_windows, lpcoef
 
 
 class CepstrumDistanceMetric(Metric):
+    higher_is_better = False
+
     def calculate(self,
                   samples_original: np.ndarray,
                   samples_processed: np.ndarray,

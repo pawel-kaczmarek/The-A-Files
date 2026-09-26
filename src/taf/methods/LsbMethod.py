@@ -1,6 +1,7 @@
 from typing import List
 import bitstring
 import numpy as np
+from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 
 
@@ -8,7 +9,7 @@ class LsbMethod(SteganographyMethod):
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         if len(message) > len(data):
-            raise ValueError(
+            raise CapacityError(
                 f"message too long for cover audio: {len(message)} > {len(data)} bits"
             )
 
