@@ -3,6 +3,7 @@
 import { CDDiagram } from "@/components/charts/CDDiagram";
 import { ChartFrame, DataTable } from "@/components/charts/base";
 import { EmptyState } from "@/components/common";
+import { EvaluationStatistics } from "@/components/run/EvaluationView";
 import { useMethodAbbreviation } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import type { Comparison, Summary } from "@/lib/types";
@@ -11,6 +12,7 @@ const TITLES: Record<string, string> = {
   ber_baseline: "run.berClean",
   ber_attacked: "run.berAttacked",
   ber_sweep: "run.curve",
+  runtime_total: "evaluation.total",
 };
 
 function isComparison(value: unknown): value is Comparison {
@@ -21,7 +23,7 @@ function isComparison(value: unknown): value is Comparison {
 // PostgreSQL's JSONB does not preserve key order, so the order in which
 // comparisons are shown is decided here: the headline comparisons first, then
 // groups, sweep values in sweep order.
-const KEY_ORDER = ["ber_baseline", "ber_attacked", "ber_sweep", "metrics", "per_value", "per_attack"];
+const KEY_ORDER = ["ber_baseline", "ber_attacked", "ber_sweep", "metrics", "per_value", "per_attack", "runtime_total"];
 
 export function comparisonsOf(summary: Summary, t: (key: string) => string): { key: string; title: string; comparison: Comparison }[] {
   const entries: { key: string; title: string; comparison: Comparison }[] = [];
@@ -133,12 +135,14 @@ export function ComparisonBlock({ title, comparison }: { title: string; comparis
 export function StatisticsView({ summary }: { summary: Summary }) {
   const { t } = useI18n();
   const comparisons = comparisonsOf(summary, t);
-  if (!comparisons.length) return <EmptyState>{t("run.noSummary")}</EmptyState>;
+  const evaluation = summary.evaluation;
+  if (!comparisons.length && !evaluation) return <EmptyState>{t("run.noSummary")}</EmptyState>;
   return (
     <div className="space-y-6">
       {comparisons.map((entry) => (
         <ComparisonBlock key={entry.key} title={entry.title} comparison={entry.comparison} />
       ))}
+      {evaluation ? <EvaluationStatistics evaluation={evaluation} /> : null}
     </div>
   );
 }

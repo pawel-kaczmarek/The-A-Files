@@ -234,6 +234,32 @@ The file is the unit of replication, because rows of one file (payloads, repetit
   payload passes when all trials complete and the bit-accuracy and BER thresholds are met. It is reported in bits and in
   bits per second, and summarised across files with a bootstrap interval. Payloads of up to 8192 bits can be tested.
 
+#### Evaluation block
+
+Next to the analysis of its design, every factorial run carries a shared evaluation block
+(`taf.experiments.scenarios.evaluation`, `summary["evaluation"]`), computed with the same estimators:
+
+* **Per method**, without and under attack: mean with its interval, median, SD, range, quartiles and IQR of BER over
+  completed trials; Tukey box summaries; recovery rates at BER = 0, ≤ 1 % and ≤ 5 % (failed trials count as not
+  recovered). With *L*-bit payloads BER moves in steps of 1/*L*, so below 100 bits "≤ 1 %" can only mean BER = 0; the
+  block records this.
+* **Per attack**: the BER increase it causes, as the mean over files of attacked minus clean BER (each file paired with
+  itself), the methods ordered by their BER under it, and paired comparisons of the methods.
+* **Per attack family observed at several strengths** (severity levels or a swept parameter): the degradation curve
+  and a test of monotonic trend.
+* **Quality** cover-vs-stego kept apart from attack damage stego-vs-attacked; **payload** (bits, bit/s) against BER and
+  quality; **processing time** and real-time factor, compared between methods only when measured with one worker.
+* **Correlations** (payload vs BER, quality and time; attack strength vs BER) as Spearman ρ on per-(file, level) means,
+  with a permutation test that shuffles values *within* files, a bootstrap interval over files, and Holm correction
+  over all correlation tests of the run.
+* **Findings**: statements computed from these figures (largest BER increase with its interval, methods whose upper
+  95 % bound of BER stays ≤ 0.01 under an attack, failures, between-file variability, significant trends, outcome of
+  the paired tests with the largest significant effect, and when too few files make significance unreachable). They
+  also open the LaTeX and Markdown reports.
+
+Confidence level, bootstrap resamples and seed, tests, effect size, correction, permutations and seed are stored with
+the block, so every figure can be recomputed from the stored trials.
+
 #### Provenance
 
 Every run produces a manifest (`ExperimentRun.manifest`, `GET /api/runs/{id}/manifest.json`). It records the

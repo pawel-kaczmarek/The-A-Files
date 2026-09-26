@@ -111,10 +111,33 @@ def get_run(run_id: uuid.UUID) -> RunOut:
     return run_out(*_require(run_id))
 
 
+def _current_summary(run: Run, experiment: Experiment) -> dict:
+    """The run's summary, recomputed from its rows when it predates the
+    current evaluation block. The summary is a deterministic function of the
+    rows and the configuration (seeded bootstrap and permutations), so the
+    refreshed figures are the ones a new run over the same rows would give."""
+    from taf.experiments.scenarios import summarize_for_scenario
+    from taf.experiments.scenarios.evaluation import EVALUATION_VERSION
+
+    summary = run.summary or {}
+    if (
+        run.status != "completed"
+        or experiment.experiment_type == "detectability"
+        or (summary.get("evaluation") or {}).get("version") == EVALUATION_VERSION
+    ):
+        return summary
+    rows = store.all_rows(run.id)
+    if not rows:
+        return summary
+    summary = store.json_safe(summarize_for_scenario(rows, _config(run, experiment)))
+    store.update_run(run.id, summary=summary)
+    return summary
+
+
 @router.get("/{run_id}/summary")
 def get_summary(run_id: uuid.UUID) -> JSONResponse:
-    run, _ = _require(run_id)
-    return JSONResponse({"run_id": str(run.id), "status": run.status, "summary": run.summary or {}})
+    run, experiment = _require(run_id)
+    return JSONResponse({"run_id": str(run.id), "status": run.status, "summary": _current_summary(run, experiment)})
 
 
 @router.get("/{run_id}/manifest.json")
@@ -222,7 +245,7 @@ def export_rows(run_id: uuid.UUID) -> Response:
 def export_summary(run_id: uuid.UUID) -> Response:
     run, experiment = _require(run_id)
     filename = make_export_filename(experiment.experiment_type, str(run.id)[:8], "summary", run.created_at)
-    return _download(export_summary_csv(run.summary or {}), filename, "text/csv")
+    return _download(export_summary_csv(_current_summary(run, experiment)), filename, "text/csv")
 
 
 @router.get("/{run_id}/report.{extension}")
@@ -239,7 +262,7 @@ def export_report(run_id: uuid.UUID, extension: str, download: bool = Query(True
         f"{experiment.name} — run {run.number}",
         _config(run, experiment),
         run.manifest or {},
-        run.summary or {},
+        _current_summary(run, experiment),
         "latex" if extension == "tex" else "markdown",
     )
     media = "application/x-tex" if extension == "tex" else "text/markdown"

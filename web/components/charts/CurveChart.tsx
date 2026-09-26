@@ -49,10 +49,14 @@ export function CurveChart({
   const plotWidth = Math.max(120, width - margin.left - margin.right);
   const plotHeight = height - margin.top - margin.bottom;
   const values = series.flatMap((s) => s.points.flatMap((p) => [p.y, p.hi]).filter((v): v is number => v !== null && v !== undefined));
+  const lows = series.flatMap((s) => s.points.flatMap((p) => [p.y, p.lo]).filter((v): v is number => v !== null && v !== undefined));
   const top = yMax ?? Math.max(0.05, ...values, threshold ?? 0) * 1.05;
-  const ticks = niceTicks(0, top, 5);
+  // Zero-based unless the data go negative (e.g. SI-SDR of a heavy embedding).
+  const bottom = Math.min(0, ...lows);
+  const ticks = niceTicks(bottom, top, 5);
+  const domainBottom = Math.min(bottom, ticks[0] ?? bottom);
   const domainTop = Math.max(top, ticks[ticks.length - 1] ?? top);
-  const y = linear([0, domainTop], [plotHeight, 0]);
+  const y = linear([domainBottom, domainTop], [plotHeight, 0]);
   const step = xLabels.length > 1 ? plotWidth / (xLabels.length - 1) : 0;
   const x = (index: number) => (xLabels.length > 1 ? index * step : plotWidth / 2);
 

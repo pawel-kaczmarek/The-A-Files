@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Sequence
 
+import numpy as np
 from pydantic import BaseModel, Field
 
 from taf.evaluation.result import EvaluationRow
@@ -233,6 +234,9 @@ def distribution_stats(
             "std": None,
             "min": None,
             "max": None,
+            "q1": None,
+            "q3": None,
+            "iqr": None,
             "ci95_low": None,
             "ci95_high": None,
         }
@@ -244,6 +248,8 @@ def distribution_stats(
     median = ordered[middle] if count % 2 else (ordered[middle - 1] + ordered[middle]) / 2
     variance = sum((value - mean) ** 2 for value in ordered) / (count - 1) if count > 1 else 0.0
     interval = estimate([value for value, _ in pairs], [cluster for _, cluster in pairs])
+    # Quartiles by linear interpolation (Hyndman & Fan type 7, numpy's default).
+    q1, q3 = (float(value) for value in np.quantile(ordered, [0.25, 0.75]))
 
     return {
         "count": count,
@@ -253,6 +259,9 @@ def distribution_stats(
         "std": math.sqrt(variance),
         "min": ordered[0],
         "max": ordered[-1],
+        "q1": q1,
+        "q3": q3,
+        "iqr": q3 - q1,
         "ci95_low": interval["ci95_low"],
         "ci95_high": interval["ci95_high"],
     }

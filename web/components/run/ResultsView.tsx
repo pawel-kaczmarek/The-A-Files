@@ -8,11 +8,12 @@ import { IntervalChart } from "@/components/charts/IntervalChart";
 import { TradeoffChart } from "@/components/charts/TradeoffChart";
 import { ChartFrame, DataTable, seriesColor, shorten } from "@/components/charts/base";
 import { Chip, EstimateText, Section, StatTile } from "@/components/common";
+import { EvaluationSections, ScientificSummary } from "@/components/run/EvaluationView";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useCatalog, useMethodAbbreviation } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
-import type { Estimate, ExperimentType, GroupStats, ParetoResult, Summary } from "@/lib/types";
+import type { Estimate, Evaluation, ExperimentType, GroupStats, ParetoResult, Summary } from "@/lib/types";
 
 type MethodStats = GroupStats & { method: string };
 type Cell = GroupStats & { method: string; attack: string | null };
@@ -41,8 +42,16 @@ function Overview({ summary }: { summary: Summary }) {
 
 // ---------------------------------------------------------------- figures
 
-function RobustnessMatrix({ cells }: { cells: Cell[] }) {
+function RobustnessMatrix({ cells, evaluation }: { cells: Cell[]; evaluation?: Evaluation }) {
   const { t, number } = useI18n();
+  const [statistic, setStatistic] = useState<"mean" | "median">("mean");
+  const medianOf = (method: string, attack: string) => {
+    if (!evaluation) return null;
+    if (attack === "") return evaluation.methods.find((entry) => entry.method === method)?.clean?.ber.median ?? null;
+    return evaluation.attacks.find((entry) => entry.attack === attack)?.per_method.find((entry) => entry.method === method)?.ber.median ?? null;
+  };
+  const valueOf = (method: string, attack: string) =>
+    statistic === "median" ? medianOf(method, attack) : lookup.get(`${method}|${attack}`)?.avg_ber_imputed ?? null;
   const methods = [...new Set(cells.map((cell) => cell.method))];
   const attacks = [...new Set(cells.map((cell) => cell.attack ?? ""))].sort((a, b) => (a === "" ? -1 : b === "" ? 1 : 0));
   const lookup = new Map(cells.map((cell) => [`${cell.method}|${cell.attack ?? ""}`, cell]));
@@ -50,27 +59,37 @@ function RobustnessMatrix({ cells }: { cells: Cell[] }) {
   return (
     <ChartFrame
       title={t("run.robustnessMatrix")}
-      hint={t("run.robustnessMatrixHint")}
+      hint={statistic === "mean" ? t("run.robustnessMatrixHint") : `${t("evaluation.statMedian")} — ${t("evaluation.methodStatsHint")}`}
+      actions={
+        evaluation ? (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            {t("evaluation.heatmapStat")}
+            <Select className="h-7 w-auto text-xs" value={statistic} onChange={(event) => setStatistic(event.target.value as "mean" | "median")}>
+              <option value="mean">{t("evaluation.statMean")}</option>
+              <option value="median">{t("evaluation.statMedian")}</option>
+            </Select>
+          </label>
+        ) : null
+      }
       table={{
         columns: [t("run.filterMethod"), ...attacks.map(label)],
-        rows: methods.map((method) => [method, ...attacks.map((attack) => number(lookup.get(`${method}|${attack}`)?.avg_ber_imputed ?? null, 3))]),
+        rows: methods.map((method) => [method, ...attacks.map((attack) => number(valueOf(method, attack), 3))]),
       }}
     >
       <Heatmap
         rows={methods}
         columns={attacks.map(label)}
-        value={(method, column) => {
-          const attack = column === t("run.baseline") ? "" : column;
-          return lookup.get(`${method}|${attack}`)?.avg_ber_imputed ?? null;
-        }}
+        value={(method, column) => valueOf(method, column === t("run.baseline") ? "" : column)}
         max={0.5}
         format={(value) => number(value, 2)}
         scaleLabel="BER"
         detail={(method, column) => {
           const cell = lookup.get(`${method}|${column === t("run.baseline") ? "" : column}`);
           if (!cell) return [];
+          const median = medianOf(method, column === t("run.baseline") ? "" : column);
           return [
             { label: "BER", value: `${number(cell.ber_imputed.estimate, 3)} [${number(cell.ber_imputed.ci95_low, 3)}, ${number(cell.ber_imputed.ci95_high, 3)}]` },
+            ...(evaluation ? [{ label: t("evaluation.median"), value: number(median, 3) }] : []),
             { label: t("run.completion"), value: `${Math.round((cell.completion_rate ?? 0) * 100)}%` },
             { label: t("common.rows"), value: String(cell.rows) },
           ];
@@ -461,6 +480,7 @@ function Pareto({ pareto, parameter }: { pareto: ParetoResult; parameter?: strin
 // ---------------------------------------------------------------- view
 
 export function ResultsView({ summary, type }: { summary: Summary; type: ExperimentType }) {
+  const evaluation = summary.evaluation;
   const matrix = (summary.matrix ?? summary.by_method_attack) as Cell[] | undefined;
   const byMethod = (summary.robustness_ranking && type === "attack_robustness"
     ? summary.robustness_ranking
@@ -468,13 +488,15 @@ export function ResultsView({ summary, type }: { summary: Summary; type: Experim
   return (
     <div className="space-y-6">
       <Overview summary={summary} />
+      {evaluation ? <ScientificSummary evaluation={evaluation} /> : null}
       {type === "robustness_curve" && summary.curves ? <Curves summary={summary} /> : null}
       {type === "tradeoff_curve" && summary.points ? <Tradeoff summary={summary} /> : null}
       {summary.capacity_by_method ? <Capacity summary={summary} /> : null}
       {summary.detectability ? <Detectability summary={summary} /> : null}
       {summary.quality_ranking ? <Quality summary={summary} /> : null}
-      {matrix && matrix.length > 0 && type !== "robustness_curve" && new Set(matrix.map((cell) => cell.attack)).size > 1 ? <RobustnessMatrix cells={matrix} /> : null}
+      {matrix && matrix.length > 0 && type !== "robustness_curve" && new Set(matrix.map((cell) => cell.attack)).size > 1 ? <RobustnessMatrix cells={matrix} evaluation={evaluation} /> : null}
       {byMethod && byMethod.length > 0 && type !== "robustness_curve" ? <MethodTable entries={byMethod} /> : null}
+      {evaluation ? <EvaluationSections evaluation={evaluation} type={type} /> : null}
       {summary.pareto && summary.pareto.front ? (
         <Pareto
           pareto={summary.pareto}

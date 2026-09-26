@@ -222,6 +222,17 @@ def test_run_is_persisted_reported_and_inspectable(client):
 
     summary = client.get(f"/api/runs/{run['id']}/summary").json()["summary"]
     assert "statistics" in summary and "pareto" in summary
+    assert summary["evaluation"]["settings"]["bootstrap_seed"] == 0
+    # A summary stored before the evaluation block existed is recomputed from
+    # the rows on first read, with the same (seeded) figures.
+    import uuid
+
+    from taf.persistence import store
+
+    store.update_run(uuid.UUID(run["id"]), summary={key: value for key, value in summary.items() if key != "evaluation"})
+    refreshed = client.get(f"/api/runs/{run['id']}/summary").json()["summary"]
+    assert refreshed["evaluation"] == summary["evaluation"]
+    assert "## Findings" in client.get(f"/api/runs/{run['id']}/report.md").text
 
     config = client.get(f"/api/runs/{run['id']}/config.json").json()
     assert isinstance(config["random_seed"], int)  # drawn at start and recorded

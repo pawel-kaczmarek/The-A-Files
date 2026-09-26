@@ -14,6 +14,7 @@ from taf.experiments.scenarios.base import Scenario
 from taf.experiments.scenarios.dataset_benchmark import SCENARIO as _dataset_benchmark
 from taf.experiments.scenarios.detectability import SCENARIO as _detectability
 from taf.experiments.scenarios.embedding_capacity import SCENARIO as _embedding_capacity
+from taf.experiments.scenarios.evaluation import evaluation_statistics, evaluation_summary
 from taf.experiments.scenarios.method_comparison import SCENARIO as _method_comparison
 from taf.experiments.scenarios.perceptual_quality import SCENARIO as _perceptual_quality
 from taf.experiments.scenarios.research_experiment import SCENARIO as _research_experiment
@@ -63,7 +64,21 @@ def validate_for_scenario(config: ExperimentConfig) -> list[str]:
 def summarize_for_scenario(
     rows: Sequence[ExperimentResultRow], config: ExperimentConfig
 ) -> dict[str, Any]:
-    return get_scenario(config.experiment_type).summarize(rows, config)
+    """The design's own analysis, plus the shared evaluation block.
+
+    Comparisons the evaluation adds (per attack, per quality metric) join the
+    design's ``statistics`` only where the design has not computed them.
+    """
+    summary = get_scenario(config.experiment_type).summarize(rows, config)
+    if rows:
+        statistics = summary.setdefault("statistics", {})
+        for key, value in evaluation_statistics(rows, config).items():
+            # A sweep design already compares methods at every swept attack.
+            if key == "per_attack" and "per_value" in statistics:
+                continue
+            statistics.setdefault(key, value)
+        summary["evaluation"] = evaluation_summary(rows, config, statistics)
+    return summary
 
 
 __all__ = [

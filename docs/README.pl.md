@@ -88,6 +88,13 @@ i odczyt wiadomości.
     * sparowane testy rangowe (Wilcoxon albo Friedman z korektą Holma, wielkość efektu, różnica krytyczna Nemenyiego);
     * front Pareto zamiast arbitralnego wyniku ważonego;
     * pojemność liczona per plik, w bitach i w b/s.
+  * **Evaluation block** — wspólny blok ewaluacji każdego przebiegu czynnikowego: rozkład BER dla każdej metody (średnia
+    z przedziałem, mediana, SD, zakres, kwartyle, IQR) bez ataku i pod atakiem, odsetki odzysku (BER = 0, ≤ 1%, ≤ 5%),
+    wzrost BER wywołany każdym atakiem (każdy plik porównany sam ze sobą), krzywe degradacji z testem trendu, jakość
+    nośnik–stego oddzielona od szkody wyrządzonej przez atak, długość wiadomości, czas przetwarzania i współczynnik czasu
+    rzeczywistego, korelacje Spearmana z testem permutacyjnym wewnątrz plików i korektą Holma oraz stwierdzenia
+    wyliczone z tych liczb. Ustawienia (poziom ufności, liczba prób bootstrap, ziarna, testy, korekta) są zapisane
+    razem z blokiem.
   * **Provenance** — manifest przebiegu: wersje pakietów i FFmpeg, commit źródeł, skróty SHA-256 plików wejściowych,
     rozwinięte ziarno oraz informacja, czy pomiary czasu są porównywalne.
   * **Reproduction of single trials and reports** — każdą zapisaną próbę da się dokładnie odtworzyć z ziarna (sygnał

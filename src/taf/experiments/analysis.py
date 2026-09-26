@@ -281,6 +281,137 @@ def paired_comparison(
 
 
 # --------------------------------------------------------------------------
+# Distributions, paired differences and associations
+# --------------------------------------------------------------------------
+
+#: Permutations of the file-stratified permutation test of a correlation.
+PERMUTATIONS = 2000
+PERMUTATION_SEED = 0
+
+
+def box_summary(values: Sequence[float]) -> dict[str, Any] | None:
+    """Tukey box: quartiles, whiskers at the most extreme values within 1.5 IQR.
+
+    Descriptive only: the values of one file are not independent, so a box
+    describes the spread of trials, not the uncertainty of a mean.
+    """
+    data = np.array([float(v) for v in values if _finite(v)])
+    if data.size == 0:
+        return None
+    q1, median, q3 = (float(v) for v in np.quantile(data, [0.25, 0.5, 0.75]))
+    iqr = q3 - q1
+    low_fence, high_fence = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+    inside = data[(data >= low_fence) & (data <= high_fence)]
+    return {
+        "n": int(data.size),
+        "min": float(data.min()),
+        "q1": q1,
+        "median": median,
+        "q3": q3,
+        "max": float(data.max()),
+        "mean": float(data.mean()),
+        "whisker_low": float(inside.min()) if inside.size else q1,
+        "whisker_high": float(inside.max()) if inside.size else q3,
+        "outliers": int(data.size - inside.size),
+    }
+
+
+def paired_difference(
+    treated: dict[Hashable, float], reference: dict[Hashable, float]
+) -> dict[str, Any]:
+    """Mean over blocks of ``treated - reference``, on the blocks both observed.
+
+    Used for the BER increase an attack causes: each file is compared with
+    itself without the attack, so the difference in content between files
+    cancels. The interval is a bootstrap over the blocks.
+    """
+    blocks = sorted(set(treated) & set(reference), key=str)
+    differences = [treated[block] - reference[block] for block in blocks]
+    result = estimate(differences, blocks)
+    result["median"] = float(np.median(differences)) if differences else None
+    return result
+
+
+def _pearson_rows(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Pearson correlation of ``x`` with every row of ``y``."""
+    xc = x - x.mean()
+    yc = y - y.mean(axis=-1, keepdims=True)
+    denominator = np.sqrt((xc**2).sum()) * np.sqrt((yc**2).sum(axis=-1))
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return (yc @ xc) / denominator
+
+
+def stratified_spearman(
+    x: Sequence[float],
+    y: Sequence[float],
+    strata: Sequence[Hashable],
+    permutations: int = PERMUTATIONS,
+    seed: int = PERMUTATION_SEED,
+    resamples: int = BOOTSTRAP_RESAMPLES,
+) -> dict[str, Any]:
+    """Spearman correlation of ``x`` and ``y`` with files as the unit.
+
+    Observations are first averaged per (stratum, x), so repetitions of one
+    file at one level count once. The p-value comes from a permutation test
+    that shuffles the y values *within* each stratum (file): under the null of
+    no association inside a file the within-file assignment is exchangeable,
+    while differences between files - which are not the effect of x - are kept.
+    A naive test on all trials would treat correlated rows of one file as
+    independent and understate the p-value. The interval is a percentile
+    bootstrap over strata.
+    """
+    cells: dict[tuple[Hashable, float], list[float]] = {}
+    for xi, yi, stratum in zip(x, y, strata):
+        if _finite(xi) and _finite(yi):
+            cells.setdefault((stratum, float(xi)), []).append(float(yi))
+    points = [(stratum, xi, sum(values) / len(values)) for (stratum, xi), values in cells.items()]
+    n_observations = sum(len(values) for values in cells.values())
+    groups = sorted({stratum for stratum, _, _ in points}, key=str)
+    levels = sorted({xi for _, xi, _ in points})
+    base = {
+        "n_observations": n_observations,
+        "n_points": len(points),
+        "n_files": len(groups),
+        "levels": len(levels),
+    }
+    if len(levels) < 2 or len(groups) < 2 or len(points) < 4:
+        return {**base, "available": False, "reason": "needs at least two levels, two files and four points"}
+
+    from scipy.stats import rankdata
+
+    xs = np.array([xi for _, xi, _ in points])
+    ys = np.array([yi for _, _, yi in points])
+    if np.ptp(ys) == 0:
+        return {**base, "available": False, "reason": "the response does not vary"}
+    x_ranks, y_ranks = rankdata(xs), rankdata(ys)
+    rho = float(_pearson_rows(x_ranks, y_ranks[None, :])[0])
+
+    rng = np.random.default_rng(seed)
+    index_by_group = [np.array([i for i, (s, _, _) in enumerate(points) if s == g]) for g in groups]
+    permuted = np.empty((permutations, len(points)))
+    for position in range(permutations):
+        order = np.arange(len(points))
+        for index in index_by_group:
+            order[index] = rng.permutation(index)
+        permuted[position] = y_ranks[order]
+    null = _pearson_rows(x_ranks, permuted)
+    null = null[np.isfinite(null)]
+    p_value = float((1 + np.sum(np.abs(null) >= abs(rho) - 1e-12)) / (1 + null.size))
+
+    # Bootstrap over strata for an interval of rho.
+    draws: list[float] = []
+    for _ in range(resamples):
+        picked = rng.integers(0, len(groups), size=len(groups))
+        index = np.concatenate([index_by_group[i] for i in picked])
+        if np.ptp(xs[index]) == 0 or np.ptp(ys[index]) == 0:
+            continue
+        draws.append(float(_pearson_rows(rankdata(xs[index]), rankdata(ys[index])[None, :])[0]))
+    tail = (1.0 - CONFIDENCE) / 2.0
+    low, high = (float(v) for v in np.quantile(draws, [tail, 1 - tail])) if len(draws) > 10 else (None, None)
+    return {**base, "available": True, "rho": rho, "rho_ci95_low": low, "rho_ci95_high": high, "p_value": p_value}
+
+
+# --------------------------------------------------------------------------
 # Multi-criteria summary
 # --------------------------------------------------------------------------
 
@@ -336,13 +467,18 @@ __all__ = [
     "BOOTSTRAP_SEED",
     "CONFIDENCE",
     "FAILURE_IMPUTED_BER",
+    "PERMUTATIONS",
+    "PERMUTATION_SEED",
     "block_means",
+    "box_summary",
     "cluster_bootstrap_ci",
     "estimate",
     "file_of",
     "holm_adjust",
     "min_blocks_for_significance",
     "paired_comparison",
+    "paired_difference",
     "pareto_front",
+    "stratified_spearman",
     "trial_ber",
 ]
