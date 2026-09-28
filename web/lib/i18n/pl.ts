@@ -213,6 +213,7 @@ export const pl: Messages = {
     quantization: "Kwantyzacja (QIM)",
     statistical: "Statystyczne / patchwork",
     adaptive: "Kodowanie adaptacyjne",
+    reversible: "Odwracalne (bezstratne)",
     learned: "Osadzanie uczone",
     neural: "Sieć neuronowa",
     plugin: "Wtyczka",

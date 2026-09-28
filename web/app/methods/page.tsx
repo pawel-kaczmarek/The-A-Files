@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { useCatalog } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 
-const FAMILY_ORDER = ["lsb", "transform", "spread_spectrum", "echo", "phase", "quantization", "statistical", "adaptive", "learned", "neural", "plugin"];
+const FAMILY_ORDER = ["lsb", "transform", "spread_spectrum", "echo", "phase", "quantization", "statistical", "adaptive", "reversible", "learned", "neural", "plugin"];
 
 export default function MethodsPage() {
   const { t } = useI18n();

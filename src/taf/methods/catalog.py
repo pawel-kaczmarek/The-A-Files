@@ -26,6 +26,7 @@ FAMILIES = (
     "quantization",
     "statistical",
     "adaptive",
+    "reversible",
     "learned",
     "neural",
 )
@@ -75,6 +76,9 @@ METHOD_METADATA: dict[MethodType, MethodMetadata] = {
     MethodType.LOW_FREQUENCY_AMPLITUDE_METHOD: MethodMetadata("statistical", "watermarking", "Lie & Chang", 2006, "10.1109/TMM.2005.861292", "margin"),
     MethodType.AUDIOSEAL_METHOD: MethodMetadata("neural", "watermarking", "San Roman et al.", 2024, "10.48550/arXiv.2401.17264", "alpha"),
     MethodType.WAVMARK_METHOD: MethodMetadata("neural", "watermarking", "Chen et al.", 2023, "10.48550/arXiv.2308.12770"),
+    MethodType.SYNC_DWT_DCT_METHOD: MethodMetadata("transform", "watermarking", "Wang & Zhao", 2006, "10.1109/TSP.2006.881258", "step_scale"),
+    MethodType.EMD_METHOD: MethodMetadata("transform", "watermarking", "Khaldi & Boudraa", 2013, "10.1109/TASL.2012.2227733", "step_scale"),
+    MethodType.REVERSIBLE_PEE_METHOD: MethodMetadata("reversible", "steganography", "Thodi & Rodriguez", 2007, "10.1109/TIP.2006.891046", "threshold"),
 }
 
 
@@ -99,6 +103,9 @@ _ABBREVIATIONS = {
     "LEARNABLE_EMBEDDING_GA_METHOD": "LE-GA",
     "AUDIOSEAL_METHOD": "AudioSeal",
     "WAVMARK_METHOD": "WavMark",
+    "SYNC_DWT_DCT_METHOD": "Sync-DWT-DCT",
+    "EMD_METHOD": "EMD",
+    "REVERSIBLE_PEE_METHOD": "PEE",
 }
 
 

@@ -7,7 +7,7 @@ Ocenia odzyskanie wiadomo?ci, zniekszta?cenia sygna?u, odporno?? na przetwarzani
 
 - [Instalacja](installation.md) ? Python, opcjonalne modele i pierwsze uruchomienie.
 - [Interfejs badawczy](ui.md) ? uruchomienie UI, przygotowanie protoko?u, analiza i eksport wynik?w.
-- [27 metod](methods.md) ? mechanizmy osadzania, identyfikatory, ograniczenia implementacji i publikacje.
+- [30 metod](methods.md) ? mechanizmy osadzania, identyfikatory, ograniczenia implementacji i publikacje.
 - [Ataki i kana?y](attacks.md) ? opis ka?dej transformacji, parametr?w i scenariuszy z?o?onych.
 - [25 metryk](metrics.md) ? znaczenie wyniku, kierunek interpretacji i ?r?d?a naukowe.
 - [Protok??](protocol.md) i [statystyka](experiments.md) ? zasady por?wnywania metod i szacowania niepewno?ci.

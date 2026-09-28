@@ -85,8 +85,8 @@ The file is the unit of replication, because rows of one file (payloads, repetit
 * **Method comparison.** Methods are compared on per-file means in a paired design. Two methods are compared with the
   Wilcoxon signed-rank test; more than two with the Friedman test followed by Holm-corrected pairwise Wilcoxon tests,
   rank-biserial effect sizes and the Nemenyi critical difference (Demšar, 2006). Below a certain number of files, no
-  Holm-corrected pairwise test can reach p < 0.05, whatever the data: 6 files for two methods, 7 for three and 14 for
-  all 27. The preview warns when the dataset is smaller than that.
+  Holm-corrected pairwise test can reach p < 0.05, whatever the data: 6 files for two methods, 7 for three and 15 for
+  all 30. The preview warns when the dataset is smaller than that.
 * **Multi-criteria summary.** Methods are summarised by their Pareto front over bit accuracy, robustness and every
   metric with a declared direction. A weighted score is computed only when weights are supplied, because it depends on
   the weights and, through normalisation, on the set of compared methods.

@@ -11,6 +11,7 @@ from taf.methods.DctDeltaLsbMethod import DctDeltaLsbMethod
 from taf.methods.DsssMethod import DsssMethod
 from taf.methods.DwtLsbMethod import DwtLsbMethod
 from taf.methods.EchoMethod import EchoMethod
+from taf.methods.EmdMethod import EmdMethod
 from taf.methods.ForegroundBackgroundSegmentationMethod import ForegroundBackgroundSegmentationMethod
 from taf.methods.AacStcMethod import AacStcMethod
 from taf.methods.FgasMethod import FgasMethod
@@ -26,7 +27,9 @@ from taf.methods.NormSpaceMethod import NormSpaceMethod
 from taf.methods.PatchworkMultilayerMethod import PatchworkMultilayerMethod
 from taf.methods.PhaseCodingMethod import PhaseCodingMethod
 from taf.methods.QimMethod import QimMethod
+from taf.methods.ReversiblePeeMethod import ReversiblePeeMethod
 from taf.methods.PrimeFactorInterpolatedMethod import PrimeFactorInterpolatedMethod
+from taf.methods.SyncDwtDctMethod import SyncDwtDctMethod
 from taf.methods.TimeSpreadEchoMethod import TimeSpreadEchoMethod
 from taf.methods.WavMarkMethod import WavMarkMethod
 from taf.methods.WirelessDwtLsbMethod import WirelessDwtLsbMethod
@@ -60,6 +63,9 @@ BUILTIN_METHOD_CLASSES: Dict[MethodType, type] = {
     MethodType.LOW_FREQUENCY_AMPLITUDE_METHOD: LowFrequencyAmplitudeMethod,
     MethodType.AUDIOSEAL_METHOD: AudioSealMethod,
     MethodType.WAVMARK_METHOD: WavMarkMethod,
+    MethodType.SYNC_DWT_DCT_METHOD: SyncDwtDctMethod,
+    MethodType.EMD_METHOD: EmdMethod,
+    MethodType.REVERSIBLE_PEE_METHOD: ReversiblePeeMethod,
 }
 
 
@@ -76,7 +82,7 @@ def build_method(cls: Callable[..., SteganographyMethod], sr: int, **parameters:
 
 #: Constructor of every packaged method, called with the sampling rate. Only
 #: the requested method is instantiated; building all of them for each lookup
-#: made every ``get()`` pay for 27 constructors.
+#: made every ``get()`` pay for 30 constructors.
 BUILTIN_METHODS: Dict[MethodType, Callable[[int], SteganographyMethod]] = {
     method_type: (lambda sr, cls=cls: build_method(cls, sr))
     for method_type, cls in BUILTIN_METHOD_CLASSES.items()

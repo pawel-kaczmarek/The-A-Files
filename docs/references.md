@@ -215,12 +215,34 @@ The following open-source projects served as references for, or are wrapped by, 
 
 **[46]** M. Chinen et al., “ViSQOL v3: An Open Source Production Ready Objective Speech and Audio Metric,” *QoMEX*, 2020. [Paper](https://arxiv.org/abs/2004.09584), [implementation](https://github.com/google/visqol).
 
+## Additional method sources
+
+<a id="ref-47"></a>
+
+**[47]** X.-Y. Wang and H. Zhao, "A Novel Synchronization Invariant Audio Watermarking Scheme Based on DWT and DCT," *IEEE Transactions on Signal Processing*, vol. 54, no. 12, pp. 4835-4840, 2006. [doi:10.1109/TSP.2006.881258](https://doi.org/10.1109/TSP.2006.881258)
+
+<a id="ref-48"></a>
+
+**[48]** K. Khaldi and A.-O. Boudraa, "Audio Watermarking Via EMD," *IEEE Transactions on Audio, Speech, and Language Processing*, vol. 21, no. 3, pp. 675-680, 2013. [doi:10.1109/TASL.2012.2227733](https://doi.org/10.1109/TASL.2012.2227733)
+
+<a id="ref-49"></a>
+
+**[49]** D. M. Thodi and J. J. Rodríguez, "Expansion Embedding Techniques for Reversible Watermarking," *IEEE Transactions on Image Processing*, vol. 16, no. 3, pp. 721-730, 2007. [doi:10.1109/TIP.2006.891046](https://doi.org/10.1109/TIP.2006.891046)
+
+<a id="ref-50"></a>
+
+**[50]** A. Nishimura, "Reversible Audio Data Hiding Using Linear Prediction and Error Expansion," in *Proceedings of the Seventh International Conference on Intelligent Information Hiding and Multimedia Signal Processing (IIHMSP)*, pp. 318-321, 2011. [doi:10.1109/IIHMSP.2011.76](https://doi.org/10.1109/IIHMSP.2011.76)
+
 ## Source use
 
 Method descriptions combine the cited literature with the linked TAF implementation. A citation provides
 scientific context, not evidence that TAF reproduces every detail or numerical result. References [1] and [7]
-are a review and a textbook. Reference [8] describes the Python wrapper; the underlying PESQ definition is
-[ITU-T P.862](https://www.itu.int/rec/T-REC-P.862).
+are a review and a textbook. Reference [49] defines prediction-error expansion for images; [50] applies it to
+audio, which is the setting of the PEE method. The full texts of [47] and [48] were not available when the
+Sync-DWT-DCT and EMD methods were written. Their descriptions follow the abstracts and the accounts of the schemes
+in later studies (for [47], [arXiv:1704.02754](https://arxiv.org/abs/1704.02754)); carrier coefficients,
+quantisation rules and step sizes are TAF's own choices. Reference [8] describes the Python wrapper; the
+underlying PESQ definition is [ITU-T P.862](https://www.itu.int/rec/T-REC-P.862).
 
 Accessible primary texts consulted for the concise descriptions include
 [AudioMarkBench, §3 and Appendix A.2](https://arxiv.org/html/2406.06979v2),

@@ -212,6 +212,7 @@ export const en = {
     quantization: "Quantisation (QIM)",
     statistical: "Statistical / patchwork",
     adaptive: "Adaptive coding",
+    reversible: "Reversible (lossless)",
     learned: "Learned embedding",
     neural: "Neural network",
     plugin: "Plugin",

@@ -29,6 +29,9 @@ class MethodType(Enum):
     LOW_FREQUENCY_AMPLITUDE_METHOD = auto()
     AUDIOSEAL_METHOD = auto()
     WAVMARK_METHOD = auto()
+    SYNC_DWT_DCT_METHOD = auto()
+    EMD_METHOD = auto()
+    REVERSIBLE_PEE_METHOD = auto()
 
 
 class MetricType(Enum):

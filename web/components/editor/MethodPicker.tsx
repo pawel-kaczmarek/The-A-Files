@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 import { formatSpec, parseSpec, parseValues, strengthLadder } from "./draft";
 
-const FAMILY_ORDER = ["lsb", "transform", "spread_spectrum", "echo", "phase", "quantization", "statistical", "adaptive", "learned", "neural"];
+const FAMILY_ORDER = ["lsb", "transform", "spread_spectrum", "echo", "phase", "quantization", "statistical", "adaptive", "reversible", "learned", "neural"];
 
 function familyOf(method: MethodInfo): string {
   return method.family ?? "plugin";

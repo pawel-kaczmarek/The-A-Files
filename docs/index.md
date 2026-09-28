@@ -8,7 +8,7 @@ robustness and statistical detectability on the same recordings and conditions.
 
 | Components | Documentation |
 | --- | --- |
-| 27 embedding methods | [Mechanisms, implementation scope and sources](methods.md) |
+| 30 embedding methods | [Mechanisms, implementation scope and sources](methods.md) |
 | 26 attack classes, four codec shortcuts, five pipelines | [Transformations and severity controls](attacks.md) |
 | 25 objective metrics | [Definitions, directions and interpretation](metrics.md) |
 | Browser research platform | [Create, run, inspect and export experiments](ui.md) |

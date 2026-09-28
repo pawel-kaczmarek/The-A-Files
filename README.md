@@ -22,14 +22,16 @@ taf-eval direct-no-metrics
 Bundled VCTK and LibriSpeech subsets support initial experiments. FFmpeg is needed for codec attacks;
 PESQ may require C++ build tools. See [installation and optional models](docs/installation.md).
 
-## Methods · 27
+## Methods · 30
 
 - **Sample and adaptive embedding:** LSB, prime-factor interpolation, FBS-LSB, AAC-STC.
-- **Transforms:** DCT-Delta-LSB, DWT-LSB, DCT-b1, norm-space, FSVC, blind SVD, LWT, wireless DWT-LSB.
+- **Transforms:** DCT-Delta-LSB, DWT-LSB, DCT-b1, norm-space, FSVC, blind SVD, LWT, wireless DWT-LSB,
+  sync-code DWT-DCT, EMD.
 - **Phase:** phase coding, improved phase coding.
 - **Spread spectrum and quantisation:** DSSS, ISS, QIM / ST-DM.
 - **Echo:** single echo, backward–forward echo, time-spread echo.
 - **Statistical:** patchwork, histogram, low-frequency amplitude modification.
+- **Reversible:** prediction-error expansion (PEE), which also restores the exact cover.
 - **Neural and approximated learned schemes:** FGAS, LE-GA, AudioSeal, WavMark.
 
 [Mechanisms, implementation limits and paper references](docs/methods.md).

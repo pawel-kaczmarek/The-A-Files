@@ -1,6 +1,6 @@
 # Embedding methods
 
-The factory registers **27 methods**. The descriptions below state what the packaged code does.
+The factory registers **30 methods**. The descriptions below state what the packaged code does.
 References identify the underlying technique or related study; they do not certify an exact reproduction
 of the paper’s implementation, training procedure or reported robustness. The review [1](references.md#ref-1)
 provides background for the classical families, rather than a primary derivation of every local variant.
@@ -38,6 +38,9 @@ detectability separately under the [experimental protocol](experiments.md).
 | **LFAM**<br>`LOW_FREQUENCY_AMPLITUDE_METHOD` | Modifies amplitude relations among three consecutive low-frequency subsegments. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/LowFrequencyAmplitudeMethod.py). | [35](references.md#ref-35) |
 | **AudioSeal**<br>`AUDIOSEAL_METHOD` | Wraps released pretrained neural models; the TAF adapter divides longer payloads into 16-bit chunks. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/AudioSealMethod.py). | [36](references.md#ref-36) |
 | **WavMark**<br>`WAVMARK_METHOD` | Wraps pretrained watermarking with synchronisation; each one-second window carries 16 user bits and 16 synchronisation bits. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/WavMarkMethod.py). | [37](references.md#ref-37) |
+| **Sync-DWT-DCT**<br>`SYNC_DWT_DCT_METHOD` | Writes a 16-bit Barker sync code into time-domain sample-group means ahead of each data segment, and quantises low-frequency DCT coefficients of the segment's DWT approximation band. The decoder searches every offset for the code, so it finds the blocks again after shifting, padding or cropping; sync groups of 16 samples replace the paper's 5, and both steps are relative to the signal level. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/SyncDwtDctMethod.py). | [47](references.md#ref-47) |
+| **EMD**<br>`EMD_METHOD` | Decomposes each frame by empirical mode decomposition and quantises the extrema magnitudes of the slow remainder left after four IMFs. Embedding is closed-loop because EMD has no exact inverse; each frame carries one bit voted on by all its extrema, and the paper's synchronisation code is not reproduced. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/EmdMethod.py). | [48](references.md#ref-48) |
+| **PEE**<br>`REVERSIBLE_PEE_METHOD` | Reversible data hiding on 16-bit PCM: expands small errors of a second-order linear predictor to carry bits and shifts the rest. A location map handles samples near full scale, and `recover_cover()` returns the original cover exactly. Fragile by design. [Code](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/ReversiblePeeMethod.py). | [49](references.md#ref-49), [50](references.md#ref-50) |
 
 ## Interpretation
 
@@ -48,6 +51,15 @@ its corpus, payload rate, attack severity and detector assumptions when compared
 The LSB and FBS variants work on floating-point representations. A successful in-memory round trip
 does not imply survival after PCM export. Patchwork-ML, LWT and LE-GA have explicit implementation
 restrictions in the table; especially LE-GA must not be reported as a reproduced trained neural system.
+
+Sync-DWT-DCT is the only classical method that searches the signal for a synchronisation code; frame-based
+methods that read a fixed grid lose synchronisation when samples are removed or inserted at the start. It reads a message
+longer than one block (32 bits by default) by numbering blocks from the first one found, so cropping the start
+preserves only a message that fits in one block. EMD depends on a data-driven decomposition that processing
+itself changes: low-pass filtering in particular alters which content forms the carrier, so the method is
+markedly less robust to filtering than fixed-basis transforms. PEE is reversible, not robust: any change to the
+marked samples, including requantisation, destroys both the payload and the ability to restore the cover, and
+a cover that is not on the 16-bit grid is restored in its rounded form.
 
 AudioSeal and WavMark require `the-a-files[neural]` and pretrained weights. FGAS requires
 `the-a-files[ai]`. See [installation](installation.md) and [provenance](experiments.md#provenance).

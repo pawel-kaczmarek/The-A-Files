@@ -28,8 +28,8 @@ A blind decoder `D` recovers an estimate `b̂ = D(z[n], L)` without access to th
 
 The toolkit comprises:
 
-* 27 embedding implementations and adapters spanning time-domain, transform-domain (DCT, DWT, LWT, SVD),
-  spread-spectrum, quantisation-index-modulation, echo, phase and neural approaches;
+* 30 embedding implementations and adapters spanning time-domain, transform-domain (DCT, DWT, LWT, SVD, EMD),
+  spread-spectrum, quantisation-index-modulation, echo, phase, reversible and neural approaches;
 * 25 registered quality/intelligibility metrics, including eSTOI, spectral diagnostics and optional ViSQOL Audio;
 * a library of seeded, parameterised attacks grouped by physical phenomenon, with severity presets and composite
   channel pipelines;
