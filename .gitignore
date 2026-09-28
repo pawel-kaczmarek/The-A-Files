@@ -69,3 +69,6 @@ docs/artivles/
 # Isolated Next.js production-build checks alongside a running dev server.
 web/.next-*/
 .tmp/research-*.txt
+
+# MkDocs static output
+/site/

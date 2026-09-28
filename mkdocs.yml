@@ -1,0 +1,81 @@
+site_name: The A-Files
+site_description: Reproducible evaluation of audio steganography and watermarking.
+site_url: https://pawelkaczmarek12.github.io/the-a-files/
+repo_url: https://github.com/pawelkaczmarek12/the-a-files
+repo_name: pawelkaczmarek12/the-a-files
+edit_uri: edit/master/docs/
+copyright: The A-Files · Paweł Kaczmarek and Zbigniew Piotrowski
+strict: true
+theme:
+  name: material
+  language: en
+  font: false
+  icon:
+    logo: material/waveform
+  palette:
+    - scheme: default
+      primary: custom
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.details
+extra_css:
+  - stylesheets/extra.css
+exclude_docs: |
+  *.drawio
+  *.docx
+  artivles/
+validation:
+  nav:
+    omitted_files: warn
+  links:
+    not_found: warn
+    anchors: warn
+    unrecognized_links: warn
+nav:
+  - Overview: index.md
+  - Getting started:
+      - Installation: installation.md
+      - Research UI: ui.md
+      - Polski przewodnik: README.pl.md
+  - Catalogue:
+      - Embedding methods: methods.md
+      - Attacks and channels: attacks.md
+      - Evaluation metrics: metrics.md
+  - Research:
+      - Protocol and scope: protocol.md
+      - Experiments and statistics: experiments.md
+      - Measurements and payloads: research-capabilities.md
+      - Steganalysis: steganalysis.md
+      - References: references.md
+  - Development:
+      - API and datasets: platform.md
+      - Plugins: extending.md
+      - Documentation and Pages: publishing.md
+      - Attack implementation history: attack-history.md
+      - Project and licence: project.md

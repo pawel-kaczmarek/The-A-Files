@@ -1,22 +1,8 @@
 # Research capabilities and protocol
 
-## Inspection and concrete gaps
-
-The current implementation lives in `src/taf`, with a FastAPI/PostgreSQL platform and a Next.js frontend in `web`.
-The older `TAF/` paths and the claim that no tests exist in AGENTS.md no longer describe the checkout.
-
-Already available: 27 methods, 21 quality/intelligibility/reverberation metrics (including PESQ, STOI, SI-SDR and
-MOSNet), factories/plugins, seeded random bit lengths and repetitions, fresh decoders, attack-specific BER and
-failure labels, separate cover–stego and stego–attacked metrics, timing, capacity sweeps, steganalysis,
-file bootstrap intervals and paired method comparisons. Corpus preparation already had seeded, speaker-balanced
-sampling, source archive hashes and prepared-file hashes. Speech, music, environmental and synthetic corpora
-were already catalogued. These mechanisms are reused.
-
-The gaps addressed here were exact text/binary messages, duration-normalized payload generation, full row-level
-audio and payload provenance, portable file identities, replayable subsets, exported derived measures,
-general-audio spectral diagnostics, an optional perceptual audio-quality adapter and structured literature evidence.
-Source channel counts previously defaulted to one in normalized results; duplicate basenames could be pooled
-as one statistical file. CSV export also dropped fields such as existing payload rates and method parameters.
+This guide defines payloads, signal measurements, input provenance and literature comparisons.
+The implementation lives in `src/taf`, with a FastAPI/PostgreSQL backend and a Next.js frontend in `web`.
+For the execution model and inferential statistics, see [experiments](experiments.md).
 
 ## Measures and their meaning
 

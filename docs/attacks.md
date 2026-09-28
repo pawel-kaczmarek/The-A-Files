@@ -1,86 +1,63 @@
-# Robustness attacks
+# Attacks and channel models
 
-This document describes the attack framework used to evaluate how well an
-embedded payload survives realistic audio processing: what each attack models,
-how it is parameterised, why those parameter ranges were chosen, and what the
-previous implementation got wrong.
+An attack transforms the stego waveform before extraction. The registry contains **26 attack classes**
+and **four codec shortcuts** (`mp3`, `aac`, `opus`, `vorbis`); these names do not represent 30 independent algorithms.
+Five named pipelines combine operations in a fixed order. Legacy aliases resolve to canonical names.
 
-- [Threat model](#threat-model)
-- [Audit of the previous attacks](#audit-of-the-previous-attacks)
-- [Taxonomy](#taxonomy)
-- [Parameters and severity](#parameters-and-severity)
-- [Benchmark suites](#benchmark-suites)
-- [Which attacks matter for which method](#which-attacks-matter-for-which-method)
-- [Usage](#usage)
-- [Reproducibility](#reproducibility)
-- [Limitations](#limitations)
+AudioMarkBench distinguishes common processing from detector-aware removal and forgery attacks
+([§3 and Appendix A.2](https://arxiv.org/html/2406.06979v2)). TAF’s catalogue below models signal processing
+and channel impairments; it does not implement that paper’s complete adversarial benchmark.
+The descriptions and parameters refer to the local implementation, not to claimed paper results.
 
-## Threat model
-
-An attack is any transformation a stego signal may undergo between embedding
-and extraction:
-
-- **incidental processing** — level changes, filtering, dynamic-range control;
-- **storage and transmission** — lossy codecs, bit-depth reduction, packet loss;
-- **format conversion** — sample-rate conversion, container changes;
-- **playback and recapture** — loudspeaker, room, microphone, clock mismatch;
-- **deliberate removal** — an adversary who wants the payload gone while the
-  audio stays usable.
-
-A benchmark is only meaningful if each transformation is what it claims to be,
-if its severity is controlled by a number that means the same thing on every
-file, and if the whole run can be repeated exactly.
-
-## Audit of the previous attacks
-
-Every attack in the previous implementation was inspected mathematically and
-measured on VCTK speech at 16 kHz. The table records what was found and what
-replaced it.
-
-| Old attack | What it actually did | Problem | Replacement | Parameters |
-| --- | --- | --- | --- | --- |
-| `additive_noise` | `np.random.normal(0, std)` added, `std=0.001` absolute, global RNG | Severity depended on recording level, so the same setting was different attacks on different files; no seed, so runs were not reproducible | `awgn`, plus separate `pink_noise` and `impulse_noise` | `snr_db`, `seed`, `prevent_clipping` |
-| `frequency_filter` | Zeroed FFT bins where `np.abs(W) == cutoff` — **exact float equality** | Measured: on a 12345-sample signal this removes **zero** bins; on a 32000-sample signal exactly 2 of 32000. The attack was essentially a no-op and modelled nothing | `notch` (second-order IIR notch) | `center_hz`, `quality`, `depth_db` |
-| `resample` | Resampled to 27500 Hz and **left the signal there** | The decoder received audio at a rate it was never built for, so the experiment measured API tolerance, not robustness to conversion | `resample` (round trip back to the source rate) | `intermediate_hz`, `restore_length` |
-| `low_pass_filter` | Butterworth order 16, fixed 2000 Hz, causal `sosfilt` | Cutoff not validated against Nyquist (meaningless at low rates); order 16 is not plausible audio processing; causal filtering added an undocumented group delay that desynchronises decoders | `low_pass` | `cutoff_hz`, `order` (6), `zero_phase` |
-| `amplitude_scaling` | `samples * 1.1` | Linear factor rather than the decibels used by every volume control and every paper; clipping neither prevented nor reported | `gain` | `gain_db`, `prevent_clipping` |
-| `flip_random_samples` | Sign-inverted 200 random samples, global RNG | Models no physical channel; unseeded | `impulse_noise` (SNR-controlled sparse impulses) | `snr_db`, `density`, `seed` |
-| `cut_random_samples` | Zeroed 200 random samples, global RNG | Reasonable phenomenon (dropouts) but unseeded and specified as a raw count rather than a fraction | `dropout` | `fraction`, `run_length`, `seed` |
-| `sample_suppression` | Zeroed random runs, global RNG | Duplicate of `cut_random_samples` under another name | merged into `dropout` | as above |
-| `time_stretch` | `rate=2.0` (phase vocoder) | Doubling the tempo destroys every method for the trivial reason that half the signal is gone; the informative range is a few percent | `time_stretch` | `rate` (0.95–1.05) |
-| `pitch_shift` | 4 semitones | Grossly audible, so not a realistic covert attack | `pitch_shift` | `semitones` (0.25–2) |
-| `quantization` | `round(x * 2^(b-1)) / 2^(b-1)` | Roughly right but the quantiser was implicit: no stated grid convention, no dither option, and the level count was off by a factor of two from the nominal depth | `bit_depth` | `bits`, `dither`, `mode`, `seed` |
-| `echo_addition` | `x[n] + decay*x[n-D]`, `delay=0.1 s` | Model correct; delay at the far end of the plausible range and specified in seconds | `echo` | `delay_ms`, `attenuation` |
-| `smoothing` | Moving average, `mode="same"` | Correct, but causal/zero-phase not stated and the nulls of the boxcar response were undocumented | `smoothing` | `window_length`, `zero_phase` |
-| `crop` | Removed a fraction split across both ends | Reasonable, but the definition was implicit and could not be varied | `crop` | `fraction`, `position`, `seed` |
-| `zero_padding` | Prepended zeros | Correct | `zero_padding` | `fraction`, `position` |
-| `speed_change` | Resample without pitch correction | Correct, and correctly distinguished from `time_stretch` | `speed` | `rate` |
-| `mp3/aac/opus_compression` | Real FFmpeg round trip | Correct in principle; bitrate passed as a string, no codec provenance recorded, no encoder-delay handling | `mp3`, `aac`, `opus`, `vorbis` | `bitrate_kbps`, `align_delay`, `restore_length` |
-
-Cross-cutting problems, all now fixed: no attack recorded its parameters; the
-benchmark applied every attack with its defaults and had no way to sweep;
-stochastic attacks used the global RNG; nothing validated parameters against
-the sample rate; and discovery by reflection over `CorruptedWavFile` had begun
-listing helper methods as attacks.
-
-**Added**, because the taxonomy had visible gaps: `pink_noise`, `impulse_noise`,
-`band_pass`, `high_pass` (parameterised), `clock_drift`, `clipping`,
-`compression_dynamic`, `time_shift`, `sample_jitter`, `reverb`,
-`acoustic_channel`, `vorbis`, and composed `pipeline` channels.
-
-## Taxonomy
-
-| Family | Attacks | Models |
+| Name | Transformation | Main controls |
 | --- | --- | --- |
-| Codec | `mp3`, `aac`, `opus`, `vorbis` | Distribution through perceptual coding |
-| Noise | `awgn`, `pink_noise`, `impulse_noise` | Channel noise, ambient noise, clicks and bit errors |
-| Filtering | `low_pass`, `high_pass`, `band_pass`, `notch`, `smoothing` | Band limitation, transmission channels, tone removal |
-| Resampling | `resample`, `clock_drift` | Format conversion, device clock mismatch |
-| Quantization | `bit_depth` | Lower-depth storage and conversion |
-| Amplitude | `gain`, `clipping`, `compression_dynamic` | Level changes, headroom loss, loudness processing |
-| Temporal | `time_shift`, `crop`, `zero_padding`, `sample_jitter`, `dropout`, `time_stretch`, `speed`, `pitch_shift` | Editing, packet loss, tempo and speed changes |
-| Acoustic | `echo`, `reverb`, `acoustic_channel` | Reflections, rooms, playback and recapture |
-| Pipeline | `streaming_upload`, `voice_call`, `broadcast`, `over_the_air`, `desync_attack` | Real multi-stage distribution chains |
+| `awgn` | Adds white Gaussian noise at a specified signal-to-noise ratio. | `snr_db` |
+| `pink_noise` | Adds coloured noise with approximately 1/f power spectrum. | `snr_db` |
+| `impulse_noise` | Adds sparse impulses to model clicks or transient corruption. | `snr_db, density` |
+| `codec` | General FFmpeg encode/decode round trip; choose the codec explicitly. | `codec, bitrate_kbps` |
+| `mp3` | MP3 perceptual coding round trip. | `bitrate_kbps` |
+| `aac` | AAC perceptual coding round trip. | `bitrate_kbps` |
+| `opus` | Opus coding round trip for speech/audio transmission. | `bitrate_kbps` |
+| `vorbis` | Vorbis perceptual coding round trip. | `bitrate_kbps` |
+| `low_pass` | Suppresses frequencies above a cutoff. | `cutoff_hz, order` |
+| `high_pass` | Suppresses frequencies below a cutoff. | `cutoff_hz, order` |
+| `band_pass` | Retains a bounded frequency range. | `low_hz, high_hz` |
+| `notch` | Attenuates a narrow band around a selected frequency. | `center_hz, quality` |
+| `smoothing` | Applies a moving-average filter, suppressing rapid sample changes. | `window_length` |
+| `resample` | Converts to an intermediate sampling rate and back to the source rate. | `intermediate_hz` |
+| `clock_drift` | Simulates sampling-clock mismatch through a small rate offset. | `offset_ppm` |
+| `bit_depth` | Quantises sample amplitudes to a lower bit depth, optionally with dither. | `bits, dither` |
+| `gain` | Applies a global level change in decibels. | `gain_db` |
+| `clipping` | Limits waveform peaks, introducing nonlinear distortion. | `threshold, mode` |
+| `compression_dynamic` | Applies memoryless amplitude compression above a linear threshold, then restores the original peak. | `threshold, ratio` |
+| `time_shift` | Shifts samples with zero padding by default; circular rotation is optional. | `shift_ms, shift_samples, mode` |
+| `crop` | Removes a fraction of the signal at a selected position. | `fraction, position` |
+| `zero_padding` | Adds silence at a selected boundary. | `fraction, position` |
+| `sample_jitter` | Inserts or deletes individual samples, disrupting synchronisation. | `events` |
+| `dropout` | Zeros sample runs to simulate missing observations. | `fraction, run_length` |
+| `time_stretch` | Changes duration with approximate pitch preservation. | `rate` |
+| `speed` | Changes playback speed, affecting duration and pitch together. | `rate` |
+| `pitch_shift` | Changes pitch while approximately preserving duration. | `semitones` |
+| `echo` | Adds one delayed, attenuated copy of the signal. | `delay_ms, attenuation` |
+| `reverb` | Convolves audio with a synthetic decaying room response. | `rt60_seconds` |
+| `acoustic_channel` | Combines simulated room, bandwidth, noise and optional clock effects. | `rt60_seconds, snr_db, clock_offset_ppm` |
+
+## Composite channels
+
+These are TAF-defined scenarios, not standardised models of particular services.
+
+| Pipeline | Processing order |
+| --- | --- |
+| `streaming_upload` | AAC → dynamic compression → MP3 |
+| `voice_call` | Speech-band filtering → Opus → sample dropouts |
+| `broadcast` | Dynamic compression → resampling round trip → white noise |
+| `over_the_air` | Simulated acoustic channel → AAC |
+| `desync_attack` | Time shift → speed change → MP3 |
+
+Use `pipeline:name=voice_call` in an experiment. Simulated reverberation and playback do not substitute
+for physical loudspeaker–microphone measurements; echo and re-recording studies motivate these tests
+([32](references.md#ref-32), [33](references.md#ref-33), [42](references.md#ref-42)).
+All stochastic operations accept a seed. Experiment exports record resolved parameters and seeds.
 
 ## Parameters and severity
 
@@ -244,3 +221,6 @@ stage of a pipeline gets its own child seed. As a result:
 - **Encoder delay is estimated by cross-correlation** and removed by default.
   The estimate is recorded; where a real channel would preserve that offset,
   set `align_delay=False`.
+
+
+See the [historical audit](attack-history.md) for changes to legacy attacks.
