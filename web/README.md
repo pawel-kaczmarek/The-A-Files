@@ -35,6 +35,17 @@ npm run build  # production build; npx tsc --noEmit for a type check
 
 Set `NEXT_PUBLIC_TAF_API_URL` (see `.env.example`) if the API runs elsewhere.
 
+To build while the development server is running, use a separate output directory:
+
+```powershell
+$env:TAF_NEXT_DIST_DIR = '.next-research-build'
+npm run build
+Remove-Item Env:TAF_NEXT_DIST_DIR
+```
+
+The [research protocol](../docs/research-capabilities.md) documents spectral/perceptual metrics,
+exact and seeded payloads, dataset replay, and the Statistics tab's filtered comparisons.
+
 ## Routes
 
 | Route | Purpose |
@@ -49,6 +60,7 @@ Set `NEXT_PUBLIC_TAF_API_URL` (see `.env.example`) if the API runs elsewhere.
 | `/runs/[id]/trials/[rowId]` | Trial inspector: the trial is re-synthesised from its seed; cover, stego, attacked and residual (stego − cover) playback with spectrograms, decoded vs. embedded message |
 | `/methods`, `/methods/[name]` | Method catalogue with family, purpose, reference and tunable parameters |
 | `/attacks`, `/metrics` | Attack and metric catalogues (severity levels, directions, components) |
+| `/literature` | Search verified paper evidence and compare payloads, datasets, attacks and reported results |
 | `/datasets`, `/datasets/[id]` | Library, standard corpora (reproducible subsets), uploads, local directories, synthetic signals |
 | `/methodology` | Protocol and statistics the platform applies |
 | `/settings` | Language, theme, API and database status, data directory |

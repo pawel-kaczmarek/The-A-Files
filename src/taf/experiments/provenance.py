@@ -36,6 +36,7 @@ TRACKED_PACKAGES = (
     "tensorflow",
     "audioseal",
     "wavmark",
+    "visqol",
 )
 
 
@@ -113,10 +114,12 @@ def describe_inputs(files: Iterable[Any]) -> list[dict[str, Any]]:
         samples = len(wav_file.samples)
         described.append(
             {
+                **wav_file.metadata,
                 "name": path.name,
-                "sha256": file_digest(path),
+                "sha256": wav_file.metadata.get("sha256") or file_digest(path),
                 "sample_rate": wav_file.samplerate,
                 "samples": samples,
+                "evaluated_channels": 1 if wav_file.samples.ndim == 1 else wav_file.samples.shape[1],
                 "duration_seconds": samples / wav_file.samplerate if wav_file.samplerate else None,
             }
         )
@@ -127,6 +130,16 @@ def build_manifest(config: Any, files: Iterable[Any], attacks: list[str]) -> dic
     """Manifest of one run; ``config`` is the resolved ``ExperimentConfig``."""
     from taf import __version__
 
+    metric_models = {}
+    if "VISQOL_METRIC" in config.metrics:
+        from taf.metrics.speech_quality.VisqolMetric import model_path
+
+        try:
+            model = model_path()
+            metric_models["VISQOL_METRIC"] = {"mode": "audio", "sample_rate": 48000, "model": model.name, "sha256": file_digest(model)}
+        except ImportError as error:
+            metric_models["VISQOL_METRIC"] = {"error": str(error)}
+
     return {
         "created_at": datetime.now(timezone.utc).isoformat(),
         "taf_version": __version__,
@@ -135,6 +148,7 @@ def build_manifest(config: Any, files: Iterable[Any], attacks: list[str]) -> dic
         "platform": platform.platform(),
         "machine": platform.machine(),
         "packages": package_versions(),
+        "metric_models": metric_models,
         "ffmpeg": ffmpeg_version(),
         "random_seed": config.random_seed,
         "resolved_attacks": attacks,

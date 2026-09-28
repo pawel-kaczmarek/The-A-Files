@@ -68,6 +68,12 @@ class EvaluationRow:
     encode_time_seconds: float | None = None
     decode_time_seconds: float | None = None
     attack_time_seconds: float | None = None
+    channels: int = 1
+    sample_count: int | None = None
+    audio_metadata: dict[str, Any] = field(default_factory=dict)
+    payload_kind: str = "random"
+    payload_seed: int | None = None
+    payload_metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -100,6 +106,12 @@ class EvaluationRow:
             "encode_time_seconds": self.encode_time_seconds,
             "decode_time_seconds": self.decode_time_seconds,
             "attack_time_seconds": self.attack_time_seconds,
+            "channels": self.channels,
+            "sample_count": self.sample_count,
+            "audio_metadata": self.audio_metadata,
+            "payload_kind": self.payload_kind,
+            "payload_seed": self.payload_seed,
+            "payload_metadata": self.payload_metadata,
         }
 
 

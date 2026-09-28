@@ -22,7 +22,7 @@
     1. [Data-driven (AI-based) metrics](#ai-based)
     2. [Speech reverberation](#speech-reverberation)
     3. [Speech intelligibility](#speech-intelligibility)
-    4. [Speech quality](#speech-quality)
+    4. [Speech and general audio quality](#speech-quality)
 7. [Steganalysis](#steganalysis)
 8. [Attack and channel model](#attacks)
 9. [References](#references)
@@ -65,7 +65,7 @@ The toolkit comprises:
 
 * reference implementations of 27 embedding methods spanning time-domain, transform-domain (DCT, DWT, LWT, SVD),
   spread-spectrum, quantisation-index-modulation, echo, phase and neural approaches;
-* 21 objective metrics of speech quality, intelligibility and reverberation, including a learned MOS predictor;
+* 25 registered quality/intelligibility metrics, including eSTOI, spectral diagnostics and optional ViSQOL Audio;
 * a library of seeded, parameterised attacks grouped by physical phenomenon, with severity presets and composite
   channel pipelines;
 * a steganalysis module estimating empirical detectability;
@@ -77,6 +77,13 @@ Audio is represented as a discrete-time waveform with its sampling rate and cont
 supported. Two public speech corpora are bundled as fixed subsets — VCTK (10 utterances) and LibriSpeech (11
 utterances) — so that experiments can be repeated without external downloads. Payloads are binary vectors, which
 decouples each method's `encode`/`decode` interface from the storage format.
+
+Experiments also accept exact UTF-8 text, hexadecimal bytes, explicit bits and seeded random payloads at requested
+bit rates. Rows record exact bit counts, offered bits/s, bits/sample, exact-message goodput, runtime factors,
+audio metadata and payload/audio hashes. Exported run configurations pin the selected relative file paths and
+SHA-256 digests. The Statistics tab offers filtered research comparisons; the Literature page holds verified,
+paper-reported evidence separately from local measurements. See the [research protocol and examples](docs/research-capabilities.md)
+for metric definitions, payload conventions, dataset metadata, sources, implementation scope and validation.
 
 ###### Method contract
 
@@ -287,7 +294,7 @@ docker compose up -d db          # PostgreSQL 17 on localhost:5432 (user, passwo
 pip install "the-a-files[platform]"
 taf-api                          # http://127.0.0.1:8000 — OpenAPI documentation at /docs
 ```
-
+1
 Migrations (Alembic) are applied when the API starts. `TAF_DATABASE_URL` overrides the connection string
 (`postgresql+psycopg://taf:taf@localhost:5432/taf`), `TAF_DATA_DIR` (default `~/.taf`) holds prepared corpora and
 uploads, and `TAF_MAX_CONCURRENT_RUNS` limits parallel runs.
@@ -417,8 +424,10 @@ registered as [plugins](#plugins). Both must satisfy the [method contract](#abou
 
 ## 6. Objective quality metrics
 
-Metrics are computed between the cover `x` and the processed signal. They are grouped by the property they estimate
-(Tables 2–5). Numbering is continuous across the tables.
+The registry contains **25 metrics**, grouped by the property they estimate (Tables 2–5). Numbering is continuous
+across the tables. Embedding quality uses cover ↔ stego (`metrics`); attack damage uses stego ↔ attacked
+(`attack_metrics`). Payload robustness is measured separately by BER and complete-message recovery under each
+attack condition. A high audio-quality score does not establish payload survival or resistance to steganalysis.
 
 Each metric declares its direction (`higher_is_better`), which rankings and significance tests use instead of inferring
 it from the metric name. A metric that returns several numbers declares their names (`components`), and each is
@@ -459,30 +468,56 @@ as a reference. STGI and wSTMI, which are defined at 10 kHz, resample other rate
 | 4.  | `CsiiMetric.py` | Coherence speech intelligibility index (CSII)      | [[7]](#articles) |
 | 5.  | `NcmMetric.py`  | Normalised covariance measure (NCM)                | [[7]](#articles) |
 | 6.  | `StoiMetric.py` | Short-time objective intelligibility (STOI)        | [[9]](#articles) |
+| 7.  | `EstoiMetric.py` | Extended STOI (eSTOI; `ESTOI_METRIC`)             | [Jensen & Taal, 2016](https://doi.org/10.1109/TASLP.2016.2585878) |
+
+eSTOI uses the existing `pystoi` implementation with `extended=True`. Higher values indicate greater predicted
+speech intelligibility; it is not a general music-quality score. Silent references and insufficient active frames
+are recorded as metric errors rather than valid scores.
 
 <a id="speech-quality"></a>
 
-#### 6.4 Speech quality
+#### 6.4 Speech and general audio quality
 
 **Table 5.** Signal-fidelity and perceptual quality measures.
 
 | No. | Module                         | Metric                                                   | Ref.              |
 |-----|--------------------------------|----------------------------------------------------------|-------------------|
-| 7.  | `SnrMetric.py`                 | Signal-to-noise ratio (SNR)                              | [[12]](#articles) |
-| 8.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance (MCD)                              | [[11]](#articles) |
-| 9.  | `SnrSegMetric.py`              | Segmental SNR (SNRseg)                                   | [[7]](#articles)  |
-| 10. | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR (fwSNRseg)              | [[7]](#articles)  |
-| 11. | `CepstrumDistanceMetric.py`    | Cepstral distance (CD)                                   | [[7]](#articles)  |
-| 12. | `LlrMetric.py`                 | Log-likelihood ratio (LLR)                               | [[7]](#articles)  |
-| 13. | `WssMetric.py`                 | Weighted spectral slope (WSS)                            | [[7]](#articles)  |
-| 14. | `PesqMetric.py`                | Perceptual evaluation of speech quality (PESQ)           | [[8]](#articles)  |
-| 15. | `CsigMetric.py`                | Composite signal-distortion rating (Csig)                | [[13]](#articles) |
-| 16. | `CovlMetric.py`                | Composite overall-quality rating (Covl)                  | [[13]](#articles) |
-| 17. | `CbakMetric.py`                | Composite background-intrusiveness rating (Cbak)         | [[13]](#articles) |
-| 18. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index (wSTMI)       | [[14]](#articles) |
-| 19. | `StgiMetric.py`                | Spectro-temporal glimpsing index (STGI)                  | [[15]](#articles) |
-| 20. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio (SI-SDR)      | [[17]](#articles) |
-| 21. | `BSSEvalMetric.py`             | BSSEval v4 source-separation measures                    | [[18]](#articles) |
+| 8.  | `SnrMetric.py`                 | Signal-to-noise ratio (SNR)                              | [[12]](#articles) |
+| 9.  | `MelCepstralDistanceMetric.py` | Mel-cepstral distance (MCD)                              | [[11]](#articles) |
+| 10. | `SnrSegMetric.py`              | Segmental SNR (SNRseg)                                   | [[7]](#articles)  |
+| 11. | `FWSnrSegMetric.py`            | Frequency-weighted segmental SNR (fwSNRseg)              | [[7]](#articles)  |
+| 12. | `CepstrumDistanceMetric.py`    | Cepstral distance (CD)                                   | [[7]](#articles)  |
+| 13. | `LlrMetric.py`                 | Log-likelihood ratio (LLR)                               | [[7]](#articles)  |
+| 14. | `WssMetric.py`                 | Weighted spectral slope (WSS)                            | [[7]](#articles)  |
+| 15. | `PesqMetric.py`                | Perceptual evaluation of speech quality (PESQ)           | [[8]](#articles)  |
+| 16. | `CsigMetric.py`                | Composite signal-distortion rating (Csig)                | [[13]](#articles) |
+| 17. | `CovlMetric.py`                | Composite overall-quality rating (Covl)                  | [[13]](#articles) |
+| 18. | `CbakMetric.py`                | Composite background-intrusiveness rating (Cbak)         | [[13]](#articles) |
+| 19. | `WstmiMetric.py`               | Weighted spectro-temporal modulation index (wSTMI)       | [[14]](#articles) |
+| 20. | `StgiMetric.py`                | Spectro-temporal glimpsing index (STGI)                  | [[15]](#articles) |
+| 21. | `SisdrMetric.py`               | Scale-invariant signal-to-distortion ratio (SI-SDR)      | [[17]](#articles) |
+| 22. | `BSSEvalMetric.py`             | BSSEval v4 source-separation measures                    | [[18]](#articles) |
+| 23. | `LogSpectralDistanceMetric.py` | Log-spectral distance (LSD; `LSD_METRIC`)                | [TAF definition](docs/research-capabilities.md#measures-and-their-meaning) |
+| 24. | `SpectralConvergenceMetric.py` | Multi-resolution spectral convergence (`MRSC_METRIC`)   | [TAF definition](docs/research-capabilities.md#measures-and-their-meaning) |
+| 25. | `VisqolMetric.py`              | ViSQOL Audio MOS-LQO (`VISQOL_METRIC`; optional)          | [Official implementation](https://github.com/google/visqol) |
+
+**LSD** is the mean framewise RMS difference of log-magnitude spectra, in dB; lower is closer. The implementation
+uses 32 ms Hann windows, 75% overlap and a fixed −100 dBFS magnitude floor. **MRSC** averages relative Frobenius
+errors of STFT magnitudes at 16, 32 and 64 ms; lower is closer, and a silent reference is undefined. Both require
+finite, sample-aligned mono signals and measure spectral distortion rather than perceptual MOS. Their fixed analysis
+settings and phase-related limitations are documented in the [research protocol](docs/research-capabilities.md#measures-and-their-meaning).
+
+**ViSQOL Audio** returns MOS-LQO, with higher scores indicating better predicted audio quality. It requires the
+official Google Python bindings and bundled `libsvm_nu_svr_model.txt`, installed separately using the
+[official build instructions](https://github.com/google/visqol#python-api-usage). The adapter uses audio mode and
+polyphase-resamples both metric inputs to 48 kHz; this does not change the decoder's signal or restore missing
+bandwidth. Missing bindings or model files produce a preview warning and metric error. Model hashes and package
+versions are recorded in provenance; audio-mode and speech-mode scores should not be pooled.
+
+Payload bits/s, bits/sample, exact-message goodput and encode/decode real-time factors are separate experiment-row
+measures. Their definitions and the distinction between offered load and empirical capacity are given in the
+[research protocol](docs/research-capabilities.md#measures-and-their-meaning). The Statistics tab's Research comparisons
+section filters these measures and quality scores by audio metadata, payload settings, attack condition and signal reference.
 
 All metrics implement the abstract interface `Metric`:
 
@@ -606,6 +641,16 @@ limitations are documented in [docs/attacks.md](docs/attacks.md).
 
 #### 9.1 Literature
 
+The application's **Literature** page (`/literature`, API: `/api/catalog/literature`) includes structured evidence
+for four additional neural audio studies: **Hide and Speak** (2020), **DeAR** (2023), **SilentCipher** (2024), and
+**IDEAW** (2024); their full citations are [41]–[44] below. Each entry records authors, publication year, method
+family, DOI/arXiv links, datasets, reported metrics, attacks, payload/capacity definitions, and experimental results
+with source locations and conditions. These entries describe reference studies; their embedding algorithms have
+not been added to the executable method registry. Paper-reported results are distinct from local measurements.
+
+See the [evidence catalog](src/taf/methods/literature.py) for the transcribed observations and the
+[research protocol](docs/research-capabilities.md#literature-and-ui) for interpretation and comparison limitations.
+
 [1] A. A. Alsabhany, A. H. Ali, F. Ridzuan, A. H. Azni, and M. R. Mokhtar, "Digital Audio Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art," *Computer Science Review*, vol. 38, article 100316, 2020. [doi:10.1016/j.cosrev.2020.100316](https://doi.org/10.1016/j.cosrev.2020.100316)
 
 [2] H. T. Hu and L. Y. Hsu, "Robust, Transparent and High-Capacity Audio Watermarking in DCT Domain," *Signal Processing*, vol. 109, pp. 226-235, 2015. [doi:10.1016/j.sigpro.2014.11.011](https://doi.org/10.1016/j.sigpro.2014.11.011)
@@ -685,6 +730,14 @@ limitations are documented in [docs/attacks.md](docs/attacks.md).
 [39] J. Kodovsky, J. Fridrich, and V. Holub, "Ensemble Classifiers for Steganalysis of Digital Media," *IEEE Transactions on Information Forensics and Security*, vol. 7, no. 2, pp. 432-444, 2012. [doi:10.1109/TIFS.2011.2175919](https://doi.org/10.1109/TIFS.2011.2175919)
 
 [40] T. Filler, J. Judas, and J. Fridrich, "Minimizing Additive Distortion in Steganography Using Syndrome-Trellis Codes," *IEEE Transactions on Information Forensics and Security*, vol. 6, no. 3, pp. 920-935, 2011. [doi:10.1109/TIFS.2011.2134094](https://doi.org/10.1109/TIFS.2011.2134094)
+
+[41] F. Kreuk, Y. Adi, B. Raj, R. Singh, and J. Keshet, "Hide and Speak: Towards Deep Neural Networks for Speech Steganography," in *Proceedings of Interspeech 2020*, 2020. [doi:10.21437/Interspeech.2020-2380](https://doi.org/10.21437/Interspeech.2020-2380); [arXiv:1902.03083](https://arxiv.org/abs/1902.03083) (preprint 2019).
+
+[42] C. Liu, J. Zhang, H. Fang, Z. Ma, W. Zhang, and N. Yu, "DeAR: A Deep-learning-based Audio Re-recording Resilient Watermarking," in *Proceedings of AAAI 2023*, 2023. [doi:10.1609/aaai.v37i11.26550](https://doi.org/10.1609/aaai.v37i11.26550); [arXiv:2212.02339](https://arxiv.org/abs/2212.02339) (preprint 2022).
+
+[43] M. K. Singh, N. Takahashi, W. Liao, and Y. Mitsufuji, "SilentCipher: Deep Audio Watermarking," in *Proceedings of Interspeech 2024*, 2024. [doi:10.21437/Interspeech.2024-174](https://doi.org/10.21437/Interspeech.2024-174); [arXiv:2406.03822](https://arxiv.org/abs/2406.03822).
+
+[44] P. Li, X. Zhang, J. Xiao, and J. Wang, "IDEAW: Robust Neural Audio Watermarking with Invertible Dual-Embedding," in *Proceedings of EMNLP 2024*, 2024. [doi:10.18653/v1/2024.emnlp-main.258](https://doi.org/10.18653/v1/2024.emnlp-main.258); [arXiv:2409.19627](https://arxiv.org/abs/2409.19627).
 
 <a id="links"></a>
 

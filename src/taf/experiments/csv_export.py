@@ -40,6 +40,13 @@ _BASE_COLUMNS = [
     "error",
 ]
 
+# Keep new scalar provenance/capacity fields in exports. Nested structures are
+# explicit JSON, while metrics retain distinct reference-specific columns.
+_BASE_COLUMNS += [name for name in ExperimentResultRow.model_fields
+                  if name not in _BASE_COLUMNS and name not in
+                  {"metrics", "metric_errors", "attack_metrics", "attack_metric_errors"}]
+_BASE_COLUMNS += ["metric_errors", "attack_metric_errors"]
+
 
 def rows_to_dataframe(rows: Sequence[ExperimentResultRow]) -> pd.DataFrame:
     """Flatten normalized rows: one column per metric, stable base columns."""
@@ -48,10 +55,14 @@ def rows_to_dataframe(rows: Sequence[ExperimentResultRow]) -> pd.DataFrame:
     attack_metric_names: list[str] = sorted({name for row in rows for name in row.attack_metrics})
     for row in rows:
         record = row.model_dump(mode="json")
+        for name in ("method_parameters", "preprocessing"):
+            record[name] = json.dumps(record[name], sort_keys=True)
         metrics = record.pop("metrics", {})
         metric_errors = record.pop("metric_errors", {})
         attack_metrics = record.pop("attack_metrics", {})
         attack_metric_errors = record.pop("attack_metric_errors", {})
+        record["metric_errors"] = json.dumps(metric_errors, sort_keys=True)
+        record["attack_metric_errors"] = json.dumps(attack_metric_errors, sort_keys=True)
         for name in attack_metric_names:
             if name in attack_metrics:
                 record[f"attack_metric:{name}"] = attack_metrics[name]

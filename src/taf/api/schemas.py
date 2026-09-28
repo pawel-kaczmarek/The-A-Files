@@ -44,6 +44,9 @@ class MethodInfo(BaseModel):
 
 
 class MetricInfo(BaseModel):
+    domain: str | None = None
+    interpretation: str | None = None
+    url: str | None = None
     name: str
     label: str = ""
     class_name: str

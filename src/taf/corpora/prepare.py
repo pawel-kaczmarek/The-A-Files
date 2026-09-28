@@ -36,6 +36,7 @@ import soundfile as sf
 from scipy.signal import resample_poly
 
 from taf.corpora.catalog import Corpus
+from taf.audio.metadata import describe_audio
 
 Progress = Callable[[str, float], None]
 """``progress(stage, fraction)``: stage is "download", "scan" or "prepare"."""
@@ -53,6 +54,16 @@ class SubsetRule:
     excerpt_seconds: float | None = None
     excerpt_offset_seconds: float = 0.0
     seed: int = 0
+
+    def __post_init__(self):
+        if self.max_files < 1 or self.seed < 0 or (self.target_sample_rate is not None and self.target_sample_rate <= 0):
+            raise ValueError("max_files and sample rate must be positive; seed must be nonnegative.")
+        if self.min_duration_seconds < 0 or self.excerpt_offset_seconds < 0:
+            raise ValueError("Durations and offsets cannot be negative.")
+        if self.max_duration_seconds is not None and self.max_duration_seconds < self.min_duration_seconds:
+            raise ValueError("Maximum duration must be at least the minimum duration.")
+        if self.excerpt_seconds is not None and self.excerpt_seconds <= 0:
+            raise ValueError("Excerpt duration must be positive.")
 
 
 def _noop(stage: str, fraction: float) -> None:
@@ -223,7 +234,9 @@ def prepare_subset(
                 break
             examined += 1
             try:
-                samples, rate = sf.read(io.BytesIO(reader.read(name)), always_2d=False)
+                source_bytes = reader.read(name)
+                source_info = describe_audio(io.BytesIO(source_bytes))
+                samples, rate = sf.read(io.BytesIO(source_bytes), always_2d=False)
             except Exception:  # noqa: BLE001 - an unreadable member is skipped and counted
                 continue
             duration = len(samples) / rate
@@ -243,11 +256,15 @@ def prepare_subset(
             sf.write(output, audio, target, subtype="PCM_16")
             files.append(
                 {
+                    **describe_audio(output),
                     "file": output.name,
                     "source": name,
+                    "source_sha256": hashlib.sha256(source_bytes).hexdigest(),
+                    "source_audio": source_info,
+                    "category": corpus.domain,
                     "speaker": speaker,
                     "sample_rate": target,
-                    "duration_seconds": round(len(audio) / target, 4),
+                    "duration_seconds": len(audio) / target,
                     "sha256": sha256_of(output),
                 }
             )
@@ -257,6 +274,8 @@ def prepare_subset(
 
     manifest = {
         "corpus": corpus.id,
+        "category": corpus.domain,
+        "preprocessing": "Arithmetic mean downmix; polyphase resampling; optional excerpt; overshoot peak scaling; PCM_16 FLAC",
         "prepared_at": datetime.now(timezone.utc).isoformat(),
         "source": str(source.name),
         "source_sha256": sha256_of(source) if source.is_file() else None,
@@ -277,23 +296,33 @@ def _safe(stem: str) -> str:
 
 def scan_directory(directory: Path) -> dict:
     """Describe an existing directory of audio files (a registered local dataset)."""
+    manifest_path = directory / "manifest.json"
+    existing = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
+    annotations = {entry["file"]: entry for entry in existing.get("files", [])}
     files = []
     for path in sorted(directory.rglob("*")):
         if path.suffix.lower() not in AUDIO_SUFFIXES or not path.is_file():
             continue
         try:
-            info = sf.info(str(path))
+            info = describe_audio(path)
         except Exception:  # noqa: BLE001 - unreadable files are left out
             continue
+        relative_path = path.relative_to(directory).as_posix()
+        entry = annotations.get(relative_path, {})
+        digest = sha256_of(path)
+        if entry.get("sha256") and entry["sha256"] != digest:
+            raise ValueError(f"Dataset manifest SHA-256 mismatch for {relative_path}.")
         files.append(
             {
-                "file": path.relative_to(directory).as_posix(),
-                "sample_rate": info.samplerate,
-                "channels": info.channels,
-                "duration_seconds": round(info.frames / info.samplerate, 4) if info.samplerate else None,
+                **{key: entry[key] for key in ("source", "speaker", "category", "source_audio", "source_sha256") if key in entry},
+                **info,
+                "file": relative_path,
+                "source": entry.get("source", relative_path),
+                "sha256": digest,
             }
         )
     return {
+        **{key: existing[key] for key in ("category", "source", "corpus", "rule", "preprocessing") if key in existing},
         "files": files,
         "total_duration_seconds": round(sum(f["duration_seconds"] or 0 for f in files), 3),
     }

@@ -28,6 +28,15 @@ class ExperimentResultRow(BaseModel):
     sample_rate: int | None = None
     duration_seconds: float | None = None
     channels: int = 1
+    source_channels: int | None = None
+    bit_depth: int | None = None
+    audio_subtype: str | None = None
+    audio_category: str | None = None
+    audio_source: str | None = None
+    audio_sha256: str | None = None
+    file_id: str | None = None
+    sample_count: int | None = None
+    preprocessing: list[str] = Field(default_factory=list)
     method: str
     method_type: str | None = None
     #: Constructor parameters the method ran with (empty: its defaults).
@@ -36,6 +45,17 @@ class ExperimentResultRow(BaseModel):
     #: Payload per second of cover audio, so capacities of files of different
     #: lengths can be compared.
     payload_rate_bps: float | None = None
+    payload_kind: str | None = None
+    payload_seed: int | None = None
+    payload_sha256: str | None = None
+    payload_bytes: float | None = None
+    requested_payload_rate_bps: float | None = None
+    payload_bits_per_sample: float | None = None
+    #: Exact-message delivered bits per cover second, zero on any failed delivery.
+    exact_goodput_bps: float | None = None
+    decoded_length: int | None = None
+    encode_rtf: float | None = None
+    decode_rtf: float | None = None
     repetition: int = 0
     message_bits: str | None = None
     decoded_bits: str | None = None
@@ -100,6 +120,11 @@ def normalize_row(
     repetition = (
         row.repetition if row.repetition is not None else _repetition_from_message_name(row.message_name)
     )
+    from taf.experiments.payloads import payload_digest
+
+    audio = row.audio_metadata
+    duration = row.duration_seconds
+    samples = row.sample_count or (round(duration * row.sample_rate) if duration and row.sample_rate else None)
     return ExperimentResultRow(
         experiment_id=experiment_id,
         experiment_type=experiment_type,
@@ -109,10 +134,30 @@ def normalize_row(
         file_path=str(row.input_path),
         sample_rate=row.sample_rate,
         duration_seconds=row.duration_seconds,
+        channels=row.channels,
+        source_channels=audio.get("channels"),
+        bit_depth=audio.get("bit_depth"),
+        audio_subtype=audio.get("subtype"),
+        audio_category=audio.get("category"),
+        audio_source=audio.get("source"),
+        audio_sha256=audio.get("sha256"),
+        file_id=audio.get("file_id"),
+        sample_count=samples,
+        preprocessing=audio.get("preprocessing", []),
         method=row.method,
         method_type=row.method_name or (method_descriptions or {}).get(row.method),
         method_parameters=dict(row.method_parameters or {}),
         payload_length=row.message_length,
+        payload_kind=row.payload_kind,
+        payload_seed=row.payload_seed,
+        payload_sha256=payload_digest(bits) if bits else None,
+        payload_bytes=row.message_length / 8,
+        requested_payload_rate_bps=row.payload_metadata.get("requested_rate_bps"),
+        payload_bits_per_sample=row.message_length / (samples * row.channels) if samples else None,
+        exact_goodput_bps=(row.message_length / duration if row.success and not failed else 0.0) if duration else None,
+        decoded_length=len(row.decoded_message) if row.decoded_message is not None else None,
+        encode_rtf=row.encode_time_seconds / duration if row.encode_time_seconds is not None and duration else None,
+        decode_rtf=row.decode_time_seconds / duration if row.decode_time_seconds is not None and duration else None,
         payload_rate_bps=(
             row.message_length / row.duration_seconds if row.duration_seconds else None
         ),

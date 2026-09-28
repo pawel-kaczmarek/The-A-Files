@@ -140,6 +140,7 @@ export function stepProblems(step: StepId, draft: ExperimentInput, design?: Desi
     if (design?.requires_attacks && !config.attacks.length && !config.attack_preset) problems.push("attacks");
   }
   if (step === "measures" && design?.requires_metrics && !config.metrics.length) problems.push("metrics");
-  if (step === "design" && !config.payload_lengths.length) problems.push("payloads");
+  if (step === "design" && (config.payload?.kind ?? "random") === "random"
+    && !config.payload_rates_bps?.length && !config.payload_lengths.length) problems.push("payloads");
   return problems;
 }

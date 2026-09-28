@@ -76,10 +76,14 @@ def write_synthetic_set(destination: Path, sample_rate: int = 16000, duration_se
         files.append(
             {
                 "file": output.name,
+                "channels": 1,
+                "bit_depth": 16,
+                "subtype": "PCM_16",
+                "category": "synthetic_signal",
                 "source": name,
                 "speaker": None,
                 "sample_rate": sample_rate,
-                "duration_seconds": duration_seconds,
+                "duration_seconds": len(signal) / sample_rate,
                 "sha256": sha256_of(output),
             }
         )

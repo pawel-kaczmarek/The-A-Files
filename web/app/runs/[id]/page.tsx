@@ -1,4 +1,5 @@
 "use client";
+import { ResearchView } from "@/components/run/ResearchView";
 
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
@@ -139,6 +140,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
           {hasSummary ? <ResultsView summary={summary.data!.summary} type={current.experiment_type} /> : <EmptyState>{t("run.noSummary")}</EmptyState>}
         </TabsContent>
         <TabsContent value="statistics" className="mt-6">
+          {hasSummary && <ResearchView runId={id} />}
           {hasSummary ? <StatisticsView summary={summary.data!.summary} /> : <EmptyState>{t("run.noSummary")}</EmptyState>}
         </TabsContent>
         <TabsContent value="trials" className="mt-6">

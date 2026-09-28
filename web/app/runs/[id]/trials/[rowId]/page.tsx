@@ -62,6 +62,15 @@ export default function TrialPage({ params }: { params: Promise<{ id: string; ro
                   <KeyValues
                     items={[
                       [t("common.file"), row.file_name],
+                      ["Relative file ID", row.file_id ?? "—"],
+                      ["Audio category / source", `${row.audio_category ?? "unknown"} / ${row.audio_source ?? "—"}`],
+                      ["Source / evaluated channels", `${row.source_channels ?? "—"} / ${row.channels ?? "—"}`],
+                      ["PCM bit depth", row.bit_depth ?? "—"],
+                      ["Payload kind / seed", `${row.payload_kind ?? "—"} / ${row.payload_seed ?? "—"}`],
+                      ["Offered payload (bits/s)", number(row.payload_rate_bps, 4)],
+                      ["Exact-message goodput (bits/s)", number(row.exact_goodput_bps, 4)],
+                      ["Bits/sample", number(row.payload_bits_per_sample, 6)],
+                      ["Payload SHA-256", <span key="hash" className="break-all font-mono text-xs">{row.payload_sha256 ?? "—"}</span>],
                       [t("run.filterMethod"), <Spec key="m">{row.method}</Spec>],
                       [t("run.filterAttack"), row.attack ? <Spec key="a">{row.attack}</Spec> : t("run.baseline")],
                       [t("run.bits"), <span key="b" className="num">{row.payload_length} · rep {row.repetition}</span>],

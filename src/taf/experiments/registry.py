@@ -146,6 +146,9 @@ def list_metrics() -> list[dict[str, Any]]:
                 "reference": metadata.reference if metadata else None,
                 "year": metadata.year if metadata else None,
                 "intrusive": metadata.intrusive if metadata else True,
+                "domain": metadata.domain if metadata else None,
+                "interpretation": metadata.interpretation if metadata else None,
+                "url": metadata.url if metadata else None,
                 # All packaged metrics compare original vs processed samples and
                 # require both signals to share length/sample rate.
                 "compares_original": True,

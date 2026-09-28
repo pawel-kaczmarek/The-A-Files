@@ -7,6 +7,7 @@ import json
 import uuid
 from functools import lru_cache
 from typing import Any
+from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
@@ -184,6 +185,33 @@ def get_rows(
 def get_facets(run_id: uuid.UUID) -> dict[str, list[Any]]:
     _require(run_id)
     return store.row_facets(run_id)
+
+
+@router.get("/{run_id}/research")
+def get_research(
+    run_id: uuid.UUID,
+    attack: str = "",
+    reference: Literal["embedding", "attack"] = "embedding",
+    group: Literal["method", "audio_category", "audio_source", "payload_kind", "payload_length", "requested_payload_rate_bps", "sample_rate", "source_channels", "bit_depth"] = "method",
+    method: str | None = None,
+    audio_category: str | None = None,
+    audio_source: str | None = None,
+    payload_kind: str | None = None,
+    payload_length: int | None = None,
+    requested_payload_rate_bps: float | None = None,
+    sample_rate: int | None = None,
+    source_channels: int | None = None,
+    bit_depth: int | None = None,
+) -> dict:
+    from taf.experiments.research import research_comparison
+
+    run, _ = _require(run_id)
+    return research_comparison(store.all_rows(run_id), attack=attack, reference=reference, group=group,
+        timing_reliable=run.config.get("max_workers", 2) == 1,
+        filters={"method": method, "audio_category": audio_category, "audio_source": audio_source, "payload_kind": payload_kind,
+                 "requested_payload_rate_bps": requested_payload_rate_bps,
+                 "payload_length": payload_length, "sample_rate": sample_rate,
+                 "source_channels": source_channels, "bit_depth": bit_depth})
 
 
 @router.get("/{run_id}/events")

@@ -42,8 +42,10 @@ export default function MetricsPage() {
                         <td className="px-4 py-3">
                           <div className="font-medium">{metric.abbreviation}</div>
                           <div className="text-xs text-muted-foreground">{metric.label}</div>
+                          {metric.interpretation && <p className="mt-2 max-w-lg text-xs text-muted-foreground">{metric.interpretation}</p>}
                           <div className="mt-1 flex flex-wrap gap-1">
                             <Chip>{metric.intrusive ? t("catalogue.intrusive") : t("catalogue.nonIntrusive")}</Chip>
+                            {metric.domain && <Chip>{metric.domain}</Chip>}
                             {metric.components.length > 0 && (
                               <Chip>
                                 {t("catalogue.components")}: {metric.components.join(" · ")}
@@ -62,6 +64,7 @@ export default function MetricsPage() {
                         <td className="whitespace-nowrap px-4 py-3 text-xs">{metric.scale ?? "–"}</td>
                         <td className="px-4 py-3 text-xs">
                           {metric.reference} {metric.year && `(${metric.year})`}
+                          {metric.url && <a className="ml-2 text-primary underline" href={metric.url}>Source</a>}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link href={`/experiments/new?metric=${metric.name}`} className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-primary hover:underline">

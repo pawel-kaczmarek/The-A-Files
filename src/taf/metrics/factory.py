@@ -23,10 +23,18 @@ from taf.metrics.speech_reverberation.BsdMetric import BsdMetric
 from taf.metrics.speech_reverberation.SrmrMetric import SrmrMetric
 from taf.models.Metric import Metric
 from taf.models.types import MetricType
+from taf.metrics.speech_intelligibility.EstoiMetric import EstoiMetric
+from taf.metrics.speech_quality.LogSpectralDistanceMetric import LogSpectralDistanceMetric
+from taf.metrics.speech_quality.SpectralConvergenceMetric import SpectralConvergenceMetric
+from taf.metrics.speech_quality.VisqolMetric import VisqolMetric
 
 
 #: Constructor of every packaged metric. Only the requested metric is built.
 BUILTIN_METRICS: Dict[MetricType, Callable[[], Metric]] = {
+    MetricType.ESTOI_METRIC: EstoiMetric,
+    MetricType.LSD_METRIC: LogSpectralDistanceMetric,
+    MetricType.MRSC_METRIC: SpectralConvergenceMetric,
+    MetricType.VISQOL_METRIC: VisqolMetric,
     MetricType.SNR_METRIC: SnrMetric,
     MetricType.SNR_SEG_METRIC: SnrSegMetric,
     MetricType.FWSNR_SEG_METRIC: FWSnrSegMetric,

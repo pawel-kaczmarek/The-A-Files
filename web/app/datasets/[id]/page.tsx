@@ -89,7 +89,7 @@ export default function DatasetPage({ params }: { params: Promise<{ id: string }
         <Section title={`${t("datasets.filesTitle")} (${files.length})`} className="mt-6">
           <DataTable
             table={{
-              columns: [t("common.file"), t("datasets.speaker"), t("datasets.rate"), t("datasets.duration"), "SHA-256"],
+              columns: [t("common.file"), t("datasets.speaker"), t("datasets.rate"), t("datasets.duration"), "Channels", "PCM bits / subtype", "Category", "Source", "SHA-256"],
               rows: files.map((file) => [
                 <span key="f" className="text-xs" title={file.source ?? ""}>
                   {file.file}
@@ -97,6 +97,10 @@ export default function DatasetPage({ params }: { params: Promise<{ id: string }
                 file.speaker ?? "–",
                 file.sample_rate,
                 `${number(file.duration_seconds, 2)} s`,
+                file.channels ?? "—",
+                `${file.bit_depth ?? "—"} / ${file.subtype ?? "—"}`,
+                file.category ?? current.domain ?? "unknown",
+                file.source ?? "—",
                 <span key="h" className="font-mono text-[11px] text-muted-foreground">
                   {file.sha256 ? `${file.sha256.slice(0, 16)}…` : "–"}
                 </span>,

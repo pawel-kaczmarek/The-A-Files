@@ -4,6 +4,9 @@ Ten dokument opisuje po polsku strukturę i zawartość głównego pliku [README
 tłumaczeniem: dla każdej sekcji wyjaśnia, czego dotyczy, jakie informacje zawiera i kiedy warto do niej zajrzeć.
 Numeracja sekcji odpowiada numeracji w README.
 
+Nowe miary, wiadomości tekstowe i binarne, powtarzalne podzbiory danych oraz porównania wyników
+opisano w [protokole badawczym](research-capabilities.md) (po angielsku).
+
 **The A-Files** (`taf`) to otwartoźródłowe narzędzie badawcze do powtarzalnej oceny metod steganografii i znakowania
 wodnego (watermarkingu) w sygnałach mowy. Zawiera implementacje referencyjne algorytmów osadzania, obiektywne miary
 przezroczystości percepcyjnej i zrozumiałości, sparametryzowany model zniekształceń kanału i ataków oraz procedurę
@@ -126,14 +129,21 @@ kontrakt z sekcji 1.
 
 ## 6. Obiektywne metryki jakości ([Objective quality metrics](../README.md#metrics))
 
-21 metryk porównujących sygnał nośny z sygnałem przetworzonym, pogrupowanych według mierzonej własności
+25 metryk jakości i zrozumiałości, pogrupowanych według mierzonej własności
 (tabele 2–5, numeracja ciągła):
 
 * **6.1 Metryki oparte na uczeniu maszynowym** — MOSNet, przewidujący średnią ocenę subiektywną (MOS);
 * **6.2 Pogłos mowy** — BSD i SRMR;
-* **6.3 Zrozumiałość mowy** — CSII, NCM, STOI;
-* **6.4 Jakość mowy** — miary wierności sygnału i jakości percepcyjnej: SNR, SNRseg, fwSNRseg, LLR, WSS, odległości
-  cepstralne (CD, MCD), PESQ, metryki złożone (Csig, Cbak, Covl), wSTMI, STGI, SI-SDR i BSSEval.
+* **6.3 Zrozumiałość mowy** — CSII, NCM, STOI i eSTOI;
+* **6.4 Jakość mowy i innych sygnałów audio** — miary wierności sygnału i jakości percepcyjnej: SNR, SNRseg,
+  fwSNRseg, LLR, WSS, odległości cepstralne (CD, MCD), PESQ, metryki złożone (Csig, Cbak, Covl), wSTMI, STGI,
+  SI-SDR, BSSEval, LSD, wielorozdzielcza zbieżność widmowa (MRSC) i opcjonalny ViSQOL Audio.
+
+Sekcja rozróżnia jakość osadzenia (cover ↔ stego), degradację po ataku (stego ↔ sygnał zaatakowany) oraz
+odporność wiadomości (BER i dokładne odtworzenie). Opisuje kierunki ocen i ograniczenia nowych miar:
+eSTOI dotyczy zrozumiałości mowy, LSD i MRSC są diagnostyką widmową, a ViSQOL wymaga oficjalnych bibliotek
+Google i modelu SVR. Miary szybkości transmisji, skutecznego dostarczenia wiadomości i czasu obliczeń
+są dokumentowane osobno od metryk jakości.
 
 Wstęp sekcji wyjaśnia, że każda metryka deklaruje swój kierunek (`higher_is_better`), zamiast zgadywać go z nazwy.
 Metryka zwracająca kilka liczb deklaruje nazwy składowych (`components`), a każda składowa jest raportowana osobno,

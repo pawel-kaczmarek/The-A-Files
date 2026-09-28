@@ -49,7 +49,15 @@ def resolve(key: str) -> Path | None:
     return Path(dataset.path)
 
 
-register_dataset_resolver(LIBRARY_DATASET_PREFIX, resolve)
+def resolve_manifest(key: str) -> dict:
+    dataset_id = store.as_uuid(key)
+    dataset = store.get_dataset(dataset_id) if dataset_id else None
+    if dataset is None:
+        return {}
+    return {**(dataset.manifest or {}), "category": dataset.domain, "source": dataset.corpus_id or dataset.name}
+
+
+register_dataset_resolver(LIBRARY_DATASET_PREFIX, resolve, resolve_manifest)
 
 
 class Library:

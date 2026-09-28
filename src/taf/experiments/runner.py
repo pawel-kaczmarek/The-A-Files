@@ -91,8 +91,6 @@ def _resolved_attacks(config: ExperimentConfig) -> list[str]:
 
 def _dataset_sample_rate(config: ExperimentConfig) -> int:
     """Sample rate of the first file in the dataset, for preset resolution."""
-    import soundfile as sf
-
     try:
         files = load_dataset_files(config)
     except Exception:  # noqa: BLE001 - dataset problems are reported elsewhere
@@ -100,7 +98,7 @@ def _dataset_sample_rate(config: ExperimentConfig) -> int:
 
     for path in files:
         try:
-            return int(sf.info(str(path)).samplerate)
+            return int(path.samplerate)
         except Exception:  # noqa: BLE001 - unreadable files are reported per row
             continue
     return 16000
@@ -108,15 +106,18 @@ def _dataset_sample_rate(config: ExperimentConfig) -> int:
 
 #: Dataset-id prefix -> function returning the directory of that dataset.
 _DATASET_RESOLVERS: dict[str, Callable[[str], Path | None]] = {}
+_DATASET_MANIFEST_RESOLVERS: dict[str, Callable[[str], dict]] = {}
 
 
-def register_dataset_resolver(prefix: str, resolver: Callable[[str], Path | None]) -> None:
+def register_dataset_resolver(prefix: str, resolver: Callable[[str], Path | None], manifest_resolver=None) -> None:
     """Let ``dataset_id="<prefix><key>"`` name a directory found by ``resolver(key)``.
 
     The platform registers its library this way, so the engine can run on
     library datasets without depending on the database.
     """
     _DATASET_RESOLVERS[prefix] = resolver
+    if manifest_resolver is not None:
+        _DATASET_MANIFEST_RESOLVERS[prefix] = manifest_resolver
 
 
 def dataset_directory(config: ExperimentConfig) -> Path | None:
@@ -169,12 +170,14 @@ def load_dataset_files(config: ExperimentConfig):
                 paths = groups[config.dataset_id or ""]
             files = load_resource_files(paths)
 
-    if config.selected_files:
-        wanted = set(config.selected_files)
-        files = [f for f in files if Path(f.path).name in wanted]
-    if config.file_limit is not None:
-        files = files[: config.file_limit]
-    return files
+    from taf.experiments.audio_inputs import prepare_inputs, select_files
+
+    directory = dataset_directory(config) if _is_external(config) else None
+    manifest = None
+    for prefix, resolver in _DATASET_MANIFEST_RESOLVERS.items():
+        if not config.dataset_path and config.dataset_id and config.dataset_id.startswith(prefix):
+            manifest = resolver(config.dataset_id[len(prefix):])
+    return prepare_inputs(select_files(files, config, directory), config, directory, manifest)
 
 
 def _dataset_file_count(config: ExperimentConfig) -> int:
@@ -185,7 +188,7 @@ def _dataset_file_count(config: ExperimentConfig) -> int:
         from taf.evaluation.workflow import audio_file_paths
 
         directory = dataset_directory(config)
-        names = [p.name for p in audio_file_paths(directory, recursive=True)] if directory and directory.is_dir() else []
+        names = audio_file_paths(directory, recursive=True) if directory and directory.is_dir() else []
     elif config.dataset_id == "example":
         names = ["example.wav"]
     else:
@@ -194,14 +197,11 @@ def _dataset_file_count(config: ExperimentConfig) -> int:
                 paths = groups["vctk"] + groups["librispeech"]
             else:
                 paths = groups.get(config.dataset_id or "", [])
-            names = [p.name for p in paths]
+            names = list(paths)
 
-    if config.selected_files:
-        wanted = set(config.selected_files)
-        names = [name for name in names if name in wanted]
-    if config.file_limit is not None:
-        names = names[: config.file_limit]
-    return len(names)
+    from taf.experiments.audio_inputs import select_files
+
+    return len(select_files(names, config, dataset_directory(config) if _is_external(config) else None))
 
 
 def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
@@ -234,6 +234,14 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
                 )
             )
     for metric in config.metrics:
+        if metric == "VISQOL_METRIC":
+            from taf.metrics.speech_quality.VisqolMetric import model_path
+
+            try:
+                model_path()
+            except ImportError as error:
+                unsupported_metrics.append(metric)
+                warnings.append(PlanWarning(code="missing_dependency", message=str(error)))
         if metric in registry.TENSORFLOW_METRICS and not tensorflow:
             unsupported_metrics.append(metric)
             warnings.append(
@@ -261,7 +269,11 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
                 )
             )
 
-    file_count = _dataset_file_count(config)
+    try:
+        file_count = _dataset_file_count(config)
+    except ValueError as error:
+        file_count = 0
+        warnings.append(PlanWarning(code="invalid_selection", message=str(error)))
     if file_count == 0:
         warnings.append(PlanWarning(code="empty_dataset", message="No audio files matched this selection."))
     elif (
@@ -292,7 +304,7 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
         )
 
     attack_variants = 1 + len(dict.fromkeys(_resolved_attacks(config)))
-    encode_operations = file_count * len(methods) * len(config.payload_lengths) * config.repetitions
+    encode_operations = file_count * len(methods) * config.payload_variant_count() * config.repetitions
     estimated_rows = encode_operations * attack_variants
     if config.experiment_type == ExperimentType.DETECTABILITY:
         # One steganalysis per (method, payload), reported in the summary;
@@ -309,7 +321,7 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
         experiment_type=config.experiment_type,
         file_count=file_count,
         method_count=len(methods),
-        payload_length_count=len(config.payload_lengths),
+        payload_length_count=config.payload_variant_count(),
         repetitions=config.repetitions,
         attack_variant_count=attack_variants,
         metric_count=len(config.metrics),
@@ -340,13 +352,16 @@ def build_evaluation_config(config: ExperimentConfig):
         metrics=list(config.metrics),
         target=DecodeTarget.DIRECT,
         output_dir=output_dir,
+        messages=config.payload.messages(config.repetitions) if config.payload.kind != "random" else (),
+        random_message_rates_bps=config.payload_rates_bps,
+        random_messages_per_length=config.repetitions,
         random_messages=[
             # No per-length seed: the engine derives one from ``random_seed``
             # and the length, so messages of different lengths are independent
             # draws rather than prefixes of one another.
             RandomMessageSpec(length=length, count=config.repetitions)
             for length in config.payload_lengths
-        ],
+        ] if config.payload.kind == "random" and not config.payload_rates_bps else [],
         random_seed=config.random_seed,
         attacks=_resolved_attacks(config),
         keep_files=config.save_encoded_audio,
@@ -392,6 +407,15 @@ async def run_experiment_async(
 
     try:
         files = await asyncio.to_thread(load_dataset_files, config)
+        if not files:
+            raise ValueError("No audio files matched this experiment.")
+        # Export the actual subset so adding unrelated files to a corpus cannot
+        # silently change a replay. The library's original study stays reusable.
+        config = config.model_copy(update={
+            "selected_files": [file.metadata["file_id"] for file in files],
+            "selected_file_sha256": {file.metadata["file_id"]: file.metadata["sha256"] for file in files},
+        })
+        run.config = config
         if config.experiment_type == ExperimentType.DETECTABILITY:
             from taf.experiments.detectability import run_detectability
 

@@ -62,6 +62,8 @@ def config_from_mapping(data: dict[str, Any]) -> EvaluationConfig:
         kwargs["random_messages"] = tuple(_random_spec(item) for item in v)
     if (v := data.get("random_message_lengths")) is not None:
         kwargs["random_message_lengths"] = tuple(int(x) for x in v)
+    if (v := data.get("random_message_rates_bps")) is not None:
+        kwargs["random_message_rates_bps"] = tuple(float(x) for x in v)
     if "random_messages_per_length" in data:
         kwargs["random_messages_per_length"] = int(data["random_messages_per_length"])
     if "random_seed" in data:
@@ -95,6 +97,7 @@ def config_to_mapping(config: EvaluationConfig) -> dict[str, Any]:
         if config.random_messages
         else [],
         "random_message_lengths": list(config.random_message_lengths),
+        "random_message_rates_bps": list(config.random_message_rates_bps),
         "random_messages_per_length": config.random_messages_per_length,
         "random_seed": config.random_seed,
         "keep_files": config.keep_files,

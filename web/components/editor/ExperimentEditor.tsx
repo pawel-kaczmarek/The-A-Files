@@ -22,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { AttackPicker, AttackSweepEditor, DatasetPicker } from "./ConditionsPicker";
 import { newSeed, stepProblems, stepsFor, type StepId } from "./draft";
 import { MethodPicker, MethodSweepEditor, MetricPicker } from "./MethodPicker";
+import { PayloadEditor } from "./PayloadEditor";
+import { AudioOptions } from "./AudioOptions";
 
 const PAYLOAD_PRESETS = [4, 8, 16, 32, 64, 128, 256, 512, 1024];
 
@@ -218,6 +220,7 @@ export function ExperimentEditor({
               fileLimit={draft.config.file_limit}
               onChange={(datasetId, fileLimit) => patchConfig({ dataset_id: datasetId, file_limit: fileLimit })}
             />
+            <AudioOptions config={draft.config} onChange={patchConfig} />
           </Section>
         )}
 
@@ -278,7 +281,8 @@ export function ExperimentEditor({
         {step === "design" && (
           <Section title={t("editor.steps.design")}>
             <div className="space-y-6">
-              <div className="space-y-2">
+              {draft.experiment_type !== "detectability" && <PayloadEditor config={draft.config} onChange={patchConfig} />}
+              <div className={((draft.config.payload?.kind ?? "random") === "random" && !draft.config.payload_rates_bps?.length) ? "space-y-2" : "hidden"}>
                 <Label>{t("editor.design.payloads")}</Label>
                 <div className="flex flex-wrap gap-1.5">
                   {[...new Set([...PAYLOAD_PRESETS, ...draft.config.payload_lengths])]

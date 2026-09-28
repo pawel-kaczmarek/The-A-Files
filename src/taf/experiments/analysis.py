@@ -107,7 +107,9 @@ def trial_ber(row: Any, impute_failures: bool = False) -> float | None:
 
 
 def file_of(row: Any) -> str:
-    return row.file_name
+    # Separate same-named clips in different directories; prefer the portable
+    # relative identity recorded by new runs. Legacy rows fall back to path.
+    return getattr(row, "file_id", None) or getattr(row, "file_path", None) or row.file_name
 
 
 # --------------------------------------------------------------------------

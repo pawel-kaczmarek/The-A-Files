@@ -84,10 +84,21 @@ def setup_paragraph(config: ExperimentConfig, manifest: dict[str, Any], design: 
         f"({total / 60:.1f} min in total, sampled at {_list([f'{rate / 1000:g} kHz' for rate in rates])})."
     ]
     if config.experiment_type.value != "detectability":
+        if config.payload.kind != "random":
+            payload_description = f"Exact {config.payload.kind} payloads of {len(config.payload.bits())} bits (identical content across repetitions)"
+        elif config.payload_rates_bps:
+            payload_description = f"Seeded random payloads at requested rates of {_list([str(rate) for rate in config.payload_rates_bps])} bits/s, with each file receiving floor(rate × duration) bits"
+        else:
+            payload_description = f"Random binary payloads of {_list([str(length) for length in config.payload_lengths])} bits"
         sentences.append(
-            f"Random binary payloads of {_list([str(length) for length in config.payload_lengths])} bits were embedded, "
-            f"with {config.repetitions} independent message{'s' if config.repetitions != 1 else ''} per file and payload length."
+            f"{payload_description} were embedded, with {config.repetitions} repetition(s) per file and payload setting. "
+            "Exact goodput counts only fully recovered messages per second of cover audio; offered payload rate is not maximum capacity."
         )
+    if config.subset_seed is not None:
+        sentences.append(f"File selection used independent subset seed {config.subset_seed} before applying the file limit.")
+    categories = sorted({item.get("category") for item in inputs if item.get("category")})
+    if categories:
+        sentences.append(f"Audio categories were {_list(categories)}; source PCM subtypes and channels are recorded in the manifest. Multichannel policy: {config.channel_policy}.")
     attacks = manifest.get("resolved_attacks") or []
     if config.attack_sweep is not None:
         sweep = config.attack_sweep

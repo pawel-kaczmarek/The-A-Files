@@ -76,13 +76,18 @@ def _summarize(rows: Sequence[ExperimentResultRow], config: ExperimentConfig) ->
         pooled = {
             cell["payload_length"]: cell["passes"] for cell in cells if cell["method"] == method
         }
-        max_passing, first_failing = _capacity(pooled)
+        file_groups = group_by(method_rows, lambda r: r.file_id or r.file_path)
+        grids = {tuple(sorted({row.payload_length for row in group})) for group in file_groups.values()}
+        comparable_grid = len(grids) == 1
+        # Rate-derived payloads vary with file duration. Pooling unlike bit
+        # grids could claim that every file carries a size tested on only one.
+        max_passing, first_failing = _capacity(pooled) if comparable_grid else (None, None)
 
         per_file_bits: list[float] = []
         per_file_bps: list[float] = []
         files: list[str] = []
         censored = 0
-        for file_name, file_rows in sorted(group_by(method_rows, lambda r: r.file_name).items()):
+        for file_name, file_rows in sorted(file_groups.items()):
             passing = {
                 payload: _passes(group_stats(group), min_accuracy, max_ber)
                 for payload, group in group_by(file_rows, lambda r: r.payload_length).items()
@@ -105,6 +110,8 @@ def _summarize(rows: Sequence[ExperimentResultRow], config: ExperimentConfig) ->
                 "max_passing_payload": max_passing,
                 "first_failing_payload": first_failing,
                 "payloads_tested": sorted(pooled),
+                "pooled_payload_grid_comparable": comparable_grid,
+                "pooled_capacity_note": None if comparable_grid else "Files used different bit-length grids; compare per-file capacity in bits/s.",
                 "files": len(per_file_bits),
                 "capacity_bits_median": _median(per_file_bits),
                 "capacity_bps_median": _median(per_file_bps),
@@ -142,8 +149,8 @@ def _median(values: list[float]) -> float | None:
 
 
 def _validate(config: ExperimentConfig) -> list[str]:
-    if len(config.payload_lengths) < 2:
-        return ["Embedding capacity needs at least two payload lengths to sweep."]
+    if config.payload_variant_count() < 2:
+        return ["Embedding capacity needs at least two payload lengths or rates to sweep."]
     return []
 
 

@@ -5,10 +5,13 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
+from typing import Literal
+import math
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from taf.experiments.sweeps import ParameterSweep
+from taf.experiments.payloads import PayloadSpec
 
 MIN_PAYLOAD_BITS = 4
 # High enough for a capacity sweep of the sample-domain methods, which carry
@@ -53,6 +56,11 @@ class ExperimentConfig(BaseModel):
     dataset_path: str | None = None
     file_limit: int | None = Field(default=None, ge=1)
     selected_files: list[str] = Field(default_factory=list)
+    selected_file_sha256: dict[str, str] = Field(default_factory=dict)
+    subset_seed: int | None = Field(default=None, ge=0)
+    audio_category: str | None = None
+    audio_source: str | None = None
+    channel_policy: Literal["mono", "reject"] = "mono"
 
     methods: list[str] = Field(default_factory=list)
     metrics: list[str] = Field(default_factory=list)
@@ -69,8 +77,10 @@ class ExperimentConfig(BaseModel):
     method_sweep: ParameterSweep | None = None
 
     payload_lengths: list[int] = Field(default_factory=lambda: [16])
+    payload: PayloadSpec = Field(default_factory=PayloadSpec)
+    payload_rates_bps: list[float] = Field(default_factory=list)
     repetitions: int = Field(default=1, ge=1, le=50)
-    random_seed: int | None = None
+    random_seed: int | None = Field(default=None, ge=0)
 
     output_directory: str | None = None
     save_encoded_audio: bool = False
@@ -146,8 +156,6 @@ class ExperimentConfig(BaseModel):
     @field_validator("payload_lengths")
     @classmethod
     def _valid_payload_lengths(cls, values: list[int]) -> list[int]:
-        if not values:
-            raise ValueError("At least one payload length is required.")
         bad = [v for v in values if v < MIN_PAYLOAD_BITS or v > MAX_PAYLOAD_BITS]
         if bad:
             raise ValueError(
@@ -169,11 +177,29 @@ class ExperimentConfig(BaseModel):
 
     @model_validator(mode="after")
     def _dataset_source_present(self) -> "ExperimentConfig":
+        if self.payload.kind == "random" and not self.payload_rates_bps and not self.payload_lengths:
+            raise ValueError("At least one payload length or rate is required for random payloads.")
+        if self.payload_rates_bps:
+            if self.payload.kind != "random":
+                raise ValueError("Rate sweeps require random payloads; explicit content is never resized.")
+            if any(not math.isfinite(rate) or rate <= 0 for rate in self.payload_rates_bps):
+                raise ValueError("Payload rates must be finite and positive.")
+            if len(set(self.payload_rates_bps)) != len(self.payload_rates_bps):
+                raise ValueError("Payload rates must be unique.")
+        if self.experiment_type == ExperimentType.DETECTABILITY and (
+            self.payload.kind != "random" or self.payload_rates_bps
+        ):
+            raise ValueError("Detectability currently supports random fixed-length payloads only.")
         if self.dataset_id is None and self.dataset_path is None:
             raise ValueError("Either dataset_id or dataset_path is required.")
         if not self.methods and self.method_sweep is None:
             raise ValueError("At least one method is required.")
         return self
+
+    def payload_variant_count(self) -> int:
+        if self.payload.kind != "random":
+            return 1
+        return len(self.payload_rates_bps or self.payload_lengths)
 
     @model_validator(mode="after")
     def _valid_sweeps(self) -> "ExperimentConfig":

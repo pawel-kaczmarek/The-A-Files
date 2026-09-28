@@ -44,6 +44,9 @@ export interface MethodInfo {
 }
 
 export interface MetricInfo {
+  domain?: string | null;
+  interpretation?: string | null;
+  url?: string | null;
   name: string;
   label: string;
   class_name: string;
@@ -135,10 +138,17 @@ export interface ParameterSweep {
 }
 
 export interface ExperimentConfig {
+  subset_seed?: number | null;
+  audio_category?: string | null;
+  audio_source?: string | null;
+  channel_policy?: "mono" | "reject";
+  payload?: { kind: "random" | "text" | "binary" | "bits"; value?: string | null };
+  payload_rates_bps?: number[];
   dataset_id?: string | null;
   dataset_path?: string | null;
   file_limit?: number | null;
   selected_files?: string[];
+  selected_file_sha256?: Record<string, string>;
   methods: string[];
   metrics: string[];
   attacks: string[];
@@ -220,6 +230,22 @@ export interface ExperimentPlan {
 // ------------------------------------------------------------------ results
 
 export interface ResultRow {
+  channels?: number;
+  source_channels?: number | null;
+  bit_depth?: number | null;
+  audio_category?: string | null;
+  audio_source?: string | null;
+  audio_sha256?: string | null;
+  file_id?: string | null;
+  payload_kind?: string | null;
+  payload_seed?: number | null;
+  payload_sha256?: string | null;
+  payload_bytes?: number | null;
+  requested_payload_rate_bps?: number | null;
+  payload_bits_per_sample?: number | null;
+  exact_goodput_bps?: number | null;
+  encode_rtf?: number | null;
+  decode_rtf?: number | null;
   experiment_id: string;
   file_name: string;
   sample_rate: number | null;
@@ -461,7 +487,7 @@ export interface Dataset {
 
 export interface DatasetDetail extends Dataset {
   manifest: {
-    files?: { file: string; source?: string; speaker?: string | null; sample_rate: number; duration_seconds: number; sha256?: string }[];
+    files?: { file: string; source?: string; speaker?: string | null; sample_rate: number; duration_seconds: number; sha256?: string; channels?: number; bit_depth?: number | null; subtype?: string; category?: string }[];
     speakers?: number;
     candidates?: number;
     source_sha256?: string | null;

@@ -70,7 +70,17 @@ def resynthesize(config: ExperimentConfig, row: ExperimentResultRow) -> TrialAud
 
     if not row.message_bits or not row.method_type:
         raise ValueError("this row does not record enough to rebuild its trial")
-    cover = load_dataset_file(config, row.file_name)
+    from taf.experiments.runner import load_dataset_files
+
+    covers = load_dataset_files(config)
+    matches = [file for file in covers if str(file.path) == row.file_path]
+    if not matches:
+        matches = [file for file in covers if file.metadata.get("file_id") == row.file_id]
+    if len(matches) != 1:
+        raise ValueError("The recorded cover is missing or ambiguous in the current dataset.")
+    cover = matches[0]
+    if row.audio_sha256 and cover.metadata.get("sha256") != row.audio_sha256:
+        raise ValueError("Cover SHA-256 differs from the recorded experiment.")
     spec = format_method_spec(row.method_type, row.method_parameters)
     message = [int(bit) for bit in row.message_bits]
 
@@ -80,7 +90,7 @@ def resynthesize(config: ExperimentConfig, row: ExperimentResultRow) -> TrialAud
     signal = stego
     if row.attack:
         seed = None if has_explicit_seed(row.attack) else attack_seed(
-            config.random_seed or 0, row.file_name, row.repetition, row.attack
+            config.random_seed or 0, row.file_id or row.file_name, row.repetition, row.attack
         )
         attacked, _, metadata = _apply_attack(stego, cover.samplerate, row.attack, seed)
         attacked = np.asarray(attacked, dtype=np.float64)

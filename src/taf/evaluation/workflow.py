@@ -6,7 +6,7 @@ import hashlib
 import re
 import time
 from collections.abc import Callable, Iterable, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -16,7 +16,7 @@ from loguru import logger
 from taf.audio.formats import AudioFileFormat, DecodeTarget
 from taf.audio.io import load_audio, save_audio
 from taf.evaluation.config import EvaluationConfig, FailurePolicy
-from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec
+from taf.evaluation.messages import EvaluationMessage, RandomMessageSpec, bits_for_rate
 from taf.evaluation.result import EvaluationResult, EvaluationRow, FailureKind
 from taf.evaluation.seeding import attack_seed, message_seed
 from taf.models.Metric import Metric
@@ -82,14 +82,28 @@ async def evaluate_files_async(
 ) -> EvaluationResult:
     files_list = list(files)
     resolved_config = config or EvaluationConfig()
-    messages = _materialize_messages(resolved_config)
+    fixed_messages = _materialize_messages(resolved_config)
+    per_file_messages = []
+    for wav_file in files_list:
+        file_messages = list(fixed_messages)
+        for rate in resolved_config.random_message_rates_bps:
+            length = bits_for_rate(rate, len(wav_file.samples), wav_file.samplerate)
+            generated = _materialize_messages(replace(
+                resolved_config, messages=(), random_message_lengths=(), random_message_rates_bps=(),
+                random_messages=[RandomMessageSpec(length=length,
+                    count=resolved_config.random_messages_per_length,
+                    name_prefix=f"rate{rate:g}")],
+            ))
+            file_messages.extend(replace(m, metadata={**m.metadata, "requested_rate_bps": rate}) for m in generated)
+        per_file_messages.append((wav_file, file_messages))
+    messages = list({m.name: m for _, group in per_file_messages for m in group}.values())
     method_specs = _method_specs(resolved_config)
     metric_specs = _metric_specs(resolved_config)
     targets = _resolve_targets(resolved_config)
     attack_variants = _resolve_attack_variants(resolved_config)
     semaphore = asyncio.Semaphore(max(1, resolved_config.max_workers))
 
-    total_tasks = len(files_list) * len(method_specs) * len(messages)
+    total_tasks = sum(len(group) for _, group in per_file_messages) * len(method_specs)
     logger.info(
         "Evaluating {} file(s) x {} method(s) x {} message(s) x {} attack variant(s) -> {} task(s); "
         "target={} formats={} max_workers={} failure_policy={} output_dir={}",
@@ -127,9 +141,9 @@ async def evaluate_files_async(
 
     tasks = [
         guarded_job(wav_file, method_spec, message)
-        for wav_file in files_list
+        for wav_file, file_messages in per_file_messages
         for method_spec in method_specs
-        for message in messages
+        for message in file_messages
     ]
     start = time.perf_counter()
     row_groups = await asyncio.gather(*tasks)
@@ -159,6 +173,12 @@ def _evaluate_file_method_message(
     for row in rows:
         row.method_name = method_spec.name
         row.method_parameters = dict(method_spec.parameters)
+        row.audio_metadata = dict(wav_file.metadata)
+        row.channels = 1 if wav_file.samples.ndim == 1 else wav_file.samples.shape[1]
+        row.sample_count = len(wav_file.samples)
+        row.payload_kind = message.source
+        row.payload_seed = message.seed
+        row.payload_metadata = dict(message.metadata)
     return rows
 
 
@@ -379,6 +399,8 @@ def _evaluate_attack_variant(
     decode_samples = stego_samples
     attack_elapsed: float | None = None
     attack_metadata: dict[str, Any] = {}
+    attack_metrics: dict[str, Any] = {}
+    attack_metric_errors: dict[str, str] = {}
     failure_kind = FailureKind.ATTACK_ERROR
 
     try:
@@ -386,7 +408,7 @@ def _evaluate_attack_variant(
             from taf.attacks.registry import has_explicit_seed
 
             seed = None if has_explicit_seed(attack) else attack_seed(
-                _base_seed(config), _file_key(original.path), _repetition(message), attack
+                _base_seed(config), original.metadata.get("file_id") or _file_key(original.path), _repetition(message), attack
             )
             logger.debug(
                 "Applying attack | file={} | method={} | message={} | target={} | attack={} | seed={}",
@@ -398,10 +420,18 @@ def _evaluate_attack_variant(
                 seed if seed is not None else "<from specification>",
             )
             attack_start = time.perf_counter()
-            decode_samples, _, attack_metadata = _apply_attack(
+            decode_samples, attacked_rate, attack_metadata = _apply_attack(
                 decode_samples, stego.samplerate, attack, seed
             )
             attack_elapsed = time.perf_counter() - attack_start
+            if decode_samples.shape == stego_samples.shape and attacked_rate == stego.samplerate:
+                attack_metrics, attack_metric_errors = _calculate_metrics(
+                    stego_samples, decode_samples, stego.samplerate, metric_specs
+                )
+            else:
+                attack_metric_errors = {"*": "attack changed signal length, channels or sample rate; sample-aligned quality metrics do not apply"}
+            if attacked_rate != stego.samplerate:
+                raise ValueError("Attack returned a different sample rate; this decoder requires the configured rate.")
 
         failure_kind = FailureKind.DECODE_ERROR
         decode_start = time.perf_counter()
@@ -434,6 +464,8 @@ def _evaluate_attack_variant(
             attack_parameters=attack_metadata,
             metrics=metrics,
             metric_errors=metric_errors,
+            attack_metrics=attack_metrics,
+            attack_metric_errors=attack_metric_errors,
         )
 
     success = bool(np.array_equal(list(message.bits), decoded_message))
@@ -448,23 +480,6 @@ def _evaluate_attack_variant(
         success,
     )
 
-    attack_metrics: dict[str, Any] = {}
-    attack_metric_errors: dict[str, str] = {}
-    if attack is not None:
-        if len(decode_samples) == len(stego_samples):
-            attack_metrics, attack_metric_errors = _calculate_metrics(
-                stego_samples, decode_samples, original.samplerate, metric_specs
-            )
-        else:
-            # Cropping, stretching and padding change the length, and the
-            # packaged metrics all require two signals of equal length.
-            attack_metric_errors = {
-                "*": (
-                    f"attack changed the signal length "
-                    f"({len(stego_samples)} -> {len(decode_samples)} samples); "
-                    "sample-aligned quality metrics do not apply"
-                )
-            }
     return EvaluationRow(
         input_path=original.path,
         method=method_label,
@@ -591,7 +606,7 @@ def _materialize_messages(config: EvaluationConfig) -> list[EvaluationMessage]:
                 )
             )
 
-    if not messages:
+    if not messages and not config.random_message_rates_bps:
         default_spec = RandomMessageSpec(length=10, count=1, seed=config.random_seed)
         return _materialize_messages(
             EvaluationConfig(
@@ -807,6 +822,8 @@ def _error_row(
     attack_parameters: dict[str, Any] | None = None,
     metrics: dict[str, Any] | None = None,
     metric_errors: dict[str, str] | None = None,
+    attack_metrics: dict[str, Any] | None = None,
+    attack_metric_errors: dict[str, str] | None = None,
 ) -> EvaluationRow:
     return EvaluationRow(
         input_path=wav_file.path,
@@ -818,6 +835,8 @@ def _error_row(
         success=False,
         metrics=dict(metrics or {}),
         metric_errors=dict(metric_errors or {}),
+        attack_metrics=dict(attack_metrics or {}),
+        attack_metric_errors=dict(attack_metric_errors or {}),
         output_path=output_path if not isinstance(target, DecodeTarget) else None,
         error=str(error),
         failure_kind=failure_kind or FailureKind.ENCODE_ERROR,
@@ -877,11 +896,9 @@ def _transformation_name(target: AudioFileFormat | DecodeTarget) -> str | None:
 
 
 def _validate_bits(bits: Sequence[int]) -> list[int]:
-    values = [int(bit) for bit in bits]
-    invalid = [bit for bit in values if bit not in {0, 1}]
-    if invalid:
+    if any(bit not in (0, 1) for bit in bits):
         raise ValueError("Evaluation messages must contain only 0 and 1 values.")
-    return values
+    return [int(bit) for bit in bits]
 
 
 def _normalize_message(message: EvaluationMessage) -> EvaluationMessage:

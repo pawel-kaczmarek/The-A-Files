@@ -53,3 +53,7 @@ class MetricType(Enum):
     SISDR_METRIC = auto()
     BSS_EVAL_METRIC = auto()
     AI_MOSNET_METRIC = auto()
+    ESTOI_METRIC = auto()
+    LSD_METRIC = auto()
+    MRSC_METRIC = auto()
+    VISQOL_METRIC = auto()

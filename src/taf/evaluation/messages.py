@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+import math
 
 
 @dataclass(frozen=True)
@@ -26,4 +27,14 @@ class RandomMessageSpec:
     name_prefix: str = "random"
 
 
-__all__ = ["EvaluationMessage", "RandomMessageSpec"]
+def bits_for_rate(rate: float, frames: int, sample_rate: int) -> int:
+    """Floor requested bps × duration, without silent clamping or padding."""
+    if not math.isfinite(rate) or rate <= 0 or sample_rate <= 0:
+        raise ValueError("Payload rate and sample rate must be finite and positive.")
+    length = math.floor(rate * frames / sample_rate)
+    if not 1 <= length <= 8192:
+        raise ValueError(f"Rate {rate:g} bps resolves to {length} bits; supported range is 1–8192.")
+    return length
+
+
+__all__ = ["EvaluationMessage", "RandomMessageSpec", "bits_for_rate"]

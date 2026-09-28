@@ -30,6 +30,7 @@ class EvaluationConfig:
     messages: Sequence[EvaluationMessage | Sequence[int]] = ()
     random_messages: Sequence[RandomMessageSpec] = ()
     random_message_lengths: Sequence[int] = ()
+    random_message_rates_bps: Sequence[float] = ()
     random_messages_per_length: int = 1
     random_seed: int | None = None
     attacks: Sequence[str] = ()
