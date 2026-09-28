@@ -8,6 +8,8 @@ Includes a Python API, declarative experiments and a browser-based research inte
 
 **[Documentation](https://pawelkaczmarek12.github.io/the-a-files/)** · [UI guide](docs/ui.md) · [References](docs/references.md)
 
+<p align="center"><img src="docs/functions.svg" alt="The A-Files evaluation architecture: embed, attack, decode with a fresh decoder, then BER, transparency, detectability and per-file statistics" width="100%"></p>
+
 ## Quick start
 
 Python **3.10–3.12**:
