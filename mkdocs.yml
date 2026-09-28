@@ -10,8 +10,8 @@ theme:
   name: material
   language: en
   font: false
-  icon:
-    logo: material/waveform
+  logo: assets/logo-mark-light.svg
+  favicon: assets/favicon.svg
   palette:
     - scheme: default
       primary: custom

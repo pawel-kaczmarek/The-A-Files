@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import {
-  Activity,
   BookOpen,
   Database,
   FlaskConical,
@@ -18,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LogoMark } from "@/components/logo";
 import { api } from "@/lib/api";
 import { useAsync, useInterval } from "@/lib/hooks";
 import { useI18n, type Locale } from "@/lib/i18n";
@@ -60,7 +60,7 @@ function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r bg-card md:flex">
       <Link href="/dashboard" className="flex items-center gap-2.5 border-b px-5 py-4">
-        <Activity className="h-5 w-5 text-primary" aria-hidden />
+        <LogoMark className="h-6 w-5 text-foreground" />
         <div className="leading-tight">
           <div className="text-sm font-semibold">{t("app.name")}</div>
           <div className="text-[11px] text-muted-foreground">{t("app.tagline")}</div>

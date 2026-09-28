@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/banner.png" alt="The A-Files — audio steganography & watermarking toolkit" width="100%"></p>
+
 # The A-Files
 
 Research toolkit for evaluating **audio steganography and watermarking**: payload recovery,
