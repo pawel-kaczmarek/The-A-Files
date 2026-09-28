@@ -111,11 +111,9 @@ class NcmMetric(Metric):
         x_100 = (L / a) * np.log10(CF / A + K)
         CF = Fs / 2 - 600
         x_8000 = (L / a) * np.log10(CF / A + K)
-        LX = x_8000 - x_100
-        x_step = LX / M
-        x = np.arange(x_100, x_8000 + x_step + 1e-20, x_step)
-        if len(x) == M:
-            np.append(x, x_8000)
+        # Exactly M + 1 edges; np.arange with a float step returns M + 1 or
+        # M + 2 depending on rounding.
+        x = np.linspace(x_100, x_8000, M + 1)
 
         BAND = A * (10 ** (a * x / L) - K)
         return BAND
