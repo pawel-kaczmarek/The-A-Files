@@ -69,6 +69,8 @@ neural = [
 ]
 dev = [
     "build>=1.2",
+    # Required by fastapi.testclient (starlette).
+    "httpx>=0.27",
     "pytest>=8.0",
     "twine>=5.0",
 ]
@@ -100,8 +102,8 @@ platform = [
 Homepage = "https://github.com/pawel-kaczmarek/The-A-Files"
 Repository = "https://github.com/pawel-kaczmarek/The-A-Files"
 Issues = "https://github.com/pawel-kaczmarek/The-A-Files/issues"
-Documentation = "https://github.com/pawel-kaczmarek/The-A-Files/blob/main/README.md"
-Publishing = "https://github.com/pawel-kaczmarek/The-A-Files/blob/main/docs/publishing.md"
+Documentation = "https://pawelkaczmarek12.github.io/the-a-files/"
+Publishing = "https://pawelkaczmarek12.github.io/the-a-files/publishing/"
 
 [project.scripts]
 taf-eval = "taf.main:main"
