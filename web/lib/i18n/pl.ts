@@ -10,7 +10,6 @@ export const pl: Messages = {
   nav: {
     research: "Badania",
     catalogue: "Katalog",
-    literature: "Literatura",
     data: "Dane",
     reference: "Materiały",
     dashboard: "Przegląd",

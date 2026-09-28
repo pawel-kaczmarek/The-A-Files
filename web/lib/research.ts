@@ -1,11 +1,3 @@
-export interface LiteratureEntry {
-  id: string; title: string; authors: string[]; year: number; venue: string;
-  family: string; purpose: string; url: string; doi: string | null; arxiv: string | null;
-  datasets: string[]; metrics: string[]; attacks: string[]; payload: string;
-  results: { metric: string; value: number; unit: string; condition: string; locator: string }[];
-  limitations: string; source_url: string; implemented_methods: string[]; verified_on: string;
-}
-
 export interface ResearchStats {
   mean: number | null; median: number | null; count: number; clusters: number;
   ci95_low: number | null; ci95_high: number | null;

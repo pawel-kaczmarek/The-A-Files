@@ -1,6 +1,6 @@
 # Research capabilities and protocol
 
-This guide defines payloads, signal measurements, input provenance and literature comparisons.
+This guide defines payloads, signal measurements, input provenance and research comparisons.
 The implementation lives in `src/taf`, with a FastAPI/PostgreSQL backend and a Next.js frontend in `web`.
 For the execution model and inferential statistics, see [experiments](experiments.md).
 
@@ -128,21 +128,7 @@ Optional manifest `sha256` values are checked. Local-library scans preserve anno
 fields/digests. Library corpus domains propagate automatically. `audio_category`/`audio_source` override metadata
 for a whole run, so leave them unset when preserving per-file categories in mixed datasets.
 
-## Literature and UI
-
-The version-controlled evidence catalog is exposed at `/api/catalog/literature` and `/literature`.
-It supplements existing implemented-method citations with four reference-only studies:
-
-- [Hide and Speak — Kreuk et al., Interspeech 2020](https://doi.org/10.21437/Interspeech.2020-2380): speech-in-speech steganography.
-- [DeAR — Liu et al., AAAI 2023](https://doi.org/10.1609/aaai.v37i11.26550): learned watermarking with physical re-recording experiments.
-- [SilentCipher — Singh et al., Interspeech 2024](https://doi.org/10.21437/Interspeech.2024-174): neural audio watermarking with perceptual constraints.
-- [IDEAW — Li et al., EMNLP 2024](https://doi.org/10.18653/v1/2024.emnlp-main.258): invertible dual embedding with a separate locating code.
-
-Each entry records authors, publication year/venue, DOI/arXiv, family/purpose, datasets, metrics, attacks,
-payload definition, source URL and verification date. Numeric observations have table/section locators and
-experimental conditions. They are reported by the papers, not reproduced locally. No new embedding algorithm
-is claimed. In particular, reconstructed speech is not binary capacity, and synchronization bits are not useful
-message bits. The UI searches all these fields, filters year/family/purpose and compares selected protocols.
+## Research comparisons and UI
 
 The Statistics tab's Research comparisons section calls `/api/runs/{id}/research`. It filters material,
 source, payload size/kind and requested rate, groups results, and draws existing interval charts with
@@ -154,7 +140,7 @@ views remain available. Dataset and trial pages expose new metadata and exact pa
 
 CSV includes the new fields, method parameters and explicit JSON metric error fields. Old result rows remain
 readable with missing fields shown as unknown. No database migration, model download or additional audio corpus
-is needed for the core additions. New research editor/view labels and paper evidence are currently English;
+is needed for the core additions. New research editor/view labels are currently English;
 existing localized views and navigation remain available.
 
 ## Validation and changed areas
@@ -201,6 +187,6 @@ Validation recorded on 2026-09-27:
 | Audio | `src/taf/audio/metadata.py`, `src/taf/models/WavFile.py`, `src/taf/corpora/{prepare,synthetic}.py`, `src/taf/api/library.py`, `src/taf/experiments/audio_inputs.py` |
 | Payloads/engine | `src/taf/experiments/{payloads,schema,runner}.py`, `src/taf/evaluation/{config,messages,result,workflow,yaml_loader}.py` |
 | Results/provenance | `src/taf/experiments/{results,research,analysis,provenance,inspector,csv_export,reporting,registry}.py`, `scenarios/embedding_capacity.py` |
-| Literature/API | `src/taf/methods/literature.py`, `src/taf/api/routers/{catalog,runs}.py`, `src/taf/api/schemas.py` |
-| Web | Literature page; metric, dataset, run and trial pages; `editor/{AudioOptions,PayloadEditor,ExperimentEditor,draft}`; `run/ResearchView`; shell, API/types/research helpers and navigation translations |
+| API | `src/taf/api/routers/{catalog,runs}.py`, `src/taf/api/schemas.py` |
+| Web | Metric, dataset, run and trial pages; `editor/{AudioOptions,PayloadEditor,ExperimentEditor,draft}`; `run/ResearchView`; shell, API/types/research helpers and navigation translations |
 | Validation/docs | Four research test modules, `scripts/smoke_research.py`, README and this protocol; configurable isolated Next.js build output and ignore rules |

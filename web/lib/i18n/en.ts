@@ -9,7 +9,6 @@ export const en = {
   nav: {
     research: "Research",
     catalogue: "Catalogue",
-    literature: "Literature",
     data: "Data",
     reference: "Reference",
     dashboard: "Overview",

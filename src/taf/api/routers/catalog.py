@@ -15,17 +15,6 @@ from ..schemas import AttackInfo, AttackParameterInfo, CatalogDataset, DesignInf
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
 
-@router.get("/literature")
-def list_literature(q: str = "", family: str | None = None, purpose: str | None = None, year: int | None = None):
-    from taf.methods.literature import literature_entries
-
-    return [entry for entry in literature_entries()
-            if (not q or q.casefold() in str(entry).casefold())
-            and (family is None or entry["family"] == family)
-            and (purpose is None or entry["purpose"] == purpose)
-            and (year is None or entry["year"] == year)]
-
-
 # The packaged catalogue does not change while the server runs; building it
 # instantiates every method and metric, so it is computed once.
 @lru_cache(maxsize=1)

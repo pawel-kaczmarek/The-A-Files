@@ -60,7 +60,6 @@ exact and seeded payloads, dataset replay, and the Statistics tab's filtered com
 | `/runs/[id]/trials/[rowId]` | Trial inspector: the trial is re-synthesised from its seed; cover, stego, attacked and residual (stego − cover) playback with spectrograms, decoded vs. embedded message |
 | `/methods`, `/methods/[name]` | Method catalogue with family, purpose, reference and tunable parameters |
 | `/attacks`, `/metrics` | Attack and metric catalogues (severity levels, directions, components) |
-| `/literature` | Search verified paper evidence and compare payloads, datasets, attacks and reported results |
 | `/datasets`, `/datasets/[id]` | Library, standard corpora (reproducible subsets), uploads, local directories, synthetic signals |
 | `/methodology` | Protocol and statistics the platform applies |
 | `/settings` | Language, theme, API and database status, data directory |

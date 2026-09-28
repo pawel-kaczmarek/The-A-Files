@@ -46,8 +46,7 @@ decouples each method's `encode`/`decode` interface from the storage format.
 Experiments also accept exact UTF-8 text, hexadecimal bytes, explicit bits and seeded random payloads at requested
 bit rates. Rows record exact bit counts, offered bits/s, bits/sample, exact-message goodput, runtime factors,
 audio metadata and payload/audio hashes. Exported run configurations pin the selected relative file paths and
-SHA-256 digests. The Statistics tab offers filtered research comparisons; the Literature page holds verified,
-paper-reported evidence separately from local measurements. See the [research protocol and examples](research-capabilities.md)
+SHA-256 digests. The Statistics tab offers filtered research comparisons. See the [research protocol and examples](research-capabilities.md)
 for metric definitions, payload conventions, dataset metadata, sources, implementation scope and validation.
 
 ## Method contract

@@ -62,8 +62,7 @@ under the selected protocol; they do not make a small bundled subset representat
 ## Catalogues and preferences
 
 **Methods**, **Attacks** and **Metrics** explain available components and parameters.
-**Literature** contains sourced paper observations with their experimental conditions, separately from
-local results. **Methodology** describes the analysis. The header and **Settings** provide English/Polish
+**Methodology** describes the analysis. The header and **Settings** provide English/Polish
 and light/dark preferences; settings also show API and database status.
 
 For automated use, see [experiments](experiments.md) and the [REST API](platform.md).

@@ -1,15 +1,5 @@
 # References
 
-The application's **Literature** page (`/literature`, API: `/api/catalog/literature`) includes structured evidence
-for four additional neural audio studies: **Hide and Speak** (2020), **DeAR** (2023), **SilentCipher** (2024), and
-**IDEAW** (2024); their full citations are [41]–[44] below. Each entry records authors, publication year, method
-family, DOI/arXiv links, datasets, reported metrics, attacks, payload/capacity definitions, and experimental results
-with source locations and conditions. These entries describe reference studies; their embedding algorithms have
-not been added to the executable method registry. Paper-reported results are distinct from local measurements.
-
-See the [evidence catalog](https://github.com/pawelkaczmarek12/the-a-files/blob/master/src/taf/methods/literature.py) for the transcribed observations and the
-[research protocol](research-capabilities.md#literature-and-ui) for interpretation and comparison limitations.
-
 <a id="ref-1"></a>
 
 **[1]** A. A. Alsabhany, A. H. Ali, F. Ridzuan, A. H. Azni, and M. R. Mokhtar, "Digital Audio Steganography: Systematic Review, Classification, and Analysis of the Current State of the Art," *Computer Science Review*, vol. 38, article 100316, 2020. [doi:10.1016/j.cosrev.2020.100316](https://doi.org/10.1016/j.cosrev.2020.100316)

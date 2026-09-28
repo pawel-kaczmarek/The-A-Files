@@ -36,7 +36,6 @@ const SECTIONS: { title: string; links: { href: string; label: string; icon: typ
     title: "nav.catalogue",
     links: [
       { href: "/methods", label: "nav.methods", icon: Waves },
-      { href: "/literature", label: "nav.literature", icon: BookOpen },
       { href: "/attacks", label: "nav.attacks", icon: Swords },
       { href: "/metrics", label: "nav.metrics", icon: Ruler },
     ],

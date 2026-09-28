@@ -7,7 +7,6 @@ import pytest
 
 from taf.experiments.research import research_comparison
 from taf.experiments.results import ExperimentResultRow
-from taf.methods.literature import PAPERS
 
 
 def row(**kwargs):
@@ -60,33 +59,18 @@ def test_rate_capacity_does_not_claim_a_shared_bit_length_grid():
     assert result["highest_stable_payload"] is None
 
 
-def test_literature_has_auditable_evidence():
-    assert len({p.id for p in PAPERS}) == len(PAPERS)
-    for p in PAPERS:
-        assert p.authors and p.doi and p.url.startswith("https://")
-        assert p.datasets and p.metrics and p.attacks and p.payload
-        assert p.limitations and p.source_url.startswith("https://")
-        for result in p.results:
-            assert np.isfinite(result.value) and result.condition and result.locator
-    assert all(not p.implemented_methods for p in PAPERS)
-
-
-def test_catalog_and_comparison_http(monkeypatch):
+def test_comparison_http(monkeypatch):
     pytest.importorskip("fastapi")
     pytest.importorskip("sqlalchemy")
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from taf.api.routers import catalog, runs
+    from taf.api.routers import runs
 
     app = FastAPI()
-    app.include_router(catalog.router)
     app.include_router(runs.router)
     monkeypatch.setattr(runs, "_require", lambda _: (SimpleNamespace(config={"max_workers": 1}), None))
     monkeypatch.setattr(runs.store, "all_rows", lambda _: [row(audio_source="Test corpus", requested_payload_rate_bps=8.)])
     client = TestClient(app)
-    papers = client.get("/api/catalog/literature?purpose=steganography").json()
-    assert [p["id"] for p in papers] == ["hide-and-speak"]
-    assert client.get("/api/catalog/literature?q=FMA&year=2024").json()[0]["id"] == "ideaw"
     url = f"/api/runs/{uuid.uuid4()}/research"
     response = client.get(url)
     assert response.status_code == 200 and response.json()["rows"] == 1

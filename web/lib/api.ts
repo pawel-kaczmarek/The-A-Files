@@ -23,7 +23,7 @@ import type {
 } from "@/lib/types";
 
 export const API_BASE = process.env.NEXT_PUBLIC_TAF_API_URL ?? "http://127.0.0.1:8000";
-import type { LiteratureEntry, ResearchComparison } from "@/lib/research";
+import type { ResearchComparison } from "@/lib/research";
 
 export class ApiError extends Error {
   constructor(
@@ -83,7 +83,6 @@ export const api = {
 
   // Catalogue
   methods: () => request<MethodInfo[]>("/api/catalog/methods"),
-  literature: () => request<LiteratureEntry[]>("/api/catalog/literature"),
   research: (id: string, params: Record<string, string | number | undefined>) =>
     request<ResearchComparison>(`/api/runs/${id}/research${query(params)}`),
   metrics: () => request<MetricInfo[]>("/api/catalog/metrics"),
