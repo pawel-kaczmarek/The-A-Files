@@ -62,6 +62,13 @@ AGENTS.md
 .claude/
 CLAUDE.md
 
+# Shared project steering and skills; keep local Claude settings ignored.
+!AGENTS.md
+!CLAUDE.md
+!.claude/
+.claude/*
+!.claude/skills/
+
 article/
 article_pl/
 docs/artivles/
