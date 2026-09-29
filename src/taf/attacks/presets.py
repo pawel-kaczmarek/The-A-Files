@@ -82,7 +82,6 @@ _GAIN_DB = {
 }
 
 _CODEC_BITRATE_KBPS = {
-    "mp3": {Severity.MILD: 256, Severity.MODERATE: 128, Severity.STRONG: 96, Severity.EXTREME: 64},
     "aac": {Severity.MILD: 192, Severity.MODERATE: 128, Severity.STRONG: 96, Severity.EXTREME: 64},
     "opus": {Severity.MILD: 128, Severity.MODERATE: 96, Severity.STRONG: 64, Severity.EXTREME: 32},
 }
@@ -104,6 +103,32 @@ _VORBIS_BY_RATE: tuple[tuple[int, tuple[int, int, int, int], tuple[int, ...]], .
     (11025, (48, 40, 32, 24), (48, 40, 32, 24, 16)),
     (0, (40, 32, 24, 16), (40, 32, 24, 16, 12)),
 )
+
+
+#: MP3 ladders by sampling rate: (lowest rate, severity levels, sweep). Each
+#: MPEG version has its own bitrate table - MPEG-1 (32-48 kHz) up to 320
+#: kbit/s, MPEG-2 (16-24 kHz) up to 160, MPEG-2.5 (8-12 kHz) up to 64 - and
+#: LAME silently clamps a higher request, so a 256 kbit/s level at 16 kHz ran
+#: at 160 kbit/s while the result row said 256. Measured with LAME in FFmpeg
+#: 7.0. Every value here is one the encoder really uses at that rate.
+_MP3_BY_RATE: tuple[tuple[int, tuple[int, int, int, int], tuple[int, ...]], ...] = (
+    (32000, (256, 128, 96, 64), (320, 256, 192, 128, 96, 64, 48, 32)),
+    (16000, (160, 128, 96, 64), (160, 128, 96, 64, 48, 32)),
+    (0, (64, 48, 32, 24), (64, 48, 32, 24, 16)),
+)
+
+
+def _mp3_ladders(rate: int) -> tuple[dict[Severity, int], list[int]]:
+    """MP3 severity levels and sweep ladder the encoder honours at ``rate``."""
+    for lowest, levels, sweep in _MP3_BY_RATE:
+        if rate >= lowest:
+            return dict(zip(Severity, levels)), list(sweep)
+    raise AssertionError("the last row covers every rate")
+
+
+def _mp3_ceiling(rate: int) -> int:
+    """Highest MP3 bitrate LAME honours at ``rate``, in kbit/s."""
+    return _mp3_ladders(rate)[1][0]
 
 
 def _vorbis_ladders(rate: int) -> tuple[dict[Severity, int], list[int]]:
@@ -277,12 +302,13 @@ def severity_parameters(
         return {"snr_db": _NOISE_SNR_DB[severity]}
     if name == "impulse_noise":
         return {"snr_db": _NOISE_SNR_DB[severity], "density": _DROPOUT_FRACTION[severity]}
+    if name in {"mp3", "codec"}:
+        # ``codec`` defaults to MP3.
+        return {"bitrate_kbps": _mp3_ladders(rate)[0][severity]}
     if name == "vorbis":
         return {"bitrate_kbps": _vorbis_ladders(rate)[0][severity]}
     if name in _CODEC_BITRATE_KBPS:
         return {"bitrate_kbps": _CODEC_BITRATE_KBPS[name][severity]}
-    if name == "codec":
-        return {"bitrate_kbps": _CODEC_BITRATE_KBPS["mp3"][severity]}
     if name == "low_pass":
         return {"cutoff_hz": round(_LOW_PASS_NYQUIST_FRACTION[severity] * nyquist, 1)}
     if name == "high_pass":
@@ -393,10 +419,11 @@ def quick_suite(sample_rate: int | None = None) -> list[str]:
     Deliberately small and fast; suitable for checking that a pipeline runs,
     not for drawing conclusions.
     """
-    targets = resampling_targets(int(sample_rate or DEFAULT_SAMPLE_RATE))
+    rate = int(sample_rate or DEFAULT_SAMPLE_RATE)
+    targets = resampling_targets(rate)
     return [
         "awgn@moderate",
-        "mp3:bitrate_kbps=128",
+        f"mp3:bitrate_kbps={min(128, _mp3_ceiling(rate))}",
         "low_pass@moderate",
         f"resample:intermediate_hz={targets[0]}",
         "bit_depth:bits=8",
@@ -418,7 +445,7 @@ def standard_suite(sample_rate: int | None = None) -> list[str]:
     nyquist = rate / 2.0
 
     specs: list[str] = []
-    specs += _codec_specs("mp3", (192, 128, 96, 64))
+    specs += _codec_specs("mp3", sorted({min(bitrate, _mp3_ceiling(rate)) for bitrate in (192, 128, 96, 64)}, reverse=True))
     specs += _codec_specs("aac", (192, 128, 96, 64))
     specs += _codec_specs("opus", (96, 64, 32))
     specs += [f"awgn:snr_db={snr}" for snr in (40, 30, 20, 15, 10)]
@@ -498,7 +525,7 @@ def sweep_presets(sample_rate: int | None = None) -> dict[str, dict[str, Any]]:
         "awgn": {"parameter": "snr_db", "values": snr_ladder, "unit": "dB SNR"},
         "pink_noise": {"parameter": "snr_db", "values": snr_ladder, "unit": "dB SNR"},
         "impulse_noise": {"parameter": "snr_db", "values": [40, 30, 20, 15, 10, 5], "unit": "dB SNR"},
-        "mp3": {"parameter": "bitrate_kbps", "values": [320, 256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
+        "mp3": {"parameter": "bitrate_kbps", "values": _mp3_ladders(rate)[1], "unit": "kbit/s"},
         "aac": {"parameter": "bitrate_kbps", "values": [256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
         "opus": {"parameter": "bitrate_kbps", "values": [128, 96, 64, 48, 32, 24, 16, 12], "unit": "kbit/s"},
         "vorbis": {"parameter": "bitrate_kbps", "values": _vorbis_ladders(rate)[1], "unit": "kbit/s"},

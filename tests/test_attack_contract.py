@@ -124,3 +124,23 @@ def test_vorbis_ladders_encode_at_their_rate(rate: int):
             pytest.skip(str(error))
         assert np.all(np.isfinite(result.audio)), bitrate
 
+
+@pytest.mark.parametrize("rate", [8000, 16000, 22050, 44100])
+def test_mp3_presets_use_bitrates_the_encoder_honours(rate: int):
+    """LAME silently clamps a bitrate above its MPEG version's table (160
+    kbit/s at 16-24 kHz, 64 below 16 kHz); a preset must never record a
+    bitrate the encoder did not use."""
+    from taf.attacks.presets import severity_parameters, standard_suite, sweep_presets
+
+    bitrates = {severity_parameters("mp3", level, rate)["bitrate_kbps"] for level in Severity}
+    bitrates |= set(sweep_presets(rate)["mp3"]["values"])
+    bitrates |= {int(spec.split("=")[1]) for spec in standard_suite(rate) if spec.startswith("mp3:")}
+    duration = 4
+    noise = np.random.default_rng(3).normal(0.0, 0.2, rate * duration)
+    for bitrate in sorted(bitrates):
+        try:
+            result = build(f"mp3:bitrate_kbps={bitrate}").apply(noise, rate)
+        except AttackToolUnavailableError as error:
+            pytest.skip(str(error))
+        effective = result.metadata["compressed_bytes"] * 8 / duration / 1000
+        assert effective == pytest.approx(bitrate, rel=0.15), (bitrate, effective)

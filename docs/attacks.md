@@ -77,8 +77,8 @@ cutoffs, resampling targets) move with the sampling rate.
 | `impulse_noise` | snr_db=40.0, density=0.001 | snr_db=25.0, density=0.005 | snr_db=15.0, density=0.01 | snr_db=5.0, density=0.05 |
 | `pink_noise` | snr_db=40.0 | snr_db=25.0 | snr_db=15.0 | snr_db=5.0 |
 | `aac` | bitrate_kbps=192 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
-| `codec` | bitrate_kbps=256 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
-| `mp3` | bitrate_kbps=256 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
+| `codec` | bitrate_kbps=160 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
+| `mp3` | bitrate_kbps=160 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
 | `opus` | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 | bitrate_kbps=32 |
 | `vorbis` | bitrate_kbps=96 | bitrate_kbps=64 | bitrate_kbps=48 | bitrate_kbps=32 |
 | `band_pass` | low_hz=20.0, high_hz=7200.0 | low_hz=100.0, high_hz=4000.0 | low_hz=300.0, high_hz=2400.0 | low_hz=1000.0, high_hz=1200.0 |
@@ -115,10 +115,12 @@ attributed to any particular publication.
   comparable to the signal, included to locate where a method finally fails.
 - **Bitrates.** The ladder spans transparent (256/192 kbps) to the point where
   coding artefacts are plainly audible (64/32 kbps), which is the range in
-  which distributed audio actually exists. Vorbis is the exception: libvorbis
-  rejects bitrates outside a range that depends on the sampling rate (for
-  16 kHz mono nothing above 96 kbps), so its levels and sweep start at the
-  highest bitrate the encoder accepts at the source rate.
+  which distributed audio actually exists. Where an encoder cannot use a
+  bitrate at the source rate, its levels and sweep start at the highest one
+  it honours: MP3 at 16–24 kHz (MPEG-2) is limited to 160 kbps and below
+  16 kHz to 64 kbps, which LAME would otherwise clamp silently while the row
+  recorded the requested value; libvorbis rejects bitrates outside a
+  rate-dependent range (for 16 kHz mono, nothing above 96 kbps).
 - **Filter cutoffs as a fraction of Nyquist.** A cutoff fixed in Hertz is
   wrong at some sampling rate: an 18 kHz low-pass does nothing to 16 kHz
   speech. Expressing it relative to Nyquist keeps the attack meaningful at any
@@ -325,7 +327,7 @@ Runs the codec through FFmpeg and returns decoded PCM. `bitrate_kbps` sets the t
 
 Shortcuts: `mp3`, `aac`, `opus`, `vorbis` select the codec.
 
-**Severity at 16 kHz:** mild `bitrate_kbps=256` · moderate `bitrate_kbps=128` · strong `bitrate_kbps=96` · extreme `bitrate_kbps=64`
+**Severity at 16 kHz:** mild `bitrate_kbps=160` · moderate `bitrate_kbps=128` · strong `bitrate_kbps=96` · extreme `bitrate_kbps=64`
 
 ### Filtering
 
