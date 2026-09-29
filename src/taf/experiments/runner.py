@@ -212,18 +212,21 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
     unsupported_methods: list[str] = []
     unsupported_metrics: list[str] = []
 
-    tensorflow = registry.tensorflow_available()
+    from taf.plugins import method_card, metric_card, parse_method_spec
+
     methods = config.resolved_methods()
     for method in methods:
-        if method in registry.TENSORFLOW_METHODS and not tensorflow:
+        try:
+            card = method_card(parse_method_spec(method)[0])
+        except (KeyError, ValueError):  # validation reports unknown methods
+            continue
+        missing = card.requirement_message(method)
+        if missing:
             unsupported_methods.append(method)
             warnings.append(
-                PlanWarning(
-                    code="missing_dependency",
-                    message=f"{method} requires TensorFlow (install the 'ai' extra); its rows will fail.",
-                )
+                PlanWarning(code="missing_dependency", message=f"{missing}; its rows will fail.")
             )
-        if method in registry.LONG_INPUT_METHODS:
+        if card.needs_long_input:
             warnings.append(
                 PlanWarning(
                     code="long_input",
@@ -234,7 +237,21 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
                 )
             )
     for metric in config.metrics:
-        if metric == "VISQOL_METRIC":
+        try:
+            card = metric_card(metric)
+        except KeyError:  # validation reports unknown metrics
+            continue
+        missing = card.requirement_message(metric)
+        if missing:
+            unsupported_metrics.append(metric)
+            warnings.append(
+                PlanWarning(
+                    code="missing_dependency",
+                    message=f"{missing}; it will be recorded as a metric error.",
+                )
+            )
+        elif metric == "VISQOL_METRIC":
+            # The bindings can be installed without the bundled SVR model.
             from taf.metrics.speech_quality.VisqolMetric import model_path
 
             try:
@@ -242,14 +259,6 @@ def preview_experiment(config: ExperimentConfig) -> ExperimentPlan:
             except ImportError as error:
                 unsupported_metrics.append(metric)
                 warnings.append(PlanWarning(code="missing_dependency", message=str(error)))
-        if metric in registry.TENSORFLOW_METRICS and not tensorflow:
-            unsupported_metrics.append(metric)
-            warnings.append(
-                PlanWarning(
-                    code="missing_dependency",
-                    message=f"{metric} requires TensorFlow (install the 'ai' extra); it will be recorded as a metric error.",
-                )
-            )
     from taf.attacks.registry import parse_spec, resolve_name
 
     changing = {spec.name for spec in registry.list_attacks() if spec.changes_length_or_rate}

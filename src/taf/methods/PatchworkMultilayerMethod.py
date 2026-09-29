@@ -4,9 +4,37 @@ from scipy.fft import dct, idct
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class PatchworkMultilayerMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="Patchwork-ML",
+        family="statistical",
+        purpose="watermarking",
+        references=(Reference("Natgunanathan et al.", 2017, doi="10.1109/TASLP.2017.2749001"),),
+        summary=Text(
+            en="Carries bits in statistical differences between paired DCT coefficient groups.",
+            pl="Przenosi bity w różnicach statystycznych między parami grup współczynników DCT.",
+        ),
+        details=Text(
+            en=(
+                "Reorders coefficients in a selected band and adjusts the mean absolute values of "
+                "paired segments so their ordering represents a bit. Extraction compares these means. "
+                "Despite the multilayer name, the current code implements only the first layer. "
+                "min_segment_length limits capacity; band removal and changes to the global transform "
+                "grid can damage the mark."
+            ),
+            pl=(
+                "Zmienia kolejność współczynników wybranego pasma i dostosowuje średnie wartości "
+                "bezwzględne par segmentów tak, by ich relacja oznaczała bit. Dekoder porównuje "
+                "średnie. Mimo nazwy multilayer obecny kod implementuje tylko pierwszą warstwę. "
+                "min_segment_length ogranicza pojemność; usunięcie pasma i zmiany globalnej siatki "
+                "transformacji mogą uszkodzić znak."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int, min_segment_length: int = 8):
         self.sr = sr

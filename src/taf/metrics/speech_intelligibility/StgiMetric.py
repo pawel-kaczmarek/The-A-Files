@@ -4,9 +4,39 @@ import numpy as np
 
 from taf.metrics.common.metrics_helper import log_mel_spectrogram, resample_to_10khz, sgbfb
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class StgiMetric(Metric):
+
+    card = MetricCard(
+        title="Spectro-temporal glimpsing index",
+        abbreviation="STGI",
+        category="speech_intelligibility",
+        scale="0–1",
+        references=(Reference("Edraki et al.", 2021, doi="10.21437/Interspeech.2021-605"),),
+        summary=Text(
+            en="Estimates how many local spectro-temporal speech patterns remain sufficiently preserved.",
+            pl="Szacuje, ile lokalnych wzorców czasowo-widmowych mowy zachowało wystarczającą zgodność.",
+        ),
+        details=Text(
+            en=(
+                "Resamples speech to 10 kHz, builds log-mel spectrograms and applies spectro-temporal "
+                "Gabor filters. Normalised local similarities are compared with channel-specific "
+                "thresholds; the score averages the resulting preserved-pattern decisions. Higher is "
+                "better on a 0–1 scale. Sufficient speech duration is needed for the analysis windows; "
+                "the result is not a word-recognition rate."
+            ),
+            pl=(
+                "Przelicza mowę do 10 kHz, buduje logarytmiczne spektrogramy melowe i stosuje "
+                "czasowo-widmowe filtry Gabora. Znormalizowane podobieństwa lokalne są porównywane z "
+                "progami kanałów, a wynik uśrednia decyzje o zachowaniu wzorców. Więcej jest lepiej w "
+                "skali 0–1. Potrzebna jest długość mowy wystarczająca dla okien analizy; to nie odsetek "
+                "rozpoznanych słów."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

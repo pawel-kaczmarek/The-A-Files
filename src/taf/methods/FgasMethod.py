@@ -19,6 +19,7 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 
@@ -30,6 +31,36 @@ def _he_normal(shape: Tuple[int, ...], fan_in: int, rng: np.random.Generator) ->
 
 class FgasMethod(SteganographyMethod):
     """Fixed-decoder adversarial-perturbation steganography (FGAS)."""
+
+    card = MethodCard(
+        title="FGAS",
+        family="neural",
+        purpose="steganography",
+        strength_parameter="epsilon",
+        references=(Reference("Yan et al.", 2025, doi="10.48550/arXiv.2505.22266"),),
+        requires=("tensorflow",),
+        extra="ai",
+        summary=Text(
+            en="Optimises a small audio perturbation so a fixed neural decoder outputs the desired bits.",
+            pl="Optymalizuje małe zaburzenie dźwięku tak, aby stały dekoder neuronowy zwrócił zadane bity.",
+        ),
+        details=Text(
+            en=(
+                "Builds a deterministically initialised 1D convolutional decoder from a shared seed and "
+                "optimises the input perturbation against the target message. The receiver reconstructs "
+                "that decoder and thresholds its output. epsilon bounds the perturbation; optimisation "
+                "settings affect cost and success. A small perturbation does not by itself guarantee "
+                "robustness to codecs or resistance to steganalysis."
+            ),
+            pl=(
+                "Buduje deterministycznie inicjalizowany dekoder konwolucyjny 1D ze wspólnego ziarna i "
+                "optymalizuje zaburzenie wejścia względem wiadomości. Odbiornik odtwarza dekoder i "
+                "progowo odczytuje wynik. epsilon ogranicza zaburzenie; ustawienia optymalizacji "
+                "wpływają na koszt i powodzenie. Mała zmiana nie gwarantuje odporności na kodeki ani "
+                "niewykrywalności przez steganalizę."
+            ),
+        ),
+    )
 
     def __init__(
         self,

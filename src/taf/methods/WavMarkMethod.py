@@ -23,6 +23,7 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 # Keep torch on the eager path: see AudioSealMethod for why.
 os.environ.setdefault("TORCHDYNAMO_DISABLE", "1")
@@ -32,6 +33,41 @@ _PAYLOAD_BITS = 16
 
 class WavMarkMethod(SteganographyMethod):
     """Neural watermarking with WavMark's pretrained model."""
+
+    card = MethodCard(
+        title="WavMark",
+        family="neural",
+        purpose="watermarking",
+        references=(Reference("Chen et al.", 2023, doi="10.48550/arXiv.2308.12770"),),
+        requires=("wavmark", "torch",),
+        extra="neural",
+        summary=Text(
+            en=(
+                "Uses the pretrained WavMark neural model to embed and recover bit payloads in audio "
+                "chunks."
+            ),
+            pl=(
+                "Używa wytrenowanego modelu neuronowego WavMark do osadzania i odczytu bitów we "
+                "fragmentach dźwięku."
+            ),
+        ),
+        details=Text(
+            en=(
+                "A one-second model window carries 32 bits: 16 synchronisation bits and 16 payload "
+                "bits. The decoder searches for the sync pattern; this adapter uses 16 kHz audio and "
+                "defaults to chunks of at least two seconds to leave search space. Longer messages use "
+                "consecutive chunks. The package and weights are optional dependencies; robustness "
+                "depends on the model and evaluated channel."
+            ),
+            pl=(
+                "Jednosekundowe okno modelu przenosi 32 bity: 16 synchronizacji i 16 wiadomości. "
+                "Dekoder szuka wzorca synchronizacji; adapter używa dźwięku 16 kHz i domyślnie co "
+                "najmniej dwusekundowych fragmentów, zostawiając miejsce na przeszukiwanie. Dłuższe "
+                "dane zajmują kolejne fragmenty. Pakiet i wagi są opcjonalnymi zależnościami; odporność "
+                "zależy od modelu oraz badanego kanału."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int = 16000, min_chunk_length: int = 32000):
         """

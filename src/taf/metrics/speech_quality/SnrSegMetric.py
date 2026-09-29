@@ -4,9 +4,37 @@ import numpy as np
 
 from taf.models.Metric import Metric
 from taf.metrics.common.metrics_helper import extract_overlapped_windows
+from taf.models.card import MetricCard, Reference, Text
 
 
 class SnrSegMetric(Metric):
+
+    card = MetricCard(
+        title="Segmental signal-to-noise ratio",
+        abbreviation="SNRseg",
+        category="speech_quality",
+        scale="dB",
+        references=(Reference("Loizou", 2013, doi="10.1201/b14529"),),
+        summary=Text(
+            en="Averages signal-to-noise ratios over short speech frames.",
+            pl="Uśrednia stosunek sygnału do szumu w krótkich ramkach mowy.",
+        ),
+        details=Text(
+            en=(
+                "Calculates a local energy-to-error ratio for each frame, limits extreme frame scores "
+                "and averages them. This gives quieter sections more influence than a single global "
+                "SNR. Higher dB is better. Frame length, silence and alignment affect the result; it "
+                "remains an error-energy measure rather than a listening score."
+            ),
+            pl=(
+                "Oblicza lokalny stosunek energii sygnału do błędu, ogranicza skrajne wyniki ramek i "
+                "uśrednia je. Cichsze fragmenty mają większy wpływ niż w globalnym SNR. Więcej dB "
+                "oznacza lepszy wynik. Długość ramek, cisza i wyrównanie wpływają na ocenę; nadal jest "
+                "to miara energii błędu, a nie ocena odsłuchowa."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

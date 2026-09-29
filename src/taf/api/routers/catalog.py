@@ -35,11 +35,13 @@ def _attacks() -> list[AttackInfo]:
             class_name=spec.class_name,
             description=spec.description,
             family=spec.family,
+            family_label=spec.family_label,
             parameters=[AttackParameterInfo(name=p.name, default=p.default) for p in spec.parameters],
             changes_length_or_rate=spec.changes_length_or_rate,
             stochastic=spec.stochastic,
             has_severity=spec.has_severity,
             sweep=spec.sweep,
+            **spec.card,
         )
         for spec in experiment_registry.list_attacks()
     ]

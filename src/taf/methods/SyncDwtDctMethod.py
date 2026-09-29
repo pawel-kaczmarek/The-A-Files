@@ -45,10 +45,51 @@ from scipy.fft import dct, idct
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class SyncDwtDctMethod(SteganographyMethod):
     """Sync-code DWT-DCT watermarking (Wang & Zhao)."""
+
+    card = MethodCard(
+        title="Sync-DWT-DCT",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="step_scale",
+        references=(Reference("Wang & Zhao", 2006, doi="10.1109/TSP.2006.881258"),),
+        summary=Text(
+            en=(
+                "Combines transform-domain data with synchronisation codes to locate marked blocks "
+                "after timing changes."
+            ),
+            pl=(
+                "Łączy dane w dziedzinie transformacji z kodami synchronizacji, aby odnajdywać bloki po "
+                "zmianach czasowych."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Writes a Barker-based sync pattern through quantised sample-group means, followed by "
+                "payload quantisation in the DCT of a DWT approximation band. The decoder scans offsets "
+                "and validates candidate blocks. Relative quantisation steps follow signal level. "
+                "Coefficient selection and step rules are implementation choices; successful "
+                "resynchronisation still depends on the attack and remaining audio. The sync code has "
+                "16 bits (the 13-bit Barker code followed by a 3-bit one), one bit per sync_group "
+                "samples; 16-sample groups replace the paper's 5. Because the decoder searches every "
+                "offset, it finds the blocks again after shifting, padding or cropping."
+            ),
+            pl=(
+                "Zapisuje wzorzec synchronizacji oparty na kodzie Barkera przez kwantyzację średnich "
+                "grup próbek, a następnie dane w DCT pasma aproksymacji DWT. Dekoder przeszukuje "
+                "przesunięcia i sprawdza kandydatów na bloki. Względne kroki kwantyzacji zależą od "
+                "poziomu sygnału. Wybór współczynników i kroków jest decyzją implementacyjną; "
+                "skuteczność synchronizacji zależy od ataku i zachowanego dźwięku. Kod synchronizacji "
+                "ma 16 bitów (13-bitowy kod Barkera i kod 3-bitowy), jeden bit na sync_group próbek; "
+                "grupy 16 próbek zastępują 5 z publikacji. Dekoder przeszukuje wszystkie przesunięcia, "
+                "więc odnajduje bloki po przesunięciu, dopełnieniu lub przycięciu."
+            ),
+        ),
+    )
 
     #: 13-bit Barker code followed by the 3-bit Barker code.
     SYNC_CODE = np.array([1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0])

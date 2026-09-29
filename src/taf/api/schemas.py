@@ -16,6 +16,45 @@ from taf.experiments.schema import ExperimentConfig, ExperimentPlan, ExperimentT
 # --------------------------------------------------------------------------
 
 
+class LocalizedText(BaseModel):
+    """A text in every interface language; missing translations fall back to English."""
+
+    en: str = ""
+    pl: str = ""
+
+
+class ReferenceInfo(BaseModel):
+    citation: str
+    year: int | None = None
+    doi: str | None = None
+    url: str | None = None
+    #: DOI resolver link, or the URL.
+    link: str | None = None
+
+
+class ComponentCardInfo(BaseModel):
+    """Fields every method, metric and attack takes from its card (``taf.models.card``)."""
+
+    title: LocalizedText = Field(default_factory=LocalizedText)
+    #: One sentence: what the component does, models or measures.
+    summary: LocalizedText = Field(default_factory=LocalizedText)
+    #: Mechanism, parameters, interpretation and departures from the publication.
+    details: LocalizedText = Field(default_factory=LocalizedText)
+    #: Short name for figures and tables ("QIM", "DCT-b1").
+    abbreviation: str = ""
+    references: list[ReferenceInfo] = Field(default_factory=list)
+    #: Importable modules needed beyond the core installation.
+    requires: list[str] = Field(default_factory=list)
+    #: Optional-dependency group that installs them.
+    extra: str | None = None
+    #: Whether the requirements are installed on this server.
+    available: bool = True
+    #: First reference, flattened.
+    reference: str | None = None
+    year: int | None = None
+    doi: str | None = None
+
+
 class MethodParameterInfo(BaseModel):
     name: str
     default: Any = None
@@ -24,43 +63,38 @@ class MethodParameterInfo(BaseModel):
     is_key: bool = False
 
 
-class MethodInfo(BaseModel):
+class MethodInfo(ComponentCardInfo):
     name: str
     class_name: str
+    #: The method's own label (``type()``), as recorded in result rows.
     description: str
-    #: Short name for figures and tables ("QIM", "DCT-b1").
-    abbreviation: str = ""
     #: False for methods registered by a plugin distribution.
     packaged: bool = True
     family: str | None = None
+    family_label: LocalizedText = Field(default_factory=LocalizedText)
     purpose: str | None = None
-    reference: str | None = None
-    year: int | None = None
-    doi: str | None = None
+    purpose_label: LocalizedText | None = None
     strength_parameter: str | None = None
     parameters: list[MethodParameterInfo] = Field(default_factory=list)
     requires_tensorflow: bool = False
     needs_long_input: bool = False
 
 
-class MetricInfo(BaseModel):
+class MetricInfo(ComponentCardInfo):
     domain: str | None = None
-    interpretation: str | None = None
-    url: str | None = None
     name: str
+    #: The metric's own label (``name()``), as recorded in result rows.
     label: str = ""
     class_name: str
     category: str
+    category_label: LocalizedText = Field(default_factory=LocalizedText)
     packaged: bool = True
     requires_tensorflow: bool = False
     #: True: higher means closer to the original; False: lower does.
     higher_is_better: bool | None = None
     #: Named entries of a multi-valued result, reported separately.
     components: list[str] = Field(default_factory=list)
-    abbreviation: str = ""
     scale: str | None = None
-    reference: str | None = None
-    year: int | None = None
     intrusive: bool = True
     compares_original: bool = True
     supports_attacked_audio: bool = True
@@ -71,11 +105,13 @@ class AttackParameterInfo(BaseModel):
     default: Any = None
 
 
-class AttackInfo(BaseModel):
+class AttackInfo(ComponentCardInfo):
     name: str
     class_name: str
+    #: English summary, kept for older clients.
     description: str = ""
     family: str = ""
+    family_label: LocalizedText = Field(default_factory=LocalizedText)
     parameters: list[AttackParameterInfo] = Field(default_factory=list)
     changes_length_or_rate: bool = False
     stochastic: bool = False

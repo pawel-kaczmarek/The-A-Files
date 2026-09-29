@@ -5,9 +5,37 @@ from scipy.signal import stft, lfilter
 from scipy.signal.windows import hann
 
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class BsdMetric(Metric):
+
+    card = MetricCard(
+        title="Bark spectral distortion",
+        abbreviation="BSD",
+        category="speech_reverberation",
+        scale="distance",
+        references=(Reference("Loizou", 2013, doi="10.1201/b14529"),),
+        summary=Text(
+            en="Measures reference-relative spectral distortion on the Bark auditory scale.",
+            pl="Mierzy zniekształcenie widmowe względem oryginału w słuchowej skali Bark.",
+        ),
+        details=Text(
+            en=(
+                "Maps short-time power spectra into 32 Bark bands and averages the squared band-energy "
+                "error normalised by reference band energy. Lower values mean closer spectra. Although "
+                "grouped with reverberation metrics, it responds to other spectral changes as well and "
+                "is not a direct measurement of room reverberation time."
+            ),
+            pl=(
+                "Mapuje krótkoczasowe widma mocy do 32 pasm Bark i uśrednia kwadrat błędu energii pasm "
+                "normalizowany energią odniesienia. Niższy wynik oznacza bliższe widma. Choć znajduje "
+                "się w grupie metryk pogłosu, reaguje także na inne zmiany widmowe i nie mierzy "
+                "bezpośrednio czasu pogłosu pomieszczenia."
+            ),
+        ),
+    )
+
     higher_is_better = False
 
     def calculate(self,

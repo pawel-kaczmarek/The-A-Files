@@ -4,9 +4,39 @@ import numpy as np
 
 from taf.models.Metric import Metric
 from taf.metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff, lpc2cep
+from taf.models.card import MetricCard, Reference, Text
 
 
 class CepstrumDistanceMetric(Metric):
+
+    card = MetricCard(
+        title="Cepstral distance",
+        abbreviation="CD",
+        category="speech_quality",
+        scale="dB",
+        references=(Reference("Loizou", 2013, doi="10.1201/b14529"),),
+        summary=Text(
+            en="Compares cepstral representations of reference and processed speech.",
+            pl="Porównuje reprezentacje cepstralne oryginalnej i przetworzonej mowy.",
+        ),
+        details=Text(
+            en=(
+                "Derives cepstral coefficients from short-frame speech models and computes their "
+                "distance. Cepstral features describe spectral-envelope shape rather than individual "
+                "waveform samples. Lower distance in dB means a closer envelope. It needs a reference "
+                "and should be interpreted alongside other metrics, since matching envelopes do not "
+                "imply identical phase or perceptual quality."
+            ),
+            pl=(
+                "Wyznacza współczynniki cepstralne z modeli krótkich ramek mowy i oblicza ich "
+                "odległość. Cechy cepstralne opisują obwiednię widma zamiast pojedynczych próbek. "
+                "Mniejsza odległość w dB oznacza bliższą obwiednię. Wymaga odniesienia i interpretacji "
+                "z innymi metrykami, bo podobne obwiednie nie gwarantują zgodnej fazy ani jakości "
+                "słuchowej."
+            ),
+        ),
+    )
+
     higher_is_better = False
 
     def calculate(self,

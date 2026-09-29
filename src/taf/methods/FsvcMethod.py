@@ -6,6 +6,7 @@ from scipy.fft import dct, idct
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 def modify_svd_pair(alpha, l1, l2, watermark_bit):
@@ -34,6 +35,37 @@ def modify_svd_pair(alpha, l1, l2, watermark_bit):
 
 
 class FsvcMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="FSVC",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="delta",
+        references=(Reference("Zhao et al.", 2021, doi="10.1109/TASLP.2021.3092555"),),
+        summary=Text(
+            en="Stores bits in the relative singular values of two frequency-domain frame halves.",
+            pl=(
+                "Zapisuje bity w relacji wartości singularnych dwóch połówek ramki w dziedzinie "
+                "częstotliwości."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Splits each payload frame in half, applies DCT, selects coefficient bands and computes "
+                "their singular values. Embedding enforces a bit-dependent ratio; decoding compares the "
+                "values. In the current implementation the ratio is controlled by an internal alpha; "
+                "the exposed delta parameter is stored but does not affect encoding. Temporal "
+                "misalignment changes the compared halves."
+            ),
+            pl=(
+                "Dzieli ramkę na pół, wykonuje DCT, wybiera pasma współczynników i oblicza wartości "
+                "singularne. Osadzanie wymusza proporcję zależną od bitu, a dekoder porównuje wartości. "
+                "W tej implementacji proporcją steruje wewnętrzna alpha; udostępniony parametr delta "
+                "jest zapisywany, ale nie wpływa na kodowanie. Przesunięcie czasowe zmienia porównywane "
+                "połówki."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int, delta: float = 3.5793656):
         self.sr = sr

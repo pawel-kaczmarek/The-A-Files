@@ -3,9 +3,38 @@ import bitstring
 import numpy as np
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class LsbMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="LSB",
+        family="lsb",
+        purpose="steganography",
+        references=(Reference("Alsabhany et al.", 2020, doi="10.1016/j.cosrev.2020.100316"),),
+        summary=Text(
+            en="Hides one message bit in each audio sample with a very small numerical change.",
+            pl=(
+                "Ukrywa jeden bit wiadomości w każdej próbce dźwięku, bardzo nieznacznie zmieniając jej "
+                "wartość."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Replaces the least significant bit of the sample’s 32-bit floating-point "
+                "representation. Decoding reads those bits in order. This implementation uses float "
+                "bits, not integer PCM bits: conversion to PCM, lossy compression or even small signal "
+                "processing changes can erase the message."
+            ),
+            pl=(
+                "Zastępuje najmniej znaczący bit 32-bitowej reprezentacji zmiennoprzecinkowej próbki. "
+                "Dekoder odczytuje te bity po kolei. Ta implementacja operuje na bitach float, a nie "
+                "całkowitoliczbowego PCM: konwersja do PCM, kompresja stratna lub drobne przetwarzanie "
+                "sygnału mogą usunąć wiadomość."
+            ),
+        ),
+    )
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         if len(message) > len(data):

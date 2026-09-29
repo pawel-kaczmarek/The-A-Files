@@ -5,6 +5,7 @@ from scipy.signal import lfilter
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.mixer import mixer
+from taf.models.card import MethodCard, Reference, Text
 
 
 class EchoMethod(SteganographyMethod):
@@ -16,6 +17,34 @@ class EchoMethod(SteganographyMethod):
     the echo amplitude is a constructor parameter: the original fixed value of
     0.5 produced a plainly audible echo (SNR 6 dB on speech).
     """
+
+    card = MethodCard(
+        title=Text("Echo hiding", "Ukrywanie w echu"),
+        abbreviation="Echo",
+        family="echo",
+        purpose="steganography",
+        strength_parameter="alpha",
+        needs_long_input=True,
+        references=(Reference("Alsabhany et al.", 2020, doi="10.1016/j.cosrev.2020.100316"),),
+        summary=Text(
+            en="Represents zero and one by echoes with different delays.",
+            pl="Reprezentuje zero i jedynkę przez echa o różnych opóźnieniach.",
+        ),
+        details=Text(
+            en=(
+                "Splits the recording into payload frames and mixes in a delayed copy using alpha. The "
+                "decoder detects the selected delay through cepstral analysis. Echo strength trades "
+                "audibility against detection margin. Short frames, existing reverberation or temporal "
+                "changes can make the two delay hypotheses difficult to distinguish."
+            ),
+            pl=(
+                "Dzieli nagranie na ramki wiadomości i domiesza opóźnioną kopię z siłą alpha. Dekoder "
+                "wykrywa wybrane opóźnienie przez analizę cepstralną. Siła echa wiąże słyszalność z "
+                "marginesem detekcji. Krótkie ramki, istniejący pogłos lub zmiany czasowe mogą utrudnić "
+                "odróżnienie obu opóźnień."
+            ),
+        ),
+    )
 
     def __init__(self, alpha: float = 0.2, d0: int = 150, d1: int = 200, min_frame_length: int = 2048):
         """

@@ -27,10 +27,38 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class ImprovedSpreadSpectrumMethod(SteganographyMethod):
     """Host-interference-rejecting spread spectrum watermarking."""
+
+    card = MethodCard(
+        title="ISS",
+        family="spread_spectrum",
+        purpose="watermarking",
+        strength_parameter="strength",
+        references=(Reference("Malvar & Florencio", 2003, doi="10.1109/TSP.2003.809385"),),
+        summary=Text(
+            en="Reduces host-signal interference before adding a spread-spectrum watermark.",
+            pl="Ogranicza zakłócenie pochodzące od nośnika przed dodaniem znaku o rozproszonym widmie.",
+        ),
+        details=Text(
+            en=(
+                "Projects each carrier frame onto a key-derived chip sequence and compensates its "
+                "existing component before setting a bit-dependent projection. The decoder reads the "
+                "correlation sign. This removes a source of ambiguity present in plain DSSS. strength "
+                "controls the mark level; compensation itself also changes the carrier, and frame "
+                "synchronisation is still required."
+            ),
+            pl=(
+                "Rzutuje ramkę na sekwencję wyprowadzoną z klucza i kompensuje istniejącą składową, "
+                "zanim ustali projekcję zależną od bitu. Dekoder odczytuje znak korelacji. Usuwa to "
+                "źródło niejednoznaczności zwykłego DSSS. strength steruje poziomem znaku; sama "
+                "kompensacja również zmienia nośnik, a synchronizacja ramek nadal jest potrzebna."
+            ),
+        ),
+    )
 
     def __init__(
         self,

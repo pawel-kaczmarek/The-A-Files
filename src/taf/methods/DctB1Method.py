@@ -6,6 +6,7 @@ from scipy.fft import dct, idct
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 def _energy_compensation(C: np.ndarray, G2_ind: np.ndarray, niT: float) -> np.ndarray:
@@ -48,6 +49,31 @@ class DctB1Method(SteganographyMethod):
         lG1 (int): Number of DCT coefficients in group G1.
         lG2 (int): Number of DCT coefficients in group G2.
     """
+
+    card = MethodCard(
+        title="DCT-b1",
+        family="transform",
+        purpose="watermarking",
+        references=(Reference("Hu & Hsu", 2015, doi="10.1016/j.sigpro.2014.11.011"),),
+        summary=Text(
+            en="Embeds a watermark in a selected DCT band using masking and energy compensation.",
+            pl="Osadza znak wodny w wybranym paśmie DCT, wykorzystując maskowanie i kompensację energii.",
+        ),
+        details=Text(
+            en=(
+                "Processes audio in frames, changes coefficient groups to represent bits, and "
+                "compensates energy changes while reconstructing the waveform. The detector evaluates "
+                "the corresponding coefficient relations. Frame and group lengths control capacity and "
+                "the embedding region; preserving frame alignment is essential after temporal attacks."
+            ),
+            pl=(
+                "Przetwarza dźwięk ramkami, zmienia grupy współczynników zgodnie z bitami i kompensuje "
+                "zmiany energii podczas rekonstrukcji. Detektor ocenia odpowiednie relacje "
+                "współczynników. Długości ramek i grup wpływają na pojemność oraz obszar osadzania; po "
+                "atakach czasowych kluczowe jest zachowanie położenia ramek."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int, lt: int = 23, lw: int = 1486, lG1: int = 24, lG2: int = 6,
                  key: int = 20240521):

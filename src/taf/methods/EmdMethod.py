@@ -43,10 +43,44 @@ import numpy as np
 from taf.methods.common.emd import emd, extrema
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class EmdMethod(SteganographyMethod):
     """EMD extrema quantisation (Khaldi & Boudraa)."""
+
+    card = MethodCard(
+        title="EMD",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="step_scale",
+        references=(Reference("Khaldi & Boudraa", 2013, doi="10.1109/TASL.2012.2227733"),),
+        summary=Text(
+            en="Encodes bits in extrema of a slow component obtained by empirical mode decomposition.",
+            pl=(
+                "Koduje bity w ekstremach wolnozmiennej składowej uzyskanej przez empiryczną "
+                "dekompozycję modów."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Decomposes frames into oscillatory modes and quantises extrema of the remainder after "
+                "the selected IMFs. It re-decomposes and corrects embedding in a closed loop; extrema "
+                "vote on one bit per frame. This differs from marking only the last IMF in the paper. "
+                "Filtering can change the decomposition itself, while repeated decomposition also "
+                "increases computation cost. The paper's synchronisation code is not reproduced; "
+                "Sync-DWT-DCT provides a sync-code scheme."
+            ),
+            pl=(
+                "Rozkłada ramki na składowe oscylacyjne i kwantuje ekstrema reszty po wydzieleniu "
+                "wybranych IMF. Ponownie wykonuje dekompozycję i koryguje osadzanie w pętli; ekstrema "
+                "głosują na jeden bit w ramce. To odstępstwo od osadzania wyłącznie w ostatnim IMF z "
+                "publikacji. Filtracja może zmieniać sam rozkład, a wielokrotna dekompozycja zwiększa "
+                "koszt obliczeń. Kod synchronizacji z publikacji nie jest odtworzony; schemat z kodem "
+                "synchronizacji zapewnia Sync-DWT-DCT."
+            ),
+        ),
+    )
 
     #: Share of a frame's carrier extrema that must read back correctly
     #: before closed-loop embedding stops refining it.

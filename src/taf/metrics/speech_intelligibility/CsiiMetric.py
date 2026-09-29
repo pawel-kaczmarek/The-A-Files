@@ -5,9 +5,38 @@ from scipy.signal import stft
 
 from taf.models.Metric import Metric
 from taf.metrics.common.metrics_helper import extract_overlapped_windows
+from taf.models.card import MetricCard, Reference, Text
 
 
 class CsiiMetric(Metric):
+
+    card = MetricCard(
+        title="Coherence speech intelligibility index",
+        abbreviation="CSII",
+        category="speech_intelligibility",
+        scale="0–1",
+        references=(Reference("Loizou", 2013, doi="10.1201/b14529"),),
+        summary=Text(
+            en="Estimates intelligibility using coherence between reference and processed speech.",
+            pl="Szacuje zrozumiałość z koherencji oryginalnej i przetworzonej mowy.",
+        ),
+        details=Text(
+            en=(
+                "Computes coherence-based signal-to-distortion information in weighted frequency bands. "
+                "Returns separate high, mid and low indices for speech segments at different levels. "
+                "Higher values indicate better preserved intelligibility cues. The three components "
+                "describe different portions of speech and should not be mistaken for repeated "
+                "measurements of one global score."
+            ),
+            pl=(
+                "Oblicza informację o stosunku sygnału do zniekształceń na podstawie koherencji w "
+                "ważonych pasmach. Zwraca osobne indeksy high, mid i low dla segmentów mowy o różnych "
+                "poziomach. Wyższe wartości oznaczają lepiej zachowane wskazówki zrozumiałości. Trzy "
+                "składowe opisują różne części mowy, a nie powtórzenia jednego wyniku globalnego."
+            ),
+        ),
+    )
+
     higher_is_better = True
     # Separate indices for high-, mid- and low-level speech segments.
     components = ("high", "mid", "low")

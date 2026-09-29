@@ -75,7 +75,7 @@ nav:
       - References: references.md
   - Development:
       - API and datasets: platform.md
-      - Plugins: extending.md
+      - Adding components: extending.md
       - Documentation and Pages: publishing.md
       - Attack implementation history: attack-history.md
       - Project and licence: project.md

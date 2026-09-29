@@ -7,12 +7,53 @@ import scipy
 
 from taf.models.Metric import Metric
 from taf.resources.paths import mosnet_model_path
+from taf.models.card import MetricCard, Reference, Text
 
 # prevent TF warnings
 os.environ.setdefault('TF_CPP_MIN_LOG_LEVEL', '2')
 
 
 class MosNetMetric(Metric):
+
+    card = MetricCard(
+        title="MOSNet",
+        abbreviation="MOSNet",
+        category="ai_based",
+        scale="MOS 1–5",
+        intrusive=False,
+        references=(Reference("Lo et al.", 2019, doi="10.48550/arXiv.1904.08352"),),
+        requires=("tensorflow",),
+        extra="ai",
+        summary=Text(
+            en=(
+                "Predicts speech quality using a pretrained neural network rather than a samplewise "
+                "reference comparison."
+            ),
+            pl=(
+                "Przewiduje jakość mowy wytrenowaną siecią neuronową zamiast porównywać próbki z "
+                "oryginałem."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Feeds magnitude spectrograms through convolutional and bidirectional LSTM layers and "
+                "averages frame predictions. TAF evaluates cover and processed audio independently, "
+                "returning both scores; only processed is ranked as the result. Higher predicts better "
+                "quality. Requires TensorFlow and model weights; predictions depend on the training "
+                "domain and are not actual listener ratings. MOSNet was developed for voice conversion; "
+                "applying it to watermarked or attacked audio requires validation."
+            ),
+            pl=(
+                "Przekazuje spektrogramy amplitudowe przez warstwy konwolucyjne i dwukierunkowe LSTM, "
+                "po czym uśrednia predykcje ramek. TAF ocenia oryginał i wynik niezależnie, zwracając "
+                "oba wyniki; tylko processed podlega rankingowi jako rezultat. Więcej oznacza lepszą "
+                "przewidywaną jakość. Wymaga TensorFlow i wag; oceny zależą od danych treningowych i "
+                "nie są rzeczywistymi ocenami słuchaczy. MOSNet opracowano do oceny konwersji głosu; "
+                "zastosowanie do audio ze znakiem wodnym lub po ataku wymaga walidacji."
+            ),
+        ),
+    )
+
     higher_is_better = True
     # Predicted MOS of the cover (a reference) and of the processed signal.
     components = ("cover", "processed")

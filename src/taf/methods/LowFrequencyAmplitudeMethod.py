@@ -25,10 +25,39 @@ from scipy.signal import butter, sosfiltfilt
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class LowFrequencyAmplitudeMethod(SteganographyMethod):
     """Low-frequency amplitude modification (LFAM)."""
+
+    card = MethodCard(
+        title="LFAM",
+        family="statistical",
+        purpose="watermarking",
+        strength_parameter="margin",
+        references=(Reference("Lie & Chang", 2006, doi="10.1109/TMM.2005.861292"),),
+        summary=Text(
+            en="Encodes bits through amplitude relations between three low-frequency sub-segments.",
+            pl="Koduje bity przez relacje amplitud trzech podsegmentów niskoczęstotliwościowych.",
+        ),
+        details=Text(
+            en=(
+                "Separates low-frequency content and scales consecutive sub-segments so the middle "
+                "amplitude lies above or below the average of its neighbours. The decoder reads that "
+                "relation without the original. margin controls the separation. Relative amplitudes "
+                "tolerate common gain changes, but high-pass filtering and temporal misalignment can "
+                "remove or rearrange the carrier."
+            ),
+            pl=(
+                "Wydziela niskie częstotliwości i skaluje kolejne podsegmenty tak, aby amplituda "
+                "środkowego była powyżej lub poniżej średniej sąsiadów. Dekoder odczytuje relację bez "
+                "oryginału. margin ustala rozdzielenie. Względne amplitudy tolerują wspólną zmianę "
+                "głośności, lecz filtr górnoprzepustowy i przesunięcie czasowe mogą usunąć lub "
+                "przestawić nośnik."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int = 16000, cutoff: float = 2000.0, margin: float = 0.3,
                  min_segment_length: int = 768):

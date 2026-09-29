@@ -19,10 +19,39 @@ from scipy.fft import fft, ifft
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class BackwardForwardEchoMethod(SteganographyMethod):
     """Echo hiding using a backward/forward kernel pair."""
+
+    card = MethodCard(
+        title=Text("Backward–forward echo", "Echo wsteczne i przednie"),
+        abbreviation="BF-Echo",
+        family="echo",
+        purpose="watermarking",
+        strength_parameter="alpha",
+        references=(Reference("Kim & Choi", 2003, doi="10.1109/TCSVT.2003.815950"),),
+        summary=Text(
+            en="Carries bits with paired backward and forward echoes.",
+            pl="Przenosi bity za pomocą par ech wstecznych i przednich.",
+        ),
+        details=Text(
+            en=(
+                "Uses echo kernels on both sides of a sample position with opposite signs. The detector "
+                "compares the corresponding cepstral responses rather than relying on a single echo "
+                "peak. alpha controls the added echo strength. The paired structure changes the "
+                "detection statistic, but does not remove sensitivity to reverberation or lost frame "
+                "alignment."
+            ),
+            pl=(
+                "Używa jąder echa po obu stronach pozycji próbki z przeciwnymi znakami. Detektor "
+                "porównuje odpowiadające im odpowiedzi cepstralne zamiast pojedynczego maksimum echa. "
+                "alpha steruje siłą dodanego echa. Konstrukcja pary zmienia statystykę detekcji, ale "
+                "nie eliminuje wrażliwości na pogłos i utratę synchronizacji ramek."
+            ),
+        ),
+    )
 
     def __init__(self, alpha: float = 0.1, d0: int = 150, d1: int = 200,
                  min_frame_length: int = 2048):

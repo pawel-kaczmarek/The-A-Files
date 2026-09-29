@@ -8,6 +8,7 @@ from scipy.signal import resample_poly
 
 from taf.metrics.common.spectral import aligned_mono
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 def model_path() -> Path:
@@ -22,6 +23,46 @@ def model_path() -> Path:
 
 
 class VisqolMetric(Metric):
+
+    card = MetricCard(
+        title="ViSQOL Audio",
+        abbreviation="ViSQOL Audio",
+        category="speech_quality",
+        scale="MOS-LQO (audio SVR, maximum about 4.75)",
+        domain="audio",
+        references=(
+            Reference("Chinen et al.", 2020, doi="10.48550/arXiv.2004.09584"),
+            Reference("google/visqol", None, url="https://github.com/google/visqol"),
+        ),
+        requires=("visqol",),
+        summary=Text(
+            en=(
+                "Estimates perceived audio quality from similarity between reference and processed "
+                "spectrograms."
+            ),
+            pl=(
+                "Szacuje postrzeganą jakość dźwięku z podobieństwa spektrogramów oryginału i sygnału "
+                "przetworzonego."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Uses official Google ViSQOL bindings and the audio-mode SVR model, with both inputs "
+                "polyphase-resampled to 48 kHz. Spectro-temporal similarity is mapped to MOS-LQO, whose "
+                "audio-model maximum is about 4.75. Prefer active clips around 8–10 seconds. Requires "
+                "optional bindings and model data; do not compare these scores directly with ViSQOL "
+                "speech mode."
+            ),
+            pl=(
+                "Używa oficjalnych wiązań Google ViSQOL i modelu SVR trybu audio; oba wejścia są "
+                "przeliczane wielofazowo do 48 kHz. Podobieństwo czasowo-widmowe jest mapowane na "
+                "MOS-LQO z maksimum modelu audio około 4,75. Preferowane są aktywne fragmenty około "
+                "8–10 sekund. Wymaga opcjonalnych wiązań i modelu; wyników nie należy bezpośrednio "
+                "porównywać z trybem speech."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self, samples_original, samples_processed, fs, frame_len=0.03, overlap=0.75):

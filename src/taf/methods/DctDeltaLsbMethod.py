@@ -6,6 +6,7 @@ from scipy.fft import dct, idct
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.split import to_frames, to_samples
+from taf.models.card import MethodCard, Reference, Text
 
 
 def _normalize(vector: np.ndarray) -> Tuple[float, np.ndarray]:
@@ -85,6 +86,33 @@ class DctDeltaLsbMethod(SteganographyMethod):
             distortion tracks the frame level instead of flattening quiet
             frames.
     """
+
+    card = MethodCard(
+        title="DCT-Delta-LSB",
+        family="transform",
+        purpose="steganography",
+        strength_parameter="delta_value",
+        references=(Reference("Alsabhany et al.", 2020, doi="10.1016/j.cosrev.2020.100316"),),
+        summary=Text(
+            en="Encodes bits in the relative norms of two groups of cosine-transform coefficients.",
+            pl="Koduje bity w relacji norm dwóch grup współczynników transformacji kosinusowej.",
+        ),
+        details=Text(
+            en=(
+                "Transforms each frame with DCT, splits coefficients into two vectors and makes one "
+                "norm larger than the other according to the bit. Decoding compares the norms. Despite "
+                "the historical LSB name, this implementation modifies norm relations. delta_value sets "
+                "the separation relative to the frame level; larger separation increases distortion and "
+                "the decision margin."
+            ),
+            pl=(
+                "Przekształca ramkę przez DCT, dzieli współczynniki na dwa wektory i zależnie od bitu "
+                "zwiększa jedną normę względem drugiej. Dekoder porównuje normy. Mimo historycznej "
+                "nazwy LSB implementacja zmienia relacje norm. delta_value ustala różnicę względem "
+                "poziomu ramki; większa różnica zwiększa zniekształcenie i margines decyzji."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int, frame_length_in_ms: int = 100, delta_value: float = 0.05):
         self.sr = sr  # Sampling rate

@@ -4,9 +4,37 @@ import numpy as np
 from scipy.signal import stft
 
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class FWSnrSegMetric(Metric):
+
+    card = MetricCard(
+        title="Frequency-weighted segmental SNR",
+        abbreviation="fwSNRseg",
+        category="speech_quality",
+        scale="dB",
+        references=(Reference("Hu & Loizou", 2008, doi="10.1109/TASL.2007.911054"),),
+        summary=Text(
+            en="Measures segmental SNR with frequency-band weighting relevant to speech.",
+            pl="Mierzy segmentowy SNR z ważeniem pasm częstotliwości istotnych dla mowy.",
+        ),
+        details=Text(
+            en=(
+                "Separates short-time spectra into perceptual bands, computes bandwise signal-to-error "
+                "ratios and combines them with frequency-dependent weights. Higher scores indicate less "
+                "weighted distortion. It can distinguish errors with similar total energy but different "
+                "spectral locations; it requires a reference and temporal alignment."
+            ),
+            pl=(
+                "Rozdziela widma krótkoczasowe na pasma percepcyjne, oblicza stosunki sygnału do błędu "
+                "w pasmach i łączy je wagami częstotliwościowymi. Wyższy wynik oznacza mniejsze ważone "
+                "zniekształcenie. Rozróżnia błędy o podobnej energii, lecz innym położeniu widmowym; "
+                "wymaga oryginału i wyrównania czasowego."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

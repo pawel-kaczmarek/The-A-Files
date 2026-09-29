@@ -23,10 +23,39 @@ from scipy.signal import butter, sosfiltfilt
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class HistogramMethod(SteganographyMethod):
     """Watermarking in the amplitude histogram."""
+
+    card = MethodCard(
+        title="Histogram",
+        family="statistical",
+        purpose="watermarking",
+        strength_parameter="threshold",
+        references=(Reference("Xiang & Huang", 2007, doi="10.1109/TMM.2007.906580"),),
+        summary=Text(
+            en="Stores bits in the distribution of sample amplitudes rather than their positions.",
+            pl="Zapisuje bity w rozkładzie amplitud próbek zamiast w ich pozycjach.",
+        ),
+        details=Text(
+            en=(
+                "Forms an amplitude histogram and modifies population relations in groups of three "
+                "neighbouring bins. The histogram range is relative to mean absolute amplitude; "
+                "threshold controls the required relation. Because sample order is not used, the method "
+                "targets timing and cropping robustness. Changes that reshape amplitude statistics, "
+                "such as clipping or noise, can still destroy the relation."
+            ),
+            pl=(
+                "Buduje histogram amplitud i zmienia relacje liczności w grupach trzech sąsiednich "
+                "przedziałów. Zakres histogramu zależy od średniej amplitudy bezwzględnej, a threshold "
+                "określa wymaganą relację. Brak zależności od kolejności próbek służy odporności na "
+                "zmiany czasowe i przycięcie. Zmiany statystyk amplitudy, np. clipping lub szum, mogą "
+                "jednak zniszczyć tę relację."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int = 16000, amplitude_span: float = 2.5, threshold: float = 2.0,
                  cutoff: float = 2000.0, rounds: int = 24,

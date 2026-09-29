@@ -30,6 +30,7 @@ from taf.attacks.base import (
     clip_to_full_scale,
     rms,
 )
+from taf.models.card import AttackCard, Text
 
 
 @dataclass(frozen=True)
@@ -46,6 +47,27 @@ class GainChange(Attack):
 
     name = "gain"
     category = AttackCategory.AMPLITUDE
+    card = AttackCard(
+        title=Text("Gain change", "Zmiana wzmocnienia"),
+        summary=Text(
+            en="Changes playback level to test dependence on absolute amplitude.",
+            pl="Zmienia głośność, sprawdzając zależność dekodera od bezwzględnej amplitudy.",
+        ),
+        details=Text(
+            en=(
+                "Multiplies samples by the gain corresponding to the requested decibel change. Optional "
+                "clipping limits values that exceed full scale and adds a separate nonlinear "
+                "distortion. Pure gain leaves relative amplitude relations intact, whereas fixed "
+                "absolute detection thresholds or quantisation steps may no longer match."
+            ),
+            pl=(
+                "Mnoży próbki przez wzmocnienie odpowiadające zmianie w decybelach. Opcjonalne "
+                "ograniczanie obcina wartości poza pełną skalą i dodaje nieliniowe zniekształcenie. "
+                "Czyste wzmocnienie zachowuje względne relacje amplitud, ale stałe progi detekcji lub "
+                "bezwzględne kroki kwantyzacji mogą przestać pasować."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         factor = 10.0 ** (self.gain_db / 20.0)
@@ -92,6 +114,28 @@ class Clipping(Attack):
 
     name = "clipping"
     category = AttackCategory.AMPLITUDE
+    card = AttackCard(
+        title=Text("Clipping", "Obcinanie amplitudy"),
+        summary=Text(
+            en="Limits signal peaks, modelling saturation or overdriven audio.",
+            pl="Ogranicza szczyty sygnału, modelując nasycenie lub przesterowanie dźwięku.",
+        ),
+        details=Text(
+            en=(
+                "Hard-clips samples at a threshold expressed relative to full scale, the signal peak or "
+                "an amplitude percentile. A lower threshold affects more samples and reshapes the "
+                "waveform, introducing additional spectral components. This tests payloads stored in "
+                "peak values, amplitude statistics and transform coefficients without deliberately "
+                "changing the time axis."
+            ),
+            pl=(
+                "Twardo obcina próbki na progu określonym względem pełnej skali, szczytu sygnału lub "
+                "percentyla amplitudy. Niższy próg obejmuje więcej próbek i zmienia przebieg, tworząc "
+                "dodatkowe składowe widma. Bada dane zapisane w szczytach, statystykach amplitudy i "
+                "współczynnikach transformacji bez celowej zmiany osi czasu."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         magnitude = np.abs(audio)
@@ -152,6 +196,35 @@ class DynamicRangeCompression(Attack):
 
     name = "compression_dynamic"
     category = AttackCategory.AMPLITUDE
+    card = AttackCard(
+        title=Text("Dynamic-range compression", "Kompresja dynamiki"),
+        summary=Text(
+            en=(
+                "Reduces the difference between loud and quiet samples, then restores the original "
+                "peak."
+            ),
+            pl=(
+                "Zmniejsza różnicę między głośnymi i cichymi próbkami, a następnie przywraca pierwotny "
+                "szczyt."
+            ),
+        ),
+        details=Text(
+            en=(
+                "A memoryless compressor: sample magnitudes above threshold (linear, relative to full "
+                "scale) are reduced by ratio, and make-up gain returns the peak to its original level. "
+                "There is no envelope follower and no attack or release time, so two numbers define the "
+                "attack completely. It changes amplitude relations while leaving the audio listenable, "
+                "which stresses amplitude- and norm-relation methods."
+            ),
+            pl=(
+                "Kompresor bez pamięci: amplitudy próbek powyżej progu threshold (liniowego, względem "
+                "pełnej skali) są zmniejszane zgodnie z ratio, a wzmocnienie wyrównujące przywraca "
+                "pierwotny szczyt. Nie ma śledzenia obwiedni ani czasów attack i release, więc atak "
+                "jest w pełni określony dwiema liczbami. Zmienia relacje amplitud przy zachowaniu "
+                "słuchalności dźwięku, co obciąża metody oparte na relacjach amplitud i norm."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if not 0.0 < self.threshold < 1.0:

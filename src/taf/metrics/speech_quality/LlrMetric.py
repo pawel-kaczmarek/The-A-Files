@@ -5,9 +5,37 @@ from scipy.linalg import toeplitz
 
 from taf.metrics.common.metrics_helper import extract_overlapped_windows, lpcoeff
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class LlrMetric(Metric):
+
+    card = MetricCard(
+        title="Log-likelihood ratio",
+        abbreviation="LLR",
+        category="speech_quality",
+        scale="distance",
+        references=(Reference("Hu & Loizou", 2008, doi="10.1109/TASL.2007.911054"),),
+        summary=Text(
+            en="Measures how much the linear-prediction model of speech changes after processing.",
+            pl="Mierzy zmianę modelu predykcji liniowej mowy po przetworzeniu.",
+        ),
+        details=Text(
+            en=(
+                "Fits linear predictive coefficients to reference and processed frames, then evaluates "
+                "a log ratio of prediction-error terms using the reference autocorrelation. Lower "
+                "values indicate more similar spectral envelopes. It is intended for speech; silence, "
+                "numerical conditioning and time alignment can affect the estimate."
+            ),
+            pl=(
+                "Dopasowuje współczynniki predykcji liniowej do ramek oryginału i wyniku, po czym "
+                "oblicza logarytm ilorazu składników błędu z autokorelacją odniesienia. Niższa wartość "
+                "oznacza bardziej podobne obwiednie widmowe. Miara jest przeznaczona do mowy; cisza, "
+                "uwarunkowanie numeryczne i wyrównanie czasowe wpływają na estymację."
+            ),
+        ),
+    )
+
     higher_is_better = False
 
     def calculate(self,

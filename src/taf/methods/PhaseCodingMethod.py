@@ -2,9 +2,36 @@ from typing import List
 import numpy as np
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class PhaseCodingMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title=Text("Phase coding", "Kodowanie fazowe"),
+        abbreviation="Phase",
+        family="phase",
+        purpose="steganography",
+        references=(Reference("Alsabhany et al.", 2020, doi="10.1016/j.cosrev.2020.100316"),),
+        summary=Text(
+            en="Stores the message in Fourier phases of the first audio block.",
+            pl="Zapisuje wiadomość w fazach transformaty Fouriera pierwszego bloku dźwięku.",
+        ),
+        details=Text(
+            en=(
+                "Sets selected phases to +π/2 or −π/2 and mirrors them to preserve a real waveform. "
+                "Subsequent blocks retain their original inter-block phase differences. Decoding reads "
+                "the signs of the first block’s phases. Magnitudes are retained during embedding, but a "
+                "shift or removal of the opening block can destroy access to the payload."
+            ),
+            pl=(
+                "Ustawia wybrane fazy na +π/2 lub −π/2 i odbija je symetrycznie, aby zachować "
+                "rzeczywisty sygnał. Kolejne bloki zachowują pierwotne różnice faz między blokami. "
+                "Dekoder odczytuje znaki faz pierwszego bloku. Moduły widma są zachowywane przy "
+                "osadzaniu, lecz przesunięcie lub usunięcie początku może uniemożliwić odczyt danych."
+            ),
+        ),
+    )
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         msg_length = len(message)

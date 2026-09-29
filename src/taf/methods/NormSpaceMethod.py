@@ -6,9 +6,39 @@ from scipy.fft import dct, idct
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.split import to_frames
+from taf.models.card import MethodCard, Reference, Text
 
 
 class NormSpaceMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="Norm-space",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="delta",
+        references=(Reference("Saadi et al.", 2019, doi="10.1016/j.sigpro.2018.08.011"),),
+        summary=Text(
+            en="Represents each bit by which of two transform-domain vectors has the larger norm.",
+            pl=(
+                "Reprezentuje bit przez wskazanie, który z dwóch wektorów w dziedzinie transformacji ma "
+                "większą normę."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Applies a Haar DWT and then DCT to the approximation band. Even and odd DCT "
+                "coefficients form two vectors whose norms are separated by a relative delta. The "
+                "decoder compares them without the original recording. Increasing delta strengthens the "
+                "separation but changes audio more; cropping can break the segment grid."
+            ),
+            pl=(
+                "Wykonuje DWT Haara, a następnie DCT pasma aproksymacji. Parzyste i nieparzyste "
+                "współczynniki tworzą wektory, których normy rozsuwa względny parametr delta. Dekoder "
+                "porównuje je bez oryginalnego nagrania. Większa delta wzmacnia różnicę kosztem "
+                "większych zmian dźwięku; przycięcie może zaburzyć podział na segmenty."
+            ),
+        ),
+    )
 
     #: Each bit needs a segment whose DWT approximation, split into even and
     #: odd DCT coefficients, leaves both sub-vectors non-empty.

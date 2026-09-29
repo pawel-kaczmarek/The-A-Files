@@ -2,6 +2,7 @@ from typing import List
 import numpy as np
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class DsssMethod(SteganographyMethod):
@@ -14,6 +15,34 @@ class DsssMethod(SteganographyMethod):
     bit from the sign of the correlation, which needs neither the cover signal
     nor a known playback gain.
     """
+
+    card = MethodCard(
+        title="DSSS",
+        family="spread_spectrum",
+        purpose="steganography",
+        strength_parameter="alpha",
+        needs_long_input=True,
+        references=(Reference("Nugraha", 2011, doi="10.1109/ICEEI.2011.6021662"),),
+        summary=Text(
+            en="Spreads each bit over a frame using a key-derived pseudo-noise sequence.",
+            pl="Rozprasza każdy bit po ramce za pomocą sekwencji pseudolosowej wyprowadzonej z klucza.",
+        ),
+        details=Text(
+            en=(
+                "Adds a bipolar sequence with sign determined by the bit and amplitude proportional to "
+                "local RMS and alpha. The receiver correlates the frame with the same sequence and "
+                "reads the correlation sign. Spreading distributes the payload over many samples, but "
+                "the cover itself interferes with detection. Larger alpha improves the detection margin "
+                "at the cost of more added noise."
+            ),
+            pl=(
+                "Dodaje sekwencję bipolarną ze znakiem zależnym od bitu i amplitudą proporcjonalną do "
+                "lokalnego RMS oraz alpha. Odbiornik koreluje ramkę z tą samą sekwencją i odczytuje "
+                "znak korelacji. Dane są rozłożone na wiele próbek, lecz sam nośnik zakłóca detekcję. "
+                "Większa alpha zwiększa margines odczytu kosztem większego szumu."
+            ),
+        ),
+    )
 
     def __init__(self, key: int = 20240521, alpha: float = 0.05, min_chip_length: int = 1024):
         """

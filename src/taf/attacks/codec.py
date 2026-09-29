@@ -22,7 +22,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -36,6 +36,7 @@ from taf.attacks.base import (
     AttackError,
     AttackToolUnavailableError,
 )
+from taf.models.card import AttackCard, Text
 
 #: Container, FFmpeg encoder and typical bitrate span for each supported codec.
 CODEC_SPECS: dict[str, dict[str, Any]] = {
@@ -128,6 +129,34 @@ class CodecCompression(Attack):
 
     name = "codec"
     category = AttackCategory.CODEC
+    card = AttackCard(
+        title=Text("Lossy codec round trip", "Kodowanie stratne"),
+        summary=Text(
+            en=(
+                "Tests whether the message survives real lossy encoding and decoding (MP3, AAC, Opus or "
+                "Vorbis)."
+            ),
+            pl=(
+                "Sprawdza, czy wiadomość przetrwa rzeczywiste kodowanie i dekodowanie stratne (MP3, "
+                "AAC, Opus lub Vorbis)."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Runs the codec through FFmpeg and returns decoded PCM. bitrate_kbps sets the target "
+                "bitrate; a lower rate usually discards more information. Optional delay alignment and "
+                "length restoration separate codec damage from timing changes. Perceptual compression "
+                "can remove quiet embedded components; results depend on the encoder and FFmpeg build."
+            ),
+            pl=(
+                "Uruchamia kodek przez FFmpeg i zwraca zdekodowany PCM. bitrate_kbps ustala docelową "
+                "przepływność; niższa zwykle oznacza większą utratę informacji. Opcjonalne wyrównanie "
+                "opóźnienia i przywrócenie długości oddzielają uszkodzenia kodeka od zmian czasowych. "
+                "Kompresja percepcyjna może usuwać ciche składowe znaku; wynik zależy od enkodera i "
+                "wersji FFmpeg."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         codec = self.codec.lower()
@@ -233,10 +262,30 @@ def vorbis(bitrate_kbps: int = 128, **kwargs: Any) -> CodecCompression:
     return CodecCompression(codec="vorbis", bitrate_kbps=bitrate_kbps, **kwargs)
 
 
+#: Display names of the codecs reachable through a registry shortcut.
+CODEC_LABELS = {"mp3": "MP3", "aac": "AAC", "opus": "Opus", "vorbis": "Vorbis"}
+
+
+def codec_shortcut_card(codec: str) -> AttackCard:
+    """Card of a codec shortcut (``mp3``, ``aac``...): the codec card, named."""
+    label = CODEC_LABELS[codec]
+    return replace(
+        CodecCompression.card,
+        title=Text(f"{label} round trip", f"Kodowanie {label}"),
+        summary=Text(
+            en=f"Tests whether the message survives real {label} lossy encoding and decoding.",
+            pl=f"Sprawdza, czy wiadomość przetrwa rzeczywiste kodowanie i dekodowanie stratne {label}.",
+        ),
+        abbreviation=label,
+    )
+
+
 __all__ = [
+    "CODEC_LABELS",
     "CODEC_SPECS",
     "CodecCompression",
     "aac",
+    "codec_shortcut_card",
     "ffmpeg_available",
     "ffmpeg_version",
     "mp3",

@@ -22,42 +22,66 @@ taf-eval direct-no-metrics
 Bundled VCTK and LibriSpeech subsets support initial experiments. FFmpeg is needed for codec attacks;
 PESQ may require C++ build tools. See [installation and optional models](https://pawel-kaczmarek.github.io/The-A-Files/installation/).
 
+<!-- catalogue:readme-methods -->
 ## Methods · 30
 
-- **Sample and adaptive embedding:** LSB, prime-factor interpolation, FBS-LSB, AAC-STC.
-- **Transforms:** DCT-Delta-LSB, DWT-LSB, DCT-b1, norm-space, FSVC, blind SVD, LWT, wireless DWT-LSB,
-  sync-code DWT-DCT, EMD.
-- **Phase:** phase coding, improved phase coding.
-- **Spread spectrum and quantisation:** DSSS, ISS, QIM / ST-DM.
-- **Echo:** single echo, backward–forward echo, time-spread echo.
-- **Statistical:** patchwork, histogram, low-frequency amplitude modification.
-- **Reversible:** prediction-error expansion (PEE), which also restores the exact cover.
-- **Neural and approximated learned schemes:** FGAS, LE-GA, AudioSeal, WavMark.
+- **Sample-domain LSB:** FBS-LSB, LSB, PFI.
+- **Transform domain:** Blind-SVD, DCT-b1, DCT-Delta-LSB, DWT-LSB, EMD, FSVC, LWT, Norm-space, Sync-DWT-DCT, W-DWT-LSB.
+- **Spread spectrum:** DSSS, ISS.
+- **Echo hiding:** BF-Echo, Echo, TS-Echo.
+- **Phase coding:** IPC, Phase.
+- **Quantisation (QIM):** QIM.
+- **Statistical / patchwork:** Histogram, LFAM, Patchwork-ML.
+- **Adaptive coding:** AAC-STC.
+- **Reversible (lossless):** PEE.
+- **Learned embedding:** LE-GA.
+- **Neural network:** AudioSeal, FGAS, WavMark.
 
-[Mechanisms, implementation limits and paper references](https://pawel-kaczmarek.github.io/The-A-Files/methods/).
+[Mechanisms, parameters, implementation limits and paper references](https://pawel-kaczmarek.github.io/The-A-Files/methods/).
+<!-- /catalogue:readme-methods -->
 
-## Attacks
+<!-- catalogue:readme-attacks -->
+## Attacks · 26
 
-- **Noise:** `awgn`, `pink_noise`, `impulse_noise`.
-- **Coding:** `codec`, with `mp3`, `aac`, `opus`, `vorbis` shortcuts.
-- **Filtering:** `low_pass`, `high_pass`, `band_pass`, `notch`, `smoothing`.
-- **Sampling and quantisation:** `resample`, `clock_drift`, `bit_depth`.
-- **Amplitude:** `gain`, `clipping`, `compression_dynamic`.
-- **Time and pitch:** `time_shift`, `crop`, `zero_padding`, `sample_jitter`, `dropout`, `time_stretch`, `speed`, `pitch_shift`.
-- **Acoustics:** `echo`, `reverb`, `acoustic_channel`.
+- **Additive noise:** `awgn`, `impulse_noise`, `pink_noise`.
+- **Lossy codecs:** `codec`, with `aac`, `mp3`, `opus`, `vorbis` shortcuts.
+- **Filtering:** `band_pass`, `high_pass`, `low_pass`, `notch`, `smoothing`.
+- **Resampling & clock:** `clock_drift`, `resample`.
+- **Quantisation:** `bit_depth`.
+- **Amplitude & dynamics:** `clipping`, `compression_dynamic`, `gain`.
+- **Temporal & desynchronisation:** `crop`, `dropout`, `pitch_shift`, `sample_jitter`, `speed`, `time_shift`, `time_stretch`, `zero_padding`.
+- **Acoustic channel:** `acoustic_channel`, `echo`, `reverb`.
 - **Pipelines:** `streaming_upload`, `voice_call`, `broadcast`, `over_the_air`, `desync_attack`.
 
-[Individual descriptions, parameters and scientific context](https://pawel-kaczmarek.github.io/The-A-Files/attacks/).
+[Individual descriptions, parameters, severity levels and scientific context](https://pawel-kaczmarek.github.io/The-A-Files/attacks/).
+<!-- /catalogue:readme-attacks -->
 
+<!-- catalogue:readme-metrics -->
 ## Metrics · 25
 
-- **Signal and spectral distortion:** SNR, SNRseg, fwSNRseg, WSS, LLR, CD, MCD, BSD, LSD, MRSC, SI-SDR, BSSEval v4.
-- **Perceptual quality:** PESQ, ViSQOL Audio, Csig, Cbak, Covl, MOSNet.
-- **Intelligibility:** CSII, NCM, STOI, eSTOI, STGI, wSTMI.
-- **Reverberation-related:** SRMR.
+- **Speech quality:** BSSEval, Cbak, CD, Covl, Csig, fwSNRseg, LLR, LSD, MCD, MRSC, PESQ, SI-SDR, SNR, SNRseg, ViSQOL Audio, WSS.
+- **Speech intelligibility:** CSII, eSTOI, NCM, STGI, STOI, wSTMI.
+- **Reverberation:** BSD, SRMR.
+- **Learned (AI-based):** MOSNet.
+
+[Definitions, score directions and references](https://pawel-kaczmarek.github.io/The-A-Files/metrics/).
+<!-- /catalogue:readme-metrics -->
 
 BER, exact-message recovery, payload rate and processing time are reported separately.
-[Definitions, score directions and references](https://pawel-kaczmarek.github.io/The-A-Files/metrics/).
+
+## Adding a method, metric or attack
+
+Write the class with its **card** (title, summary and details in English and Polish, references,
+requirements) and register it in one place per kind. The API, the research UI, these lists and the
+documentation pages are derived from it, and contract tests pick the component up automatically:
+
+```bash
+python -m taf.catalogue_docs     # regenerate the catalogue sections of the docs and this README
+python -m pytest tests/test_catalogue.py tests/test_attack_contract.py tests/test_methods_roundtrip.py
+```
+
+[Step-by-step guide with templates](https://pawel-kaczmarek.github.io/The-A-Files/extending/).
+Third-party packages can add components through entry points without modifying this repository.
 
 ## Research UI
 

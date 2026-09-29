@@ -32,6 +32,7 @@ from taf.attacks.base import (
     from_columns,
     signal_power,
 )
+from taf.models.card import AttackCard, Text
 
 
 def _noise_scale(audio: np.ndarray, snr_db: float) -> float:
@@ -76,6 +77,27 @@ class AdditiveWhiteNoise(Attack):
 
     name = "awgn"
     category = AttackCategory.NOISE
+    card = AttackCard(
+        title=Text("White Gaussian noise", "Biały szum gaussowski"),
+        summary=Text(
+            en="Adds white Gaussian noise to model a noisy recording or transmission channel.",
+            pl="Dodaje biały szum gaussowski, symulując zaszumione nagranie lub kanał transmisyjny.",
+        ),
+        details=Text(
+            en=(
+                "Measures signal power and scales random noise to the requested snr_db. Lower SNR means "
+                "stronger noise, while seed reproduces the random sequence. Noise perturbs sample "
+                "values and transform coefficients throughout the recording; the resulting bit errors "
+                "reveal the detector’s tolerance to distributed disturbance."
+            ),
+            pl=(
+                "Mierzy moc sygnału i skaluje losowy szum do zadanego snr_db. Niższy SNR oznacza "
+                "silniejszy szum, a seed pozwala odtworzyć sekwencję. Szum zmienia wartości próbek i "
+                "współczynniki transformacji w całym nagraniu; błędy bitowe pokazują tolerancję "
+                "dekodera na rozproszone zakłócenie."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         rng = np.random.default_rng(self.seed)
@@ -110,6 +132,26 @@ class AdditivePinkNoise(Attack):
 
     name = "pink_noise"
     category = AttackCategory.NOISE
+    card = AttackCard(
+        title=Text("Pink noise", "Szum różowy"),
+        summary=Text(
+            en="Adds pink noise, concentrating more disturbance at low frequencies than white noise.",
+            pl="Dodaje szum różowy, skupiający więcej zakłóceń w niskich częstotliwościach niż szum biały.",
+        ),
+        details=Text(
+            en=(
+                "Generates noise with an approximately 1/f power spectrum and scales it to the "
+                "requested SNR. snr_db controls total power and seed controls reproducibility. At equal "
+                "SNR, its frequency distribution differs from AWGN, so comparing them helps identify "
+                "whether the payload depends on low-frequency content."
+            ),
+            pl=(
+                "Generuje szum o widmie mocy zbliżonym do 1/f i skaluje go do zadanego SNR. snr_db "
+                "steruje mocą, a seed powtarzalnością. Przy równym SNR rozkład częstotliwości różni się "
+                "od AWGN, więc porównanie pokazuje zależność danych od niskich częstotliwości."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         rng = np.random.default_rng(self.seed)
@@ -153,6 +195,27 @@ class ImpulseNoise(Attack):
 
     name = "impulse_noise"
     category = AttackCategory.NOISE
+    card = AttackCard(
+        title=Text("Impulse noise", "Szum impulsowy"),
+        summary=Text(
+            en="Injects sparse strong impulses, resembling clicks or isolated transmission errors.",
+            pl="Dodaje rzadkie silne impulsy przypominające trzaski lub pojedyncze błędy transmisji.",
+        ),
+        details=Text(
+            en=(
+                "Randomly selects a fraction of samples using density and sets impulse power from "
+                "snr_db. At fixed total noise power, fewer affected samples mean stronger individual "
+                "impulses. seed reproduces their positions. This distinguishes vulnerability to local "
+                "damage from sensitivity to continuous background noise."
+            ),
+            pl=(
+                "Losowo wybiera część próbek według density i ustala moc impulsów przez snr_db. Przy "
+                "stałej mocy zakłócenia mniej trafionych próbek oznacza silniejsze pojedyncze impulsy. "
+                "seed odtwarza ich pozycje. Atak pozwala odróżnić podatność na lokalne uszkodzenia od "
+                "wrażliwości na ciągły szum."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if not 0.0 < self.density <= 1.0:

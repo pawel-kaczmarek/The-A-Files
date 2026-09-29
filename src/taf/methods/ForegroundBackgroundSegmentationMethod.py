@@ -6,9 +6,36 @@ import numpy as np
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
 from taf.methods.common.background_separator import separate_fg_bg_full
+from taf.models.card import MethodCard, Reference, Text
 
 
 class ForegroundBackgroundSegmentationMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="FBS-LSB",
+        family="lsb",
+        purpose="steganography",
+        references=(Reference("Wang & Wang", 2025, doi="10.1016/j.compeleceng.2024.109247"),),
+        summary=Text(
+            en="Adapts LSB capacity to foreground and background regions of the recording.",
+            pl="Dostosowuje pojemność LSB do fragmentów pierwszego planu i tła nagrania.",
+        ),
+        details=Text(
+            en=(
+                "Separates foreground from background, shuffles sample positions with a shared seed, "
+                "then stores two float-representation bits per foreground sample and one per background "
+                "sample. Decoding repeats the segmentation and ordering. Both sample precision and "
+                "stable segmentation matter; format conversion or processing can break extraction."
+            ),
+            pl=(
+                "Rozdziela pierwszy plan i tło, miesza pozycje próbek za pomocą wspólnego ziarna, a "
+                "następnie zapisuje dwa bity reprezentacji float w próbce pierwszego planu i jeden w "
+                "próbce tła. Dekoder powtarza segmentację i kolejność. Odczyt wymaga zachowania "
+                "precyzji próbek oraz podziału sygnału; konwersja formatu lub przetwarzanie mogą go "
+                "zaburzyć."
+            ),
+        ),
+    )
 
     def __init__(self, sr: int, seed: int = 42):
         self.sr = sr

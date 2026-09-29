@@ -311,6 +311,16 @@ def severity_parameters(
             "clock_offset_ppm": _CLOCK_PPM[severity] if severity is Severity.EXTREME else 0.0,
         }
 
+    # An attack defined elsewhere, a plugin for instance, may declare its own
+    # levels next to its implementation.
+    from taf.attacks.registry import attack_class
+
+    try:
+        levels = attack_class(name).severity_levels(severity, rate)
+    except AttackError:
+        levels = None
+    if levels is not None:
+        return dict(levels)
     raise AttackError(f"no severity preset defined for attack {name!r}")
 
 

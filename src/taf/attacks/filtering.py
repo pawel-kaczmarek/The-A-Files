@@ -34,6 +34,7 @@ from taf.attacks.base import (
     per_channel,
     validate_cutoff,
 )
+from taf.models.card import AttackCard, Text
 
 
 def _apply_sos(audio: np.ndarray, sos: np.ndarray, zero_phase: bool) -> np.ndarray:
@@ -52,6 +53,28 @@ class LowPassFilter(Attack):
 
     name = "low_pass"
     category = AttackCategory.FILTERING
+    card = AttackCard(
+        title=Text("Low-pass filter", "Filtr dolnoprzepustowy"),
+        summary=Text(
+            en="Attenuates high frequencies to test whether the watermark depends on the upper band.",
+            pl="Tłumi wysokie częstotliwości, sprawdzając zależność znaku od górnego pasma.",
+        ),
+        details=Text(
+            en=(
+                "Uses a Butterworth low-pass filter specified by cutoff and order. The default "
+                "forward-backward mode avoids group delay but applies filtering twice; causal mode also "
+                "changes phase. Lower cutoff removes more bandwidth. Lost upper-band payload components "
+                "cannot be recovered merely by restoring the original sample rate."
+            ),
+            pl=(
+                "Stosuje filtr dolnoprzepustowy Butterwortha określony częstotliwością odcięcia i "
+                "rzędem. Domyślny przebieg w przód i wstecz usuwa opóźnienie grupowe, ale filtruje "
+                "dwukrotnie; wariant przyczynowy zmienia także fazę. Niższe odcięcie usuwa więcej "
+                "pasma. Przywrócenie częstotliwości próbkowania nie odtwarza utraconych składowych "
+                "danych."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         validate_cutoff(self.cutoff_hz, sample_rate)
@@ -82,6 +105,28 @@ class HighPassFilter(Attack):
 
     name = "high_pass"
     category = AttackCategory.FILTERING
+    card = AttackCard(
+        title=Text("High-pass filter", "Filtr górnoprzepustowy"),
+        summary=Text(
+            en="Attenuates low frequencies, as in rumble removal or an AC-coupled recording path.",
+            pl="Tłumi niskie częstotliwości, podobnie do usuwania dudnienia lub toru bez składowej stałej.",
+        ),
+        details=Text(
+            en=(
+                "Applies a Butterworth high-pass filter with a chosen cutoff and order. Raising the "
+                "cutoff removes more low-band content and can damage amplitude-relation or "
+                "low-frequency transform embedding. zero_phase controls forward-backward versus causal "
+                "filtering, separating band attenuation from phase-delay effects."
+            ),
+            pl=(
+                "Stosuje filtr górnoprzepustowy Butterwortha o wybranym odcięciu i rzędzie. "
+                "Podniesienie odcięcia usuwa więcej niskiego pasma i może niszczyć osadzanie oparte na "
+                "relacjach amplitud lub niskich częstotliwościach. zero_phase wybiera filtrację w przód "
+                "i wstecz albo przyczynową, rozdzielając tłumienie pasma od efektów opóźnienia "
+                "fazowego."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         validate_cutoff(self.cutoff_hz, sample_rate)
@@ -112,6 +157,30 @@ class BandPassFilter(Attack):
 
     name = "band_pass"
     category = AttackCategory.FILTERING
+    card = AttackCard(
+        title=Text("Band-pass filter", "Filtr pasmowoprzepustowy"),
+        summary=Text(
+            en="Keeps only a selected frequency band, modelling a bandwidth-limited channel.",
+            pl=(
+                "Przepuszcza tylko wybrane pasmo częstotliwości, modelując kanał o ograniczonej "
+                "szerokości pasma."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Combines lower and upper cutoffs in a Butterworth band-pass filter. Narrowing the "
+                "passband removes more carrier information, as in telephone-like transmission. Filter "
+                "order controls transition steepness and zero_phase controls phase handling. Payload "
+                "stored outside the retained band is especially exposed."
+            ),
+            pl=(
+                "Łączy dolne i górne odcięcie w filtrze pasmowoprzepustowym Butterwortha. Zwężenie "
+                "pasma usuwa więcej informacji nośnika, jak w transmisji telefonicznej. Rząd określa "
+                "stromość zboczy, a zero_phase sposób obsługi fazy. Szczególnie narażone są dane "
+                "zapisane poza zachowanym pasmem."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         validate_cutoff(self.low_hz, sample_rate, "low_hz")
@@ -154,6 +223,27 @@ class NotchFilter(Attack):
 
     name = "notch"
     category = AttackCategory.FILTERING
+    card = AttackCard(
+        title=Text("Notch filter", "Filtr zaporowy"),
+        summary=Text(
+            en="Suppresses a narrow frequency region, such as hum or a tonal interferer.",
+            pl="Wycisza wąski zakres częstotliwości, np. przydźwięk lub zakłócenie tonalne.",
+        ),
+        details=Text(
+            en=(
+                "Uses a second-order IIR notch around a centre frequency; its quality factor determines "
+                "bandwidth. Optional depth_db allows partial attenuation instead of a full notch. It "
+                "probes whether a mark relies on a narrow carrier region rather than broadly "
+                "distributed energy."
+            ),
+            pl=(
+                "Używa filtra zaporowego IIR drugiego rzędu wokół częstotliwości środkowej; dobroć "
+                "określa szerokość pasma. Opcjonalny depth_db pozwala na częściowe tłumienie zamiast "
+                "pełnej zapory. Sprawdza, czy znak zależy od wąskiego obszaru widma, czy od szerzej "
+                "rozłożonej energii."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         validate_cutoff(self.center_hz, sample_rate, "center_hz")
@@ -200,6 +290,27 @@ class MovingAverageSmoothing(Attack):
 
     name = "smoothing"
     category = AttackCategory.FILTERING
+    card = AttackCard(
+        title=Text("Moving-average smoothing", "Wygładzanie średnią ruchomą"),
+        summary=Text(
+            en="Smooths samples by replacing them with local moving averages.",
+            pl="Wygładza próbki przez zastępowanie ich lokalnymi średnimi ruchomymi.",
+        ),
+        details=Text(
+            en=(
+                "Convolves the waveform with a uniform boxcar window. A longer window suppresses fast "
+                "variations more strongly and produces spectral nulls related to the window length. "
+                "This models simple smoothing or naive denoising and can erase fine sample-level "
+                "payload changes."
+            ),
+            pl=(
+                "Wykonuje splot przebiegu z równomiernym oknem prostokątnym. Dłuższe okno mocniej tłumi "
+                "szybkie zmiany i wprowadza zera widma zależne od długości okna. Modeluje proste "
+                "wygładzanie lub naiwne odszumianie i może usuwać drobne zmiany próbek niosące "
+                "wiadomość."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if self.window_length < 2:

@@ -23,6 +23,7 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 # AudioSeal's generator runs through torch.compile, which shells out to a C++
 # compiler. On a machine without one (a stock Windows install, for instance)
@@ -34,6 +35,39 @@ _PAYLOAD_BITS = 16
 
 class AudioSealMethod(SteganographyMethod):
     """Neural watermarking with AudioSeal's pretrained models."""
+
+    card = MethodCard(
+        title="AudioSeal",
+        family="neural",
+        purpose="watermarking",
+        strength_parameter="alpha",
+        references=(Reference("San Roman et al.", 2024, doi="10.48550/arXiv.2401.17264"),),
+        requires=("audioseal", "torch",),
+        extra="neural",
+        summary=Text(
+            en="Uses pretrained AudioSeal networks to generate and detect a neural audio watermark.",
+            pl=(
+                "Wykorzystuje wytrenowane sieci AudioSeal do generowania i wykrywania neuronowego znaku "
+                "wodnego."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Wraps the optional AudioSeal package and released model weights. The generator carries "
+                "16 bits per chunk, so longer messages are split across consecutive chunks; alpha "
+                "scales the watermark contribution. Detection uses the corresponding neural model. "
+                "Dependencies and weights must be available, and robustness should be measured for the "
+                "actual audio and attack settings."
+            ),
+            pl=(
+                "Korzysta z opcjonalnego pakietu AudioSeal i opublikowanych wag modelu. Generator "
+                "przenosi 16 bitów na fragment, więc dłuższe wiadomości są dzielone między kolejne "
+                "fragmenty; alpha skaluje wkład znaku. Detekcja używa odpowiadającej sieci. Wymagane są "
+                "zależności i wagi, a odporność należy mierzyć dla konkretnych nagrań oraz ustawień "
+                "ataków."
+            ),
+        ),
+    )
 
     def __init__(
         self,

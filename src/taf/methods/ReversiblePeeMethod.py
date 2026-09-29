@@ -42,10 +42,51 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class ReversiblePeeMethod(SteganographyMethod):
     """Prediction-error expansion reversible data hiding."""
+
+    card = MethodCard(
+        title="PEE",
+        family="reversible",
+        purpose="steganography",
+        strength_parameter="threshold",
+        references=(
+            Reference("Thodi & Rodriguez", 2007, doi="10.1109/TIP.2006.891046"),
+            Reference("Nishimura", 2011, doi="10.1109/IIHMSP.2011.76"),
+        ),
+        summary=Text(
+            en=(
+                "Hides data while allowing exact recovery of the original 16-bit PCM cover when no "
+                "damage occurs."
+            ),
+            pl=(
+                "Ukrywa dane, umożliwiając dokładne odzyskanie oryginalnego nośnika PCM 16-bit, jeśli "
+                "nie został uszkodzony."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Predicts each sample from its two predecessors and expands small prediction errors as "
+                "2e + bit; larger errors are shifted. A location map handles overflow risks and "
+                "decoding reverses the mappings. threshold controls eligible errors and capacity. "
+                "Reversibility refers to the cover rounded onto the 16-bit grid; processing or another "
+                "bit-depth conversion can destroy both payload and restoration. recover_cover() returns "
+                "the original cover exactly from an undamaged stego signal. The method is fragile by "
+                "design."
+            ),
+            pl=(
+                "Przewiduje próbkę na podstawie dwóch poprzednich i rozszerza małe błędy predykcji jako "
+                "2e + bit; większe błędy przesuwa. Mapa pozycji obsługuje ryzyko przepełnienia, a "
+                "dekoder odwraca przekształcenia. threshold steruje wyborem błędów i pojemnością. "
+                "Odwracalność dotyczy nośnika zaokrąglonego do siatki 16-bit; przetwarzanie lub zmiana "
+                "głębi może zniszczyć dane i możliwość rekonstrukcji. recover_cover() zwraca dokładnie "
+                "oryginalny nośnik z nieuszkodzonego sygnału stego. Metoda jest z założenia krucha."
+            ),
+        ),
+    )
 
     SCALE = 32768
     LOWEST = -32768

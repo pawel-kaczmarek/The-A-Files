@@ -4,9 +4,39 @@ import numpy as np
 
 from taf.metrics.common.spectral import aligned_mono, magnitude
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Text
 
 
 class SpectralConvergenceMetric(Metric):
+
+    card = MetricCard(
+        title="Multi-resolution spectral convergence",
+        abbreviation="MRSC",
+        category="speech_quality",
+        scale="ratio",
+        domain="audio",
+        summary=Text(
+            en="Measures relative spectral error at several time-frequency resolutions.",
+            pl="Mierzy względny błąd widma w kilku rozdzielczościach czasowo-częstotliwościowych.",
+        ),
+        details=Text(
+            en=(
+                "Computes STFT magnitudes with 16, 32 and 64 ms windows and 75% overlap. At each "
+                "resolution it divides the Frobenius norm of the magnitude error by the reference norm, "
+                "then averages. Lower is better and zero indicates matching magnitudes. A silent "
+                "reference is undefined; some phase changes remain invisible. This ratio is not a "
+                "perceptual MOS."
+            ),
+            pl=(
+                "Liczy moduły STFT z oknami 16, 32 i 64 ms oraz nakładaniem 75%. Dla każdej "
+                "rozdzielczości dzieli normę Frobeniusa błędu modułu przez normę oryginału i uśrednia "
+                "wyniki. Mniej jest lepiej, a zero oznacza zgodne moduły. Dla cichego odniesienia wynik "
+                "jest nieokreślony; część zmian fazy pozostaje niewidoczna. Ten iloraz nie jest "
+                "percepcyjnym MOS."
+            ),
+        ),
+    )
+
     higher_is_better = False
 
     def calculate(self, samples_original, samples_processed, fs, frame_len=0.03, overlap=0.75):

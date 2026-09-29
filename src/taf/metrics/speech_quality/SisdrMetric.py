@@ -3,9 +3,38 @@ from numbers import Number
 import numpy as np
 
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class SisdrMetric(Metric):
+
+    card = MetricCard(
+        title="Scale-invariant signal-to-distortion ratio",
+        abbreviation="SI-SDR",
+        category="speech_quality",
+        scale="dB",
+        domain="audio",
+        references=(Reference("Le Roux et al.", 2019, doi="10.1109/ICASSP.2019.8683855"),),
+        summary=Text(
+            en="Measures waveform distortion after compensating for a single global scale factor.",
+            pl="Mierzy zniekształcenie przebiegu po kompensacji jednego globalnego współczynnika skali.",
+        ),
+        details=Text(
+            en=(
+                "Projects the processed signal onto the reference and compares projected target energy "
+                "with residual energy in dB. Higher SI-SDR is better. Unlike ordinary SNR, a uniform "
+                "gain change is discounted; timing errors and other waveform changes still count. Use "
+                "alongside level-sensitive metrics when amplitude preservation matters."
+            ),
+            pl=(
+                "Rzutuje sygnał przetworzony na oryginał i porównuje energię projekcji z energią reszty "
+                "w dB. Wyższy SI-SDR jest lepszy. W odróżnieniu od zwykłego SNR pomija jednolite "
+                "wzmocnienie; błędy czasu i inne zmiany przebiegu nadal wpływają na wynik. Jeśli ważne "
+                "jest zachowanie amplitudy, warto zestawić go z miarą czułą na poziom."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

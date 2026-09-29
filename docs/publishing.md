@@ -44,7 +44,17 @@ and [Material’s publication guide](https://squidfunk.github.io/mkdocs-material
 
 ## Maintaining scientific descriptions
 
-Check catalogue coverage against `src/taf/methods/factory.py`, `src/taf/metrics/factory.py` and
-`src/taf/attacks/registry.py`. For each addition, document the mechanism, identifier, limitations and source.
-Distinguish paper algorithms, local adaptations and wrappers over released models. Cite a paper’s
-section or experimental conditions when quoting results; do not imply those results were reproduced locally.
+The method, attack and metric pages and the catalogue lists in the README are generated from the `card`
+of each class (see [adding components](extending.md)). Edit the card next to the implementation, never
+the generated sections between `<!-- catalogue:... -->` markers, then regenerate:
+
+```bash
+python -m taf.catalogue_docs            # rewrite the generated sections
+python -m taf.catalogue_docs --check    # exit 1 when they are out of date
+```
+
+`tests/test_catalogue.py` runs the check, so CI fails when a card changed without regenerating.
+The prose around the generated sections is written by hand. For each addition, document the mechanism,
+identifier, limitations and source. Distinguish paper algorithms, local adaptations and wrappers over
+released models. Cite a paper’s section or experimental conditions when quoting results; do not imply
+those results were reproduced locally.

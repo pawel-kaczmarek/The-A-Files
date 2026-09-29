@@ -51,7 +51,7 @@ def test_new_metrics_registered_with_interpretation():
     entries = {row["name"]: row for row in list_metrics()}
     for name in ("ESTOI_METRIC", "LSD_METRIC", "MRSC_METRIC"):
         assert create_metric(name).name() == entries[name]["label"]
-        assert entries[name]["interpretation"]
+        assert entries[name]["details"]["en"] and entries[name]["details"]["pl"]
 
 
 def test_visqol_optional_adapter_contract(monkeypatch, tmp_path):

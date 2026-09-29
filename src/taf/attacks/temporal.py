@@ -31,6 +31,7 @@ from taf.attacks.base import (
     from_columns,
     per_channel,
 )
+from taf.models.card import AttackCard, Text
 
 
 @dataclass(frozen=True)
@@ -56,6 +57,27 @@ class TimeShift(Attack):
 
     name = "time_shift"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Time shift", "Przesunięcie w czasie"),
+        summary=Text(
+            en="Moves the recording in time to test decoder synchronisation.",
+            pl="Przesuwa nagranie w czasie, sprawdzając synchronizację dekodera.",
+        ),
+        details=Text(
+            en=(
+                "Uses shift_samples or shift_ms to delay or advance audio. Pad mode fills exposed "
+                "positions with zeros while keeping length; circular mode wraps samples around. A small "
+                "shift can move every decoding frame away from its embedded position even when much of "
+                "the waveform itself is unchanged."
+            ),
+            pl=(
+                "Używa shift_samples lub shift_ms do opóźnienia albo przyspieszenia sygnału. Tryb pad "
+                "uzupełnia odsłonięte pozycje zerami przy zachowaniu długości; circular przenosi próbki "
+                "na drugi koniec. Małe przesunięcie może przestawić każdą ramkę odczytu, nawet jeśli "
+                "większość przebiegu pozostaje niezmieniona."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _resolve_shift(self, sample_rate: int) -> int:
@@ -113,6 +135,27 @@ class Cropping(Attack):
 
     name = "crop"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Cropping", "Przycięcie"),
+        summary=Text(
+            en="Removes part of the recording to test payload loss and framing sensitivity.",
+            pl="Usuwa część nagrania, badając utratę danych i wrażliwość podziału na ramki.",
+        ),
+        details=Text(
+            en=(
+                "Deletes the configured fraction from the start, end, both ends or a seeded random "
+                "location. The result is shorter, so some bits may disappear and length-derived frame "
+                "boundaries may move. It tests partial-recording recovery; success depends on "
+                "redundancy, synchronisation and where the method stored its message."
+            ),
+            pl=(
+                "Wycina zadaną część z początku, końca, obu końców lub losowego miejsca ustalanego "
+                "ziarnem. Wynik jest krótszy, więc część bitów może zniknąć, a granice ramek wyznaczane "
+                "z długości mogą się przesunąć. Sprawdza odczyt z fragmentu nagrania; powodzenie zależy "
+                "od nadmiarowości, synchronizacji i miejsca zapisu wiadomości."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -175,6 +218,31 @@ class ZeroPadding(Attack):
 
     name = "zero_padding"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Zero padding", "Dopełnienie ciszą"),
+        summary=Text(
+            en="Adds silence at the start, the end or both, without changing the retained samples.",
+            pl="Dodaje ciszę na początku, na końcu lub z obu stron, nie zmieniając zachowanych próbek.",
+        ),
+        details=Text(
+            en=(
+                "Inserts zero-valued samples amounting to fraction of the signal length at position "
+                "start, end or both. Leading silence moves every embedded position, so a decoder that "
+                "counts samples from the start of the file reads each frame at the wrong offset; "
+                "trailing silence changes only the total length, which matters to methods that derive "
+                "their framing from it. Leading silence is routine when a clip is cut from a longer "
+                "recording or a container adds priming samples."
+            ),
+            pl=(
+                "Wstawia próbki zerowe o łącznej długości fraction długości sygnału w położeniu start, "
+                "end lub both. Cisza na początku przesuwa wszystkie pozycje danych, więc dekoder "
+                "liczący próbki od początku pliku czyta każdą ramkę z błędnym przesunięciem; cisza na "
+                "końcu zmienia jedynie całkowitą długość, co ma znaczenie dla metod wyprowadzających z "
+                "niej podział na ramki. Cisza na początku pojawia się rutynowo przy wycinaniu fragmentu "
+                "nagrania lub gdy kontener dodaje próbki rozbiegowe."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -228,6 +296,27 @@ class SampleInsertionDeletion(Attack):
 
     name = "sample_jitter"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Sample insertion and deletion", "Wstawianie i usuwanie próbek"),
+        summary=Text(
+            en="Inserts or deletes short sample runs at scattered positions.",
+            pl="Wstawia lub usuwa krótkie serie próbek w rozproszonych miejscach.",
+        ),
+        details=Text(
+            en=(
+                "Deletion removes samples; insertion repeats preceding samples to model a simple "
+                "concealment operation. Seeded positions make the attack reproducible. Each edit shifts "
+                "subsequent boundaries, creating local and cumulative desynchronisation that a single "
+                "global offset correction cannot necessarily repair."
+            ),
+            pl=(
+                "Usuwanie wycina próbki, a wstawianie powtarza poprzednią próbkę, modelując proste "
+                "maskowanie braków. Pozycje ustalane ziarnem zapewniają powtarzalność. Każda zmiana "
+                "przesuwa kolejne granice, tworząc lokalną i narastającą desynchronizację, której nie "
+                "musi naprawić jedno globalne przesunięcie."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -291,6 +380,27 @@ class SampleDropout(Attack):
 
     name = "dropout"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Sample dropout", "Utrata próbek"),
+        summary=Text(
+            en="Replaces short audio regions with zeros, modelling missing packets or recording dropouts.",
+            pl="Zastępuje krótkie obszary zerami, modelując utracone pakiety lub przerwy w nagraniu.",
+        ),
+        details=Text(
+            en=(
+                "Selects runs of samples and silences them while preserving total length. Parameters "
+                "determine how much audio is lost and the run size; seed reproduces placement. Unlike "
+                "cropping, positions after a dropout remain aligned, helping distinguish loss of "
+                "payload content from loss of synchronisation."
+            ),
+            pl=(
+                "Wybiera serie próbek i wycisza je, zachowując całkowitą długość. Parametry określają "
+                "ilość traconego dźwięku i rozmiar serii, a seed odtwarza pozycje. W przeciwieństwie do "
+                "przycięcia późniejsze próbki pozostają wyrównane, co pomaga odróżnić utratę treści "
+                "danych od utraty synchronizacji."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if not 0.0 < self.fraction < 1.0:
@@ -333,6 +443,27 @@ class TimeStretch(Attack):
 
     name = "time_stretch"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Time stretch", "Rozciągnięcie w czasie"),
+        summary=Text(
+            en="Changes duration while approximately preserving pitch.",
+            pl="Zmienia czas trwania przy przybliżonym zachowaniu wysokości dźwięku.",
+        ),
+        details=Text(
+            en=(
+                "Uses a phase vocoder to resynthesise audio at a different tempo. This changes both the "
+                "temporal grid and waveform phases, rather than merely moving existing samples. The "
+                "rate controls the duration change. It can damage phase-based and frame-based payloads "
+                "even when the tempo difference sounds small."
+            ),
+            pl=(
+                "Używa wokodera fazowego do ponownej syntezy w innym tempie. Zmienia zarówno siatkę "
+                "czasową, jak i fazy przebiegu, zamiast tylko przestawiać próbki. Współczynnik tempa "
+                "ustala zmianę długości. Może uszkadzać dane fazowe i ramkowe nawet przy mało "
+                "słyszalnej różnicy tempa."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -370,6 +501,27 @@ class SpeedChange(Attack):
 
     name = "speed"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Speed change", "Zmiana prędkości"),
+        summary=Text(
+            en="Changes playback speed, affecting both duration and pitch.",
+            pl="Zmienia prędkość odtwarzania, wpływając jednocześnie na długość i wysokość dźwięku.",
+        ),
+        details=Text(
+            en=(
+                "Resamples the waveform to model faster or slower playback while keeping the nominal "
+                "output rate. Faster playback shortens the clip and raises pitch; slower playback does "
+                "the reverse. It probes timing and frequency dependence together, unlike time "
+                "stretching, which aims to preserve pitch."
+            ),
+            pl=(
+                "Próbkuje przebieg ponownie, modelując szybsze lub wolniejsze odtwarzanie przy "
+                "zachowaniu nominalnej częstotliwości wyjściowej. Szybsze odtwarzanie skraca nagranie i "
+                "podnosi wysokość, a wolniejsze działa odwrotnie. Bada jednocześnie zależność czasową i "
+                "częstotliwościową, inaczej niż zmiana tempa z zachowaniem wysokości."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -408,6 +560,27 @@ class PitchShift(Attack):
 
     name = "pitch_shift"
     category = AttackCategory.TEMPORAL
+    card = AttackCard(
+        title=Text("Pitch shift", "Zmiana wysokości dźwięku"),
+        summary=Text(
+            en="Raises or lowers pitch while keeping approximately the same duration.",
+            pl="Podnosi lub obniża wysokość dźwięku przy zachowaniu przybliżonej długości.",
+        ),
+        details=Text(
+            en=(
+                "Applies a pitch-shifting operation parameterised in semitones. The resynthesis changes "
+                "frequency content and phase relationships even though the overall duration is "
+                "maintained. It tests whether embedding relies on particular spectral positions or "
+                "waveform detail, rather than simply on clip length."
+            ),
+            pl=(
+                "Stosuje zmianę wysokości określoną w półtonach. Ponowna synteza zmienia zawartość "
+                "częstotliwościową i relacje faz mimo zachowania czasu trwania. Sprawdza, czy osadzanie "
+                "zależy od konkretnych pozycji widma lub szczegółów przebiegu, a nie tylko od długości "
+                "nagrania."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         import librosa

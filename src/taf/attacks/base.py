@@ -33,12 +33,18 @@ from typing import Any, Callable, ClassVar
 
 import numpy as np
 
+from taf.models.card import AttackCard
+
 
 class AttackCategory(str, Enum):
-    """Scientific grouping of attacks by the phenomenon they model."""
+    """Scientific grouping of attacks by the phenomenon they model.
 
-    CODEC = "codec"
+    Members are listed in presentation order: the catalogue groups attacks
+    in this order.
+    """
+
     NOISE = "noise"
+    CODEC = "codec"
     FILTERING = "filtering"
     RESAMPLING = "resampling"
     QUANTIZATION = "quantization"
@@ -212,6 +218,20 @@ class Attack(ABC):
     #: True when the attack may change the signal length or the sample rate,
     #: which desynchronises decoders that index by absolute position.
     changes_length_or_rate: ClassVar[bool] = False
+    #: What the attack models, for the catalogue, the UI and the
+    #: documentation (``taf.models.card``). Packaged attacks must declare one.
+    card: ClassVar[AttackCard | None] = None
+
+    @classmethod
+    def severity_levels(cls, severity: Severity, sample_rate: int) -> dict[str, Any] | None:
+        """Explicit parameters of this attack at ``severity``, or None.
+
+        The packaged attacks have their levels in ``taf.attacks.presets``; an
+        attack defined elsewhere - a plugin - overrides this to declare its
+        own. Values that depend on the sampling rate (cutoffs, target rates)
+        must be derived from ``sample_rate`` so they stay below Nyquist.
+        """
+        return None
 
     @abstractmethod
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:

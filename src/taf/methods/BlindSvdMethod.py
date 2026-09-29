@@ -6,6 +6,7 @@ from scipy.linalg import svd
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 def _dct_transform(frame: np.ndarray) -> np.ndarray:
@@ -26,6 +27,41 @@ def _calculate_entropy(sub_band: np.ndarray) -> float:
 
 
 class BlindSvdMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="Blind SVD",
+        abbreviation="Blind-SVD",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="quantization_coefficient",
+        references=(Reference("Dhar & Shimamura", 2015, doi="10.1016/j.jisa.2014.10.007"),),
+        summary=Text(
+            en=(
+                "Embeds one bit per frame in the largest singular value of an entropy-selected DCT "
+                "sub-band."
+            ),
+            pl=(
+                "Osadza jeden bit na ramkę w największej wartości singularnej podpasma DCT wybranego "
+                "według entropii."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Chooses a low-frequency sub-band with maximum estimated entropy, reshapes it into a "
+                "matrix and applies SVD. Quantisation parity of the largest singular value carries the "
+                "bit. The step is derived from the remaining singular values and "
+                "quantization_coefficient. No original cover is needed, but processing that changes "
+                "sub-band selection can disrupt detection."
+            ),
+            pl=(
+                "Wybiera podpasmo niskich częstotliwości o największej oszacowanej entropii, układa je "
+                "w macierz i wykonuje SVD. Bit jest zapisany w parzystości kwantyzacji największej "
+                "wartości singularnej. Krok wynika z pozostałych wartości i quantization_coefficient. "
+                "Oryginał nie jest potrzebny, ale przetwarzanie zmieniające wybór podpasma może "
+                "zakłócić detekcję."
+            ),
+        ),
+    )
 
     def __init__(self, frame_size: int = 1024, sub_band_count: int = 4, quantization_coefficient: float = 0.1):
         """

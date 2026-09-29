@@ -22,10 +22,40 @@ from scipy.fft import fft, ifft
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class TimeSpreadEchoMethod(SteganographyMethod):
     """Echo hiding with a pseudo-noise-spread kernel."""
+
+    card = MethodCard(
+        title=Text("Time-spread echo", "Echo rozproszone w czasie"),
+        abbreviation="TS-Echo",
+        family="echo",
+        purpose="watermarking",
+        strength_parameter="alpha",
+        references=(Reference("Ko et al.", 2005, doi="10.1109/TMM.2005.843366"),),
+        summary=Text(
+            en="Distributes the echo watermark over multiple delays using a keyed sequence.",
+            pl="Rozkłada echo znaku wodnego na wiele opóźnień za pomocą sekwencji zależnej od klucza.",
+        ),
+        details=Text(
+            en=(
+                "A pseudo-noise kernel spreads echo energy in time instead of concentrating it at one "
+                "delay. The decoder uses the corresponding sequence to detect the bit from the cepstral "
+                "response. alpha sets strength and the shared seed reproduces the kernel. Spreading "
+                "changes the audibility and detection trade-off; it still needs enough audio per bit "
+                "and correct alignment."
+            ),
+            pl=(
+                "Jądro pseudolosowe rozprasza energię echa w czasie zamiast skupiać ją w jednym "
+                "opóźnieniu. Dekoder używa odpowiadającej sekwencji do odczytania bitu z odpowiedzi "
+                "cepstralnej. alpha określa siłę, a wspólne ziarno odtwarza jądro. Rozpraszanie zmienia "
+                "kompromis między słyszalnością a detekcją; nadal potrzeba odpowiedniej ilości dźwięku "
+                "na bit i synchronizacji."
+            ),
+        ),
+    )
 
     def __init__(
         self,

@@ -22,6 +22,7 @@ import pywt
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 def _pack_bits(bits: List[int], width: int) -> np.ndarray:
@@ -72,6 +73,40 @@ def _restore_dtype(data: np.ndarray, dtype: np.dtype, integer_peak: int | None) 
 
 class WirelessDwtLsbMethod(SteganographyMethod):
     """Embed message bits in low-frequency DWT coefficients using LSB coding."""
+
+    card = MethodCard(
+        title="Wireless DWT-LSB",
+        abbreviation="W-DWT-LSB",
+        family="transform",
+        purpose="steganography",
+        references=(Reference("Hamdi et al.", 2025, doi="10.3390/jsan14060106"),),
+        summary=Text(
+            en=(
+                "Places payload bits in the low-frequency approximation coefficients of a wavelet "
+                "transform."
+            ),
+            pl=(
+                "Umieszcza dane w niskoczęstotliwościowych współczynnikach aproksymacji transformacji "
+                "falkowej."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Scales and rounds DWT approximation coefficients to integers, replaces up to lsb_depth "
+                "low bits and reconstructs the waveform. Decoding repeats the transform and scaling. "
+                "Wavelet type, level and coefficient_scale affect capacity and distortion. This adapts "
+                "the paper’s carrier idea to direct bit payloads; the name does not imply guaranteed "
+                "survival of a wireless channel."
+            ),
+            pl=(
+                "Skaluje i zaokrągla współczynniki aproksymacji DWT do liczb całkowitych, zastępuje do "
+                "lsb_depth najmłodszych bitów i odtwarza sygnał. Dekoder powtarza transformację oraz "
+                "skalowanie. Rodzaj falki, poziom i coefficient_scale wpływają na pojemność oraz "
+                "zniekształcenia. Jest to adaptacja idei nośnika z publikacji do ciągu bitów; nazwa nie "
+                "gwarantuje odporności na kanał bezprzewodowy."
+            ),
+        ),
+    )
 
     def __init__(
         self,

@@ -30,6 +30,7 @@ import soundfile as sf
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 _INT16_MAX = 32767
@@ -286,6 +287,39 @@ def _stc_decode(stego_lsb: np.ndarray, H_hat: np.ndarray, k: int) -> List[int]:
 
 class AacStcMethod(SteganographyMethod):
     """Adaptive +-1 audio steganography (Luo et al. 2017)."""
+
+    card = MethodCard(
+        title="AAC-STC",
+        family="adaptive",
+        purpose="steganography",
+        references=(Reference("Luo et al.", 2017, doi="10.1007/978-3-319-64185-0_14"),),
+        summary=Text(
+            en=(
+                "Chooses low-cost sample edits using perceptual codec residuals and syndrome-trellis "
+                "coding."
+            ),
+            pl=(
+                "Wybiera zmiany próbek o małym koszcie, korzystając z reszty kodeka percepcyjnego i "
+                "kodowania syndrome-trellis."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Converts audio to 16-bit PCM and estimates embedding costs from the difference after "
+                "an AAC round trip, with Vorbis as a fallback. A trellis search selects inexpensive ±1 "
+                "changes whose LSB syndrome encodes the message. Decoding applies the same parity-check "
+                "matrix. The codec guides where to embed; it does not make the resulting LSB payload "
+                "inherently resistant to transcoding."
+            ),
+            pl=(
+                "Konwertuje dźwięk do PCM 16-bit i szacuje koszty osadzania z różnicy po kodowaniu i "
+                "dekodowaniu AAC, awaryjnie Vorbis. Przeszukiwanie kraty wybiera tanie zmiany ±1, "
+                "których syndrom LSB koduje wiadomość. Dekoder stosuje tę samą macierz kontroli "
+                "parzystości. Kodek wskazuje miejsce osadzania; nie zapewnia odporności powstałych "
+                "danych LSB na transkodowanie."
+            ),
+        ),
+    )
 
     def __init__(
         self,

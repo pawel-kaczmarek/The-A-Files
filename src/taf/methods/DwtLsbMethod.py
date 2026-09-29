@@ -3,6 +3,7 @@ import numpy as np
 import pywt
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class DwtLsbMethod(SteganographyMethod):
@@ -17,6 +18,34 @@ class DwtLsbMethod(SteganographyMethod):
     signal being processed, so the encoder and the decoder agree on it without
     sharing the cover, and the embedding survives amplitude scaling.
     """
+
+    card = MethodCard(
+        title="DWT-LSB",
+        family="transform",
+        purpose="steganography",
+        strength_parameter="step_scale",
+        references=(Reference("Alsabhany et al.", 2020, doi="10.1016/j.cosrev.2020.100316"),),
+        summary=Text(
+            en="Hides bits in the parity of quantised wavelet detail coefficients.",
+            pl="Ukrywa bity w parzystości skwantowanych współczynników detali falkowych.",
+        ),
+        details=Text(
+            en=(
+                "A two-level discrete wavelet transform separates the signal into approximation and "
+                "detail bands. Selected detail coefficients are quantised to even or odd indices and "
+                "decoded by parity. step_scale controls the step relative to detail-band RMS, making it "
+                "follow signal level. Filtering and requantisation can still move coefficients across "
+                "decision boundaries."
+            ),
+            pl=(
+                "Dwupoziomowa dyskretna transformacja falkowa rozdziela sygnał na aproksymację i "
+                "detale. Wybrane współczynniki detali są kwantowane do indeksów parzystych lub "
+                "nieparzystych, z których dekoder odczytuje bity. step_scale określa krok względem RMS "
+                "pasma detali, więc skaluje się on z poziomem sygnału. Filtracja i ponowna kwantyzacja "
+                "mogą jednak zmienić decyzję dekodera."
+            ),
+        ),
+    )
 
     def __init__(self, dwt_type: str = 'bior5.5', step_scale: float = 0.5, spacing: int = 10):
         """

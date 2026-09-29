@@ -28,6 +28,7 @@ import numpy as np
 from scipy.signal import resample_poly
 
 from taf.attacks.base import Attack, AttackCategory, AttackError, per_channel
+from taf.models.card import AttackCard, Text
 
 
 def resample_to(audio: np.ndarray, source_rate: int, target_rate: int) -> np.ndarray:
@@ -61,6 +62,29 @@ class ResampleRoundTrip(Attack):
 
     name = "resample"
     category = AttackCategory.RESAMPLING
+    card = AttackCard(
+        title=Text("Resampling round trip", "Zmiana częstotliwości próbkowania"),
+        summary=Text(
+            en="Converts to an intermediate sample rate and back to test rate-conversion damage.",
+            pl="Zmienia częstotliwość próbkowania na pośrednią i z powrotem, badając skutki konwersji.",
+        ),
+        details=Text(
+            en=(
+                "Uses polyphase FIR resampling with anti-alias filtering. A lower intermediate_hz "
+                "limits the recoverable bandwidth and changes the sample grid. Optional restore_length "
+                "trims or pads rounding differences. Returning to the original rate lets the decoder "
+                "use its expected rate, but does not restore discarded frequencies or original sample "
+                "values."
+            ),
+            pl=(
+                "Używa wielofazowego resamplingu FIR z filtracją antyaliasingową. Niższy "
+                "intermediate_hz ogranicza zachowane pasmo i zmienia siatkę próbek. Opcjonalny "
+                "restore_length przycina lub uzupełnia różnice zaokrągleń. Powrót do pierwotnej "
+                "częstotliwości daje dekoderowi oczekiwany format, ale nie odtwarza odrzuconych "
+                "częstotliwości ani wartości próbek."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
@@ -107,6 +131,27 @@ class SampleRateOffset(Attack):
 
     name = "clock_drift"
     category = AttackCategory.RESAMPLING
+    card = AttackCard(
+        title=Text("Clock drift", "Dryft zegara"),
+        summary=Text(
+            en="Simulates a small mismatch between playback and recording clocks.",
+            pl="Symuluje małą różnicę zegarów urządzenia odtwarzającego i nagrywającego.",
+        ),
+        details=Text(
+            en=(
+                "Resamples by a factor derived from offset_ppm while leaving the nominal sample rate "
+                "unchanged. Even a small mismatch accumulates into positional drift over a long "
+                "recording. The attack tests whether a decoder can track a gradually changing sample "
+                "grid, not simply a constant initial offset."
+            ),
+            pl=(
+                "Próbkuje ponownie ze współczynnikiem wynikającym z offset_ppm, pozostawiając nominalną "
+                "częstotliwość bez zmian. Nawet mała różnica narasta do zauważalnego przesunięcia "
+                "próbek w długim nagraniu. Atak sprawdza śledzenie stopniowo zmieniającej się siatki, a "
+                "nie tylko stałego przesunięcia początku."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:

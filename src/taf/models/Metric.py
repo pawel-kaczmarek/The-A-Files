@@ -1,10 +1,17 @@
 from abc import ABC, abstractmethod
 from numbers import Number
+from typing import ClassVar
 
 import numpy as np
 
+from taf.models.card import MetricCard
+
 
 class Metric(ABC):
+
+    #: What the metric measures, for the catalogue, the UI and the
+    #: documentation (``taf.models.card``). Packaged metrics must declare one.
+    card: ClassVar[MetricCard | None] = None
 
     #: ``True`` when a higher score means the processed signal is closer to the
     #: original, ``False`` when a lower one does, ``None`` when the score has

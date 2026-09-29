@@ -31,6 +31,7 @@ from taf.attacks.base import (
     clip_to_full_scale,
     per_channel,
 )
+from taf.models.card import AttackCard, Text
 
 
 def synthetic_impulse_response(
@@ -96,6 +97,37 @@ class EchoAttack(Attack):
 
     name = "echo"
     category = AttackCategory.ACOUSTIC
+    card = AttackCard(
+        title="Echo",
+        summary=Text(
+            en=(
+                "Adds one delayed, attenuated copy of the signal, modelling a single acoustic "
+                "reflection."
+            ),
+            pl=(
+                "Dodaje jedną opóźnioną i stłumioną kopię sygnału, modelując pojedyncze odbicie "
+                "akustyczne."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Computes y[n] = x[n] + attenuation · x[n − D], with the delay D given by delay_ms so "
+                "it means the same at any sampling rate. Below about 10 ms the echo colours the sound; "
+                "above about 50 ms it is heard as a repetition. An echo-hiding decoder searches the "
+                "cepstrum for a peak at its own delay, so an echo at a different delay inserts a "
+                "competing peak: the attack is targeted at echo methods and should be reported as such. "
+                "prevent_clipping limits the result to full scale."
+            ),
+            pl=(
+                "Oblicza y[n] = x[n] + attenuation · x[n − D], gdzie opóźnienie D podane jest w "
+                "delay_ms, więc znaczy to samo przy każdej częstotliwości próbkowania. Poniżej ok. 10 "
+                "ms echo zabarwia dźwięk; powyżej ok. 50 ms słychać je jako powtórzenie. Dekoder "
+                "ukrywania w echu szuka w cepstrum maksimum przy własnym opóźnieniu, więc echo o innym "
+                "opóźnieniu wprowadza konkurencyjne maksimum: atak celuje w metody echa i tak należy go "
+                "raportować. prevent_clipping ogranicza wynik do pełnej skali."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if self.delay_ms <= 0:
@@ -149,6 +181,28 @@ class Reverberation(Attack):
 
     name = "reverb"
     category = AttackCategory.ACOUSTIC
+    card = AttackCard(
+        title=Text("Reverberation", "Pogłos"),
+        summary=Text(
+            en="Simulates reverberation by convolving audio with a generated room impulse response.",
+            pl="Symuluje pogłos przez splot dźwięku z wygenerowaną odpowiedzią impulsową pomieszczenia.",
+        ),
+        details=Text(
+            en=(
+                "Combines direct sound with a decaying reflection response controlled by reverberation "
+                "and mixing parameters. The random response is reproducible with a seed. Reverberation "
+                "smears energy over time and changes phase, stressing echo detectors and local frame "
+                "statistics. This is a simulated room, not a measured playback-and-recording "
+                "experiment."
+            ),
+            pl=(
+                "Łączy dźwięk bezpośredni z zanikającą odpowiedzią odbić sterowaną parametrami pogłosu "
+                "i mieszania. Losową odpowiedź można odtworzyć przez seed. Pogłos rozmywa energię w "
+                "czasie i zmienia fazę, obciążając detektory echa oraz lokalne statystyki ramek. To "
+                "symulacja pomieszczenia, a nie pomiar rzeczywistego odtwarzania i nagrywania."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if not 0.0 < self.mix <= 1.0:
@@ -213,6 +267,29 @@ class AcousticChannel(Attack):
 
     name = "acoustic_channel"
     category = AttackCategory.ACOUSTIC
+    card = AttackCard(
+        title=Text("Acoustic channel", "Kanał akustyczny"),
+        summary=Text(
+            en="Combines several effects to approximate a loudspeaker-to-microphone channel.",
+            pl="Łączy kilka efektów, przybliżając kanał od głośnika do mikrofonu.",
+        ),
+        details=Text(
+            en=(
+                "Chains acoustic and transmission effects such as bandwidth limitation, reverberation, "
+                "noise and clock mismatch according to its parameters. Damage accumulates across "
+                "stages, so surviving each effect separately does not establish survival of the "
+                "combination. It is a reproducible synthetic channel and does not replace validation on "
+                "real recording hardware."
+            ),
+            pl=(
+                "Stosuje kolejno efekty akustyczne i transmisyjne, takie jak ograniczenie pasma, "
+                "pogłos, szum i różnica zegarów, zgodnie z parametrami. Uszkodzenia nakładają się, więc "
+                "odporność na każdy efekt osobno nie dowodzi odporności na ich połączenie. To "
+                "powtarzalny kanał syntetyczny, który nie zastępuje sprawdzenia na rzeczywistym "
+                "sprzęcie."
+            ),
+        ),
+    )
     changes_length_or_rate = True
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:

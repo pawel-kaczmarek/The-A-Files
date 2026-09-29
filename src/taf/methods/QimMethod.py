@@ -25,10 +25,43 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class QimMethod(SteganographyMethod):
     """Spread-transform dither modulation (ST-DM)."""
+
+    card = MethodCard(
+        title="QIM / ST-DM",
+        abbreviation="QIM",
+        family="quantization",
+        purpose="watermarking",
+        strength_parameter="step_scale",
+        references=(Reference("Chen & Wornell", 2001, doi="10.1109/18.923725"),),
+        summary=Text(
+            en="Encodes bits by choosing between two quantisation grids for a keyed frame projection.",
+            pl=(
+                "Koduje bity przez wybór jednej z dwóch siatek kwantyzacji projekcji ramki zależnej od "
+                "klucza."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Projects a frame onto a key-derived direction and moves that projection to the nearest "
+                "point on the bit’s dithered grid. The decoder chooses the closer grid. The step "
+                "follows energy orthogonal to the projection, which embedding leaves unchanged, and is "
+                "scaled by step_scale. Larger steps increase separation and distortion; timing changes "
+                "disrupt the frame projections."
+            ),
+            pl=(
+                "Rzutuje ramkę na kierunek wyprowadzony z klucza i przesuwa projekcję do najbliższego "
+                "punktu siatki danego bitu. Dekoder wybiera bliższą siatkę. Krok zależy od energii "
+                "prostopadłej do projekcji, niezmienianej przez osadzanie, oraz step_scale. Większy "
+                "krok zwiększa rozdzielenie i zniekształcenia; zmiany czasowe zaburzają projekcje "
+                "ramek."
+            ),
+        ),
+    )
 
     def __init__(self, key: int = 20240521, step_scale: float = 0.1, min_frame_length: int = 256):
         """

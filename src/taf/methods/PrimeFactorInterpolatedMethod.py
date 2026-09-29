@@ -19,6 +19,7 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 _INT16_MAX = 32767
 _INT16_MIN = -32768
@@ -50,6 +51,39 @@ class PrimeFactorInterpolatedMethod(SteganographyMethod):
             five-digit offset to a single sample; capping it keeps the worst
             case audible-but-small.
     """
+
+    card = MethodCard(
+        title=Text("Prime-factor interpolation", "Interpolacja z czynnikiem pierwszym"),
+        abbreviation="PFI",
+        family="lsb",
+        purpose="steganography",
+        references=(Reference("Adhiyaksa et al.", 2022, doi="10.1109/ISMODE53584.2022.9743066"),),
+        summary=Text(
+            en="Stores a variable number of bits as small offsets from interpolated sample values.",
+            pl=(
+                "Zapisuje zmienną liczbę bitów jako niewielkie odchylenia od interpolowanych wartości "
+                "próbek."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Every second sample is replaced by an interpolation of its retained neighbours plus "
+                "the payload value. Capacity follows the least prime factor of a log-scaled neighbour "
+                "difference, capped by max_bits_per_sample. The decoder derives the same prediction and "
+                "capacity from the neighbours. More bits mean larger offsets; changing the neighbours "
+                "can corrupt decoding. Recovering the original cover is not part of the TAF interface, "
+                "so reversibility is not established here."
+            ),
+            pl=(
+                "Co druga próbka jest zastępowana interpolacją zachowanych sąsiadów powiększoną o "
+                "wartość danych. Pojemność wynika z najmniejszego czynnika pierwszego logarytmicznie "
+                "przeskalowanej różnicy sąsiadów i limitu max_bits_per_sample. Dekoder odtwarza tę samą "
+                "predykcję oraz pojemność. Więcej bitów oznacza większe zmiany; modyfikacja sąsiadów "
+                "może uszkodzić odczyt. Odtworzenie oryginalnego nośnika nie jest częścią interfejsu "
+                "TAF, więc odwracalność nie jest tu wykazana."
+            ),
+        ),
+    )
 
     def __init__(self, max_bits_per_sample: int = 4):
         if not 1 <= max_bits_per_sample <= 8:

@@ -4,9 +4,38 @@ import numpy as np
 from scipy.signal import stft
 
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class WssMetric(Metric):
+
+    card = MetricCard(
+        title="Weighted spectral slope",
+        abbreviation="WSS",
+        category="speech_quality",
+        scale="distance",
+        references=(Reference("Hu & Loizou", 2008, doi="10.1109/TASL.2007.911054"),),
+        summary=Text(
+            en="Compares the slopes of reference and processed speech spectra.",
+            pl="Porównuje nachylenia widm oryginalnej i przetworzonej mowy.",
+        ),
+        details=Text(
+            en=(
+                "Calculates differences between adjacent perceptual-band levels and weights slope "
+                "mismatches, emphasising important spectral peaks. Lower distance means better "
+                "preservation of spectral shape. Requires reference speech and aligned frames. It "
+                "highlights spectral-envelope damage but does not directly measure intelligibility or "
+                "payload recovery."
+            ),
+            pl=(
+                "Oblicza różnice poziomów sąsiednich pasm percepcyjnych i waży niezgodność nachyleń, "
+                "podkreślając istotne szczyty widma. Mniejsza odległość oznacza lepsze zachowanie "
+                "kształtu widma. Wymaga mowy odniesienia i wyrównanych ramek. Ujawnia zmiany obwiedni "
+                "widmowej, ale nie mierzy bezpośrednio zrozumiałości ani odczytu danych."
+            ),
+        ),
+    )
+
     higher_is_better = False
 
     def calculate(self,

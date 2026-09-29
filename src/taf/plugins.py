@@ -24,7 +24,10 @@ replace a packaged component, so a published result that names a packaged
 method always refers to the packaged implementation.
 
 Once registered, a plugin method is held to the same contract as the
-packaged ones and appears in the API catalogue and in experiments.
+packaged ones and appears in the API catalogue and in experiments. What the
+catalogue, the UI and the documentation say about a component comes from the
+``card`` attribute of its class (``taf.models.card``); a plugin that declares
+none is described by its class docstring.
 """
 
 from __future__ import annotations
@@ -194,6 +197,46 @@ def create_method(spec: str, sample_rate: int, **parameters: Any):
     return source(sample_rate, **parsed) if parsed else source(sample_rate)
 
 
+def _card_of(source: Any, build: Callable[[], Any], kind: type) -> Any:
+    """The card declared by ``source``, or by the class a factory builds."""
+    card = getattr(source, "card", None)
+    if isinstance(card, kind):
+        return card
+    if isinstance(source, type):
+        return None
+    try:
+        card = getattr(type(build()), "card", None)
+    except Exception as error:  # noqa: BLE001 - a plugin that cannot be built is still listed
+        logger.debug("Cannot build {} to read its card: {}", source, error)
+        return None
+    return card if isinstance(card, kind) else None
+
+
+def method_card(name: str):
+    """What the method ``name`` is (``MethodCard``), from its class.
+
+    A method without a card is described by its registry name and docstring.
+    """
+    from taf.models.card import MethodCard, fallback_card
+
+    source = method_sources().get(name)
+    if source is None:
+        raise KeyError(f"Unknown steganography method {name!r}")
+    card = _card_of(source, lambda: create_method(name, 16000), MethodCard)
+    return card or fallback_card(source, name, MethodCard)
+
+
+def metric_card(name: str):
+    """What the metric ``name`` measures (``MetricCard``), from its class."""
+    from taf.models.card import MetricCard, fallback_card
+
+    source = metric_factories().get(name)
+    if source is None:
+        raise KeyError(f"Unknown metric {name!r}")
+    card = _card_of(source, source, MetricCard)
+    return card or fallback_card(source, name, MetricCard)
+
+
 def create_metric(name: str):
     factories = metric_factories()
     if name not in factories:
@@ -232,8 +275,10 @@ __all__ = [
     "parse_method_spec",
     "is_packaged_method",
     "load_entry_points",
+    "method_card",
     "method_factories",
     "method_names",
+    "metric_card",
     "metric_directions",
     "metric_factories",
     "metric_names",

@@ -21,7 +21,8 @@ from typing import Any, Callable, Iterable
 from taf.attacks.acoustic import AcousticChannel, EchoAttack, Reverberation
 from taf.attacks.amplitude import Clipping, DynamicRangeCompression, GainChange
 from taf.attacks.base import Attack, AttackError, Severity
-from taf.attacks.codec import CodecCompression
+from taf.models.card import AttackCard, fallback_card
+from taf.attacks.codec import CodecCompression, codec_shortcut_card
 from taf.attacks.filtering import (
     BandPassFilter,
     HighPassFilter,
@@ -83,6 +84,9 @@ ATTACK_FACTORIES: dict[str, Callable[..., Attack]] = {
     "opus": lambda **kwargs: CodecCompression(codec="opus", **kwargs),
     "vorbis": lambda **kwargs: CodecCompression(codec="vorbis", **kwargs),
 }
+
+#: Cards of the convenience names, which have no class of their own.
+ATTACK_FACTORY_CARDS: dict[str, AttackCard] = {name: codec_shortcut_card(name) for name in ATTACK_FACTORIES}
 
 
 #: Names used before the attacks were reworked, kept so that configurations
@@ -155,6 +159,16 @@ def attack_class(name: str) -> type[Attack]:
     if name in ATTACK_FACTORIES:
         return CodecCompression
     raise AttackError(f"unknown attack {name!r}; known: {available_attacks()}")
+
+
+def attack_card(name: str) -> AttackCard:
+    """What the attack ``name`` models: its card, or one made from its docstring."""
+    name = resolve_name(name)
+    if name in ATTACK_FACTORY_CARDS:
+        return ATTACK_FACTORY_CARDS[name]
+    cls = attack_class(name)
+    card = getattr(cls, "card", None)
+    return card if isinstance(card, AttackCard) else fallback_card(cls, name, AttackCard)
 
 
 def create(name: str, **parameters: Any) -> Attack:
@@ -320,8 +334,10 @@ def reseed(attack: Attack, seed: int) -> Attack:
 __all__ = [
     "ATTACK_CLASSES",
     "ATTACK_FACTORIES",
+    "ATTACK_FACTORY_CARDS",
     "LEGACY_ALIASES",
     "resolve_name",
+    "attack_card",
     "attack_class",
     "attack_classes",
     "available_attacks",

@@ -4,9 +4,38 @@ import numpy as np
 
 from taf.metrics.common.metrics_helper import log_mel_spectrogram, resample_to_10khz, sgbfb
 from taf.models.Metric import Metric
+from taf.models.card import MetricCard, Reference, Text
 
 
 class WstmiMetric(Metric):
+
+    card = MetricCard(
+        title="Weighted spectro-temporal modulation index",
+        abbreviation="wSTMI",
+        category="speech_intelligibility",
+        scale="index",
+        references=(Reference("Edraki et al.", 2021, doi="10.1109/TASLP.2020.3039929"),),
+        summary=Text(
+            en="Predicts intelligibility from weighted spectro-temporal modulation similarities.",
+            pl="Przewiduje zrozumiałość z ważonych podobieństw modulacji czasowo-widmowych.",
+        ),
+        details=Text(
+            en=(
+                "Computes log-mel features and Gabor modulation responses after conversion to 10 kHz. "
+                "Normalised reference-to-processed correlations are combined with fixed learned weights "
+                "and a bias. Higher values indicate better predicted intelligibility. This is an index, "
+                "not a percentage or MOS; interpret it consistently within the same implementation and "
+                "speech domain."
+            ),
+            pl=(
+                "Po konwersji do 10 kHz oblicza cechy log-mel i odpowiedzi filtrów modulacyjnych "
+                "Gabora. Znormalizowane korelacje oryginału z wynikiem łączy stałymi wyuczonymi wagami "
+                "i wyrazem wolnym. Wyższa wartość oznacza lepszą przewidywaną zrozumiałość. To indeks, "
+                "a nie procent ani MOS; należy porównywać go w tej samej implementacji i domenie mowy."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

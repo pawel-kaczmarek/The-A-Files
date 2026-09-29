@@ -30,6 +30,7 @@ from typing import Any
 import numpy as np
 
 from taf.attacks.base import Attack, AttackCategory, AttackError
+from taf.models.card import AttackCard, Text
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,27 @@ class BitDepthReduction(Attack):
 
     name = "bit_depth"
     category = AttackCategory.QUANTIZATION
+    card = AttackCard(
+        title=Text("Bit-depth reduction", "Redukcja głębi bitowej"),
+        summary=Text(
+            en="Requantises audio to fewer PCM amplitude levels.",
+            pl="Ponownie kwantuje dźwięk do mniejszej liczby poziomów amplitudy PCM.",
+        ),
+        details=Text(
+            en=(
+                "Maps samples to a uniform grid with spacing 2 / 2^bits over nominal full scale. The "
+                "mode selects a grid with or without an exact zero level; optional TPDF dither adds "
+                "noise before quantisation. Lower bit depth removes finer sample detail and is "
+                "particularly destructive to payloads stored in low sample bits."
+            ),
+            pl=(
+                "Przypisuje próbki do równomiernej siatki o odstępie 2 / 2^bits w nominalnym zakresie. "
+                "Tryb wybiera siatkę z dokładnym poziomem zera lub bez niego; opcjonalny dither TPDF "
+                "dodaje szum przed kwantyzacją. Mniejsza głębia usuwa drobniejsze szczegóły i "
+                "szczególnie niszczy dane zapisane w najmłodszych bitach próbek."
+            ),
+        ),
+    )
 
     def _process(self, audio: np.ndarray, sample_rate: int) -> tuple[np.ndarray, int, dict[str, Any]]:
         if not 2 <= self.bits <= 24:

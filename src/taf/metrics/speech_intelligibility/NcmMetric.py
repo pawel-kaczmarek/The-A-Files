@@ -6,9 +6,39 @@ from scipy.signal import butter, lfilter, hilbert
 
 from taf.models.Metric import Metric
 from taf.metrics.common.metrics_helper import resample_matlab_like
+from taf.models.card import MetricCard, Reference, Text
 
 
 class NcmMetric(Metric):
+
+    card = MetricCard(
+        title="Normalised-covariance measure",
+        abbreviation="NCM",
+        category="speech_intelligibility",
+        scale="0–1",
+        references=(Reference("Loizou", 2013, doi="10.1201/b14529"),),
+        summary=Text(
+            en="Measures preservation of slow speech-envelope modulations across frequency bands.",
+            pl="Mierzy zachowanie wolnych modulacji obwiedni mowy w pasmach częstotliwości.",
+        ),
+        details=Text(
+            en=(
+                "Splits speech into 20 bands, extracts Hilbert envelopes and resamples them to 32 Hz. "
+                "Normalised envelope covariance is mapped to apparent SNR and combined using "
+                "speech-importance weights. Higher scores indicate better predicted intelligibility. "
+                "This implementation accepts 8 or 16 kHz input and requires a reference; it does not "
+                "assess bit recovery."
+            ),
+            pl=(
+                "Dzieli mowę na 20 pasm, wyznacza obwiednie Hilberta i przelicza je do 32 Hz. "
+                "Znormalizowana kowariancja obwiedni jest mapowana na pozorny SNR i łączona wagami "
+                "ważności pasm mowy. Wyższy wynik oznacza lepszą przewidywaną zrozumiałość. Ta "
+                "implementacja przyjmuje wejście 8 lub 16 kHz i wymaga oryginału; nie ocenia odczytu "
+                "bitów."
+            ),
+        ),
+    )
+
     higher_is_better = True
 
     def calculate(self,

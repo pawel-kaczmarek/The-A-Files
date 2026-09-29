@@ -5,9 +5,40 @@ import pywt
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class LwtMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title="LWT",
+        family="transform",
+        purpose="watermarking",
+        strength_parameter="threshold",
+        references=(Reference("Mushtaq et al.", 2024, doi="10.1109/ICRITO61523.2024.10522195"),),
+        summary=Text(
+            en="Encodes bits as the sign of blocks of wavelet detail coefficients.",
+            pl="Koduje bity jako znak bloków współczynników detali falkowych.",
+        ),
+        details=Text(
+            en=(
+                "This implementation uses a two-level Haar wavelet decomposition and groups eight "
+                "detail coefficients per bit. It forces a positive or negative block with a minimum "
+                "magnitude set by threshold, then reconstructs the signal. Decoding reads the sign of "
+                "the block mean. A larger threshold creates a stronger mark and more distortion; "
+                "alignment and detail-band preservation matter. The transform is the PyWavelets Haar "
+                "decomposition rather than an explicit lifting scheme."
+            ),
+            pl=(
+                "Ta implementacja używa dwupoziomowej dekompozycji Haara i grupuje po osiem "
+                "współczynników detali na bit. Wymusza dodatni lub ujemny blok z minimalną wartością "
+                "bezwzględną threshold, po czym odtwarza sygnał. Dekoder odczytuje znak średniej bloku. "
+                "Większy próg wzmacnia znak i zniekształcenia; istotne są synchronizacja oraz "
+                "zachowanie pasma detali. Transformacją jest dekompozycja Haara z PyWavelets, a nie "
+                "jawny schemat liftingowy."
+            ),
+        ),
+    )
 
     def __init__(self, threshold: float = 0.05):
         self.threshold = threshold

@@ -4,9 +4,37 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 class ImprovedPhaseCodingMethod(SteganographyMethod):
+
+    card = MethodCard(
+        title=Text("Improved phase coding", "Ulepszone kodowanie fazowe"),
+        abbreviation="IPC",
+        family="phase",
+        purpose="steganography",
+        references=(Reference("Yang", 2024, doi="10.48550/arXiv.2408.13277"),),
+        summary=Text(
+            en="Distributes phase-coded message portions across multiple Fourier blocks.",
+            pl="Rozdziela fragmenty wiadomości kodowanej fazowo pomiędzy wiele bloków Fouriera.",
+        ),
+        details=Text(
+            en=(
+                "Divides the payload among segments and sets selected phase pairs to ±π/2 while "
+                "retaining spectral magnitudes. The decoder reconstructs the segment layout from the "
+                "message length and reads phase signs. Distribution avoids concentrating all bits in "
+                "the first segment, but it is not error correction; altered length, phase distortion "
+                "and trimming can still corrupt bits."
+            ),
+            pl=(
+                "Dzieli dane między segmenty i ustawia wybrane pary faz na ±π/2, zachowując moduły "
+                "widma. Dekoder odtwarza układ segmentów z długości wiadomości i odczytuje znaki faz. "
+                "Rozłożenie bitów nie jest kodem korekcyjnym; zmiana długości, zniekształcenia fazowe i "
+                "przycinanie nadal mogą uszkodzić dane."
+            ),
+        ),
+    )
 
     def encode(self, data: np.ndarray, message: List[int]) -> np.ndarray:
         # Calculate message length in bits

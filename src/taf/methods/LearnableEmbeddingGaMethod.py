@@ -31,6 +31,7 @@ import numpy as np
 
 from taf.models.errors import CapacityError
 from taf.models.SteganographyMethod import SteganographyMethod
+from taf.models.card import MethodCard, Reference, Text
 
 
 def _validate_audio(data: np.ndarray) -> None:
@@ -78,6 +79,40 @@ def _restore_dtype(data: np.ndarray, dtype: np.dtype, integer_peak: int | None) 
 
 class LearnableEmbeddingGaMethod(SteganographyMethod):
     """Robust audio watermarking with learnable embedding and GA optimization."""
+
+    card = MethodCard(
+        title="LE-GA",
+        family="learned",
+        purpose="watermarking",
+        strength_parameter="embedding_strength",
+        references=(Reference("Nayeem et al.", 2026, doi="10.1016/j.dsp.2026.106372"),),
+        summary=Text(
+            en=(
+                "Provides an experimental embedding pipeline inspired by learnable watermarking and "
+                "genetic optimisation."
+            ),
+            pl=(
+                "Udostępnia eksperymentalny schemat inspirowany uczonym osadzaniem i optymalizacją "
+                "genetyczną."
+            ),
+        ),
+        details=Text(
+            en=(
+                "Maps bits to an upscaled waveform, applies a mask and adds a scaled residual; "
+                "extraction uses correlation-style pooling. Without the paper’s trained weights, this "
+                "implementation uses deterministic minimal operators and an all-ones mask. "
+                "embedding_strength sets the residual level. Treat it as an implementation-specific "
+                "baseline, not a reproduction of the trained network’s reported performance."
+            ),
+            pl=(
+                "Mapuje bity na rozciągnięty przebieg, stosuje maskę i dodaje przeskalowany sygnał; "
+                "odczyt wykorzystuje agregację opartą na korelacji. Bez wytrenowanych wag z publikacji "
+                "implementacja używa minimalnych operatorów deterministycznych i maski z samych "
+                "jedynek. embedding_strength ustala siłę dodawanego sygnału. To wariant porównawczy "
+                "właściwy tej implementacji, a nie odtworzenie wyników wytrenowanej sieci."
+            ),
+        ),
+    )
 
     def __init__(
             self,
