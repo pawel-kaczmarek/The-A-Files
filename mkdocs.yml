@@ -1,8 +1,8 @@
 site_name: The A-Files
 site_description: Reproducible evaluation of audio steganography and watermarking.
-site_url: https://pawelkaczmarek12.github.io/the-a-files/
-repo_url: https://github.com/pawelkaczmarek12/the-a-files
-repo_name: pawelkaczmarek12/the-a-files
+site_url: https://pawel-kaczmarek.github.io/The-A-Files/
+repo_url: https://github.com/pawel-kaczmarek/The-A-Files
+repo_name: pawel-kaczmarek/The-A-Files
 edit_uri: edit/master/docs/
 copyright: The A-Files · Paweł Kaczmarek and Zbigniew Piotrowski
 strict: true

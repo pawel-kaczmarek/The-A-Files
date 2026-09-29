@@ -2,7 +2,7 @@
 
 ## Licence
 
-The A-Files is free software distributed under the GNU General Public License, version 3 or later ([GPL-3.0-or-later](https://github.com/pawelkaczmarek12/the-a-files/blob/master/LICENSE)).
+The A-Files is free software distributed under the GNU General Public License, version 3 or later ([GPL-3.0-or-later](https://github.com/pawel-kaczmarek/The-A-Files/blob/master/LICENSE)).
 
 ## Authors
 

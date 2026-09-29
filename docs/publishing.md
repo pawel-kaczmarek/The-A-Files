@@ -33,7 +33,7 @@ and the small visual overrides in `docs/stylesheets/extra.css`.
 2. Push the documentation changes to the default branch (`master` in this checkout).
 3. The **Documentation** workflow validates and builds the site, uploads the Pages artifact and deploys
    it using the `github-pages` environment. Pull requests build without deploying.
-4. The expected URL is **https://pawelkaczmarek12.github.io/the-a-files/**.
+4. The expected URL is **https://pawel-kaczmarek.github.io/The-A-Files/**.
 
 The workflow can also be started manually from the Actions tab. Publication requires repository access
 and an enabled Pages environment. If the owner or repository name changes, update `site_url`, `repo_url`

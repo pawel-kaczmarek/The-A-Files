@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/assets/banner.png" alt="The A-Files — audio steganography & watermarking toolkit" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/pawel-kaczmarek/The-A-Files/master/docs/assets/banner.png" alt="The A-Files — audio steganography & watermarking toolkit" width="100%"></p>
 
 # The A-Files
 
@@ -6,9 +6,9 @@ Research toolkit for evaluating **audio steganography and watermarking**: payloa
 signal quality, robustness, capacity and empirical detectability under a shared experimental protocol.
 Includes a Python API, declarative experiments and a browser-based research interface.
 
-**[Documentation](https://pawelkaczmarek12.github.io/the-a-files/)** · [UI guide](docs/ui.md) · [References](docs/references.md)
+**[Documentation](https://pawel-kaczmarek.github.io/The-A-Files/)** · [UI guide](https://pawel-kaczmarek.github.io/The-A-Files/ui/) · [References](https://pawel-kaczmarek.github.io/The-A-Files/references/)
 
-<p align="center"><img src="docs/functions.svg" alt="The A-Files evaluation architecture: embed, attack, decode with a fresh decoder, then BER, transparency, detectability and per-file statistics" width="100%"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/pawel-kaczmarek/The-A-Files/master/docs/functions.svg" alt="The A-Files evaluation architecture: embed, attack, decode with a fresh decoder, then BER, transparency, detectability and per-file statistics" width="100%"></p>
 
 ## Quick start
 
@@ -20,7 +20,7 @@ taf-eval direct-no-metrics
 ```
 
 Bundled VCTK and LibriSpeech subsets support initial experiments. FFmpeg is needed for codec attacks;
-PESQ may require C++ build tools. See [installation and optional models](docs/installation.md).
+PESQ may require C++ build tools. See [installation and optional models](https://pawel-kaczmarek.github.io/The-A-Files/installation/).
 
 ## Methods · 30
 
@@ -34,7 +34,7 @@ PESQ may require C++ build tools. See [installation and optional models](docs/in
 - **Reversible:** prediction-error expansion (PEE), which also restores the exact cover.
 - **Neural and approximated learned schemes:** FGAS, LE-GA, AudioSeal, WavMark.
 
-[Mechanisms, implementation limits and paper references](docs/methods.md).
+[Mechanisms, implementation limits and paper references](https://pawel-kaczmarek.github.io/The-A-Files/methods/).
 
 ## Attacks
 
@@ -47,7 +47,7 @@ PESQ may require C++ build tools. See [installation and optional models](docs/in
 - **Acoustics:** `echo`, `reverb`, `acoustic_channel`.
 - **Pipelines:** `streaming_upload`, `voice_call`, `broadcast`, `over_the_air`, `desync_attack`.
 
-[Individual descriptions, parameters and scientific context](docs/attacks.md).
+[Individual descriptions, parameters and scientific context](https://pawel-kaczmarek.github.io/The-A-Files/attacks/).
 
 ## Metrics · 25
 
@@ -57,7 +57,7 @@ PESQ may require C++ build tools. See [installation and optional models](docs/in
 - **Reverberation-related:** SRMR.
 
 BER, exact-message recovery, payload rate and processing time are reported separately.
-[Definitions, score directions and references](docs/metrics.md).
+[Definitions, score directions and references](https://pawel-kaczmarek.github.io/The-A-Files/metrics/).
 
 ## Research UI
 
@@ -93,13 +93,13 @@ npm run dev
 Open **http://localhost:3000**. Create an experiment, select data, methods, payloads, attacks and metrics,
 review the execution plan, then start a run. Results include statistics, individual trials with audio playback,
 provenance and CSV/Markdown/LaTeX exports. English and Polish are available.
-[Step-by-step UI guide](docs/ui.md).
+[Step-by-step UI guide](https://pawel-kaczmarek.github.io/The-A-Files/ui/).
 
 Quality is measured separately for embedding and attack damage. Published results and local measurements
-remain distinct; implementation adaptations are documented in the [method catalogue](docs/methods.md).
+remain distinct; implementation adaptations are documented in the [method catalogue](https://pawel-kaczmarek.github.io/The-A-Files/methods/).
 GitHub Pages hosts the documentation; the research UI runs with the Python API and PostgreSQL.
 
 ## Licence and authors
 
-[GPL-3.0-or-later](LICENSE). Paweł Kaczmarek and Zbigniew Piotrowski — Military University of Technology,
-Faculty of Electronics. [Scientific background and bibliography](docs/references.md).
+[GPL-3.0-or-later](https://github.com/pawel-kaczmarek/The-A-Files/blob/master/LICENSE). Paweł Kaczmarek and Zbigniew Piotrowski — Military University of Technology,
+Faculty of Electronics. [Scientific background and bibliography](https://pawel-kaczmarek.github.io/The-A-Files/references/).

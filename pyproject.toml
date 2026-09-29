@@ -22,7 +22,7 @@ keywords = [
     "speech-intelligibility",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
@@ -102,8 +102,8 @@ platform = [
 Homepage = "https://github.com/pawel-kaczmarek/The-A-Files"
 Repository = "https://github.com/pawel-kaczmarek/The-A-Files"
 Issues = "https://github.com/pawel-kaczmarek/The-A-Files/issues"
-Documentation = "https://pawelkaczmarek12.github.io/the-a-files/"
-Publishing = "https://pawelkaczmarek12.github.io/the-a-files/publishing/"
+Documentation = "https://pawel-kaczmarek.github.io/The-A-Files/"
+Publishing = "https://pawel-kaczmarek.github.io/The-A-Files/publishing/"
 
 [project.scripts]
 taf-eval = "taf.main:main"

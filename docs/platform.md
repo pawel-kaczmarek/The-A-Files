@@ -41,7 +41,7 @@ referenced by their path inside it.
 | Progress (Server-Sent Events) | `GET /api/runs/events`, `GET /api/runs/{id}/events` |
 | Datasets | `GET /api/datasets`, `POST /api/datasets/{prepare,local,upload,synthetic}`, `GET, DELETE /api/datasets/{id}` |
 
-The web client in [`web/`](https://github.com/pawelkaczmarek12/the-a-files/blob/master/web/README.md) (Next.js, TypeScript; English and Polish; light and dark theme) is a thin
+The web client in [`web/`](https://github.com/pawel-kaczmarek/The-A-Files/blob/master/web/README.md) (Next.js, TypeScript; English and Polish; light and dark theme) is a thin
 client of this API. It offers a design gallery grouped by property, a step-by-step protocol editor with an execution
 plan, live runs, result figures with table views, critical-difference diagrams, the trial inspector and report
 downloads. It is not part of the PyPI distribution:
