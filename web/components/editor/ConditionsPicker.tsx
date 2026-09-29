@@ -9,17 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { groupsInOrder, localized } from "@/lib/catalogue";
 import { useI18n } from "@/lib/i18n";
 import type { AttackInfo, AttackPresets, CatalogDataset, ParameterSweep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { formatSpec, parseValues } from "./draft";
 
-const FAMILY_ORDER = ["noise", "codec", "filtering", "resampling", "quantization", "amplitude", "temporal", "acoustic"];
 const SEVERITIES = ["mild", "moderate", "strong", "extreme"];
 
 function AttackRow({ attack, onAdd }: { attack: AttackInfo; onAdd: (spec: string) => void }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState(attack.has_severity ? "moderate" : "custom");
   const [parameters, setParameters] = useState<Record<string, string>>({});
   const editable = attack.parameters.filter((parameter) => !["seed", "codec"].includes(parameter.name));
@@ -46,7 +46,7 @@ function AttackRow({ attack, onAdd }: { attack: AttackInfo; onAdd: (spec: string
             {attack.stochastic && <Chip>{t("catalogue.stochastic")}</Chip>}
             {attack.changes_length_or_rate && <Chip>{t("catalogue.changesLength")}</Chip>}
           </div>
-          <div className="text-xs text-muted-foreground">{attack.description}</div>
+          <div className="text-xs text-muted-foreground">{localized(attack.summary, locale) || attack.description}</div>
         </div>
         <Select value={mode} onChange={(event) => setMode(event.target.value)} className="h-8 w-36 text-xs">
           {attack.has_severity &&
@@ -93,7 +93,7 @@ export function AttackPicker({
   preset: string | null | undefined;
   onChange: (attacks: string[], preset: string | null) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState<"none" | "battery" | "suite">(preset ? "suite" : value.length ? "battery" : "none");
   const add = (spec: string) => !value.includes(spec) && onChange([...value, spec], preset ?? null);
 
@@ -161,12 +161,11 @@ export function AttackPicker({
             )}
             <p className="mt-1.5 text-[11px] text-muted-foreground">{t("editor.conditions.baselineNote")}</p>
           </div>
-          {FAMILY_ORDER.filter((family) => attacks.some((attack) => attack.family === family)).map((family) => (
-            <div key={family}>
-              <div className="eyebrow mb-1.5">{t(`attackFamilies.${family}`)}</div>
+          {groupsInOrder(attacks.filter((attack) => attack.name !== "codec"), (attack) => attack.family, (attack) => attack.family_label).map((family) => (
+            <div key={family.key}>
+              <div className="eyebrow mb-1.5">{localized(family.label, locale)}</div>
               <div className="divide-y rounded-md border">
-                {attacks
-                  .filter((attack) => attack.family === family && attack.name !== "codec")
+                {family.items
                   .map((attack) => (
                     <AttackRow key={attack.name} attack={attack} onAdd={add} />
                   ))}
@@ -206,7 +205,7 @@ export function AttackSweepEditor({
   value: ParameterSweep | null | undefined;
   onChange: (sweep: ParameterSweep) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const current = value ?? { target: "awgn", parameter: "snr_db", values: [] };
   const attack = attacks.find((entry) => entry.name === current.target);
   const [text, setText] = useState(current.values.join(", "));
@@ -232,10 +231,9 @@ export function AttackSweepEditor({
               apply({ target: name, parameter: preset?.parameter ?? fallback, values: preset?.values ?? [] });
             }}
           >
-            {FAMILY_ORDER.map((family) => (
-              <optgroup key={family} label={t(`attackFamilies.${family}`)}>
-                {attacks
-                  .filter((entry) => entry.family === family && entry.name !== "codec")
+            {groupsInOrder(attacks.filter((entry) => entry.name !== "codec"), (entry) => entry.family, (entry) => entry.family_label).map((family) => (
+              <optgroup key={family.key} label={localized(family.label, locale)}>
+                {family.items
                   .map((entry) => (
                     <option key={entry.name} value={entry.name}>
                       {entry.name}

@@ -4,17 +4,17 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 
 import { Chip, Spec } from "@/components/common";
+import { RequirementChips } from "@/components/catalogue-description";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { groupsInOrder, localized, matchesSearch } from "@/lib/catalogue";
 import { useI18n } from "@/lib/i18n";
 import type { MethodInfo, MetricInfo, ParameterSweep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { formatSpec, parseSpec, parseValues, strengthLadder } from "./draft";
-
-const FAMILY_ORDER = ["lsb", "transform", "spread_spectrum", "echo", "phase", "quantization", "statistical", "adaptive", "reversible", "learned", "neural"];
 
 function familyOf(method: MethodInfo): string {
   return method.family ?? "plugin";
@@ -67,7 +67,7 @@ export function MethodPicker({
   value: string[];
   onChange: (specs: string[]) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
   const [family, setFamily] = useState("");
   const [purpose, setPurpose] = useState("");
@@ -80,9 +80,16 @@ export function MethodPicker({
     (method) =>
       (!family || familyOf(method) === family) &&
       (!purpose || method.purpose === purpose) &&
-      (!search || `${method.name} ${method.description} ${method.reference ?? ""}`.toLowerCase().includes(search.toLowerCase()))
+      matchesSearch(method, search, locale)
   );
-  const families = [...FAMILY_ORDER, "plugin"].filter((entry) => filtered.some((method) => familyOf(method) === entry));
+  // Groups and their names come from the API, in its order.
+  const allFamilies = groupsInOrder(methods, familyOf, (method) => method.family_label);
+  const purposes = groupsInOrder(
+    methods.filter((method) => method.purpose && method.purpose_label),
+    (method) => method.purpose ?? "",
+    (method) => method.purpose_label ?? { en: "", pl: "" }
+  );
+  const families = groupsInOrder(filtered, familyOf, (method) => method.family_label);
 
   function toggle(name: string) {
     if (settings(name).length) onChange(value.filter((spec) => parseSpec(spec).name !== name));
@@ -101,16 +108,19 @@ export function MethodPicker({
         <Input placeholder={t("common.search")} value={search} onChange={(event) => setSearch(event.target.value)} className="w-56" />
         <Select value={family} onChange={(event) => setFamily(event.target.value)} className="w-52">
           <option value="">{t("editor.methods.filterFamily")}: {t("common.all")}</option>
-          {[...FAMILY_ORDER, "plugin"].map((entry) => (
-            <option key={entry} value={entry}>
-              {t(`families.${entry}`)}
+          {allFamilies.map((entry) => (
+            <option key={entry.key} value={entry.key}>
+              {localized(entry.label, locale)}
             </option>
           ))}
         </Select>
         <Select value={purpose} onChange={(event) => setPurpose(event.target.value)} className="w-48">
           <option value="">{t("editor.methods.filterPurpose")}: {t("common.all")}</option>
-          <option value="steganography">{t("purposes.steganography")}</option>
-          <option value="watermarking">{t("purposes.watermarking")}</option>
+          {purposes.map((entry) => (
+            <option key={entry.key} value={entry.key}>
+              {localized(entry.label, locale)}
+            </option>
+          ))}
         </Select>
         <span className="text-xs text-muted-foreground">{t("common.selected", { count: value.length })}</span>
         {value.length > 0 && (
@@ -122,11 +132,10 @@ export function MethodPicker({
 
       <div className="space-y-5">
         {families.map((entry) => (
-          <div key={entry}>
-            <div className="eyebrow mb-1.5">{t(`families.${entry}`)}</div>
+          <div key={entry.key}>
+            <div className="eyebrow mb-1.5">{localized(entry.label, locale)}</div>
             <div className="divide-y rounded-md border">
-              {filtered
-                .filter((method) => familyOf(method) === entry)
+              {entry.items
                 .map((method) => {
                   const own = settings(method.name);
                   const selected = own.length > 0;
@@ -136,16 +145,16 @@ export function MethodPicker({
                       <div className="flex items-center gap-3 px-3 py-2">
                         <input type="checkbox" checked={selected} onChange={() => toggle(method.name)} aria-label={method.name} />
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm">{method.description || method.name}</div>
+                          <div className="truncate text-sm" title={localized(method.summary, locale)}>{localized(method.title, locale) || method.name}</div>
                           <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                             <span className="font-mono">{method.name}</span>
-                            {method.purpose && <span>· {t(`purposes.${method.purpose}`)}</span>}
+                            {method.purpose_label && <span>· {localized(method.purpose_label, locale)}</span>}
                             {method.reference && (
                               <span>
                                 · {method.reference} ({method.year})
                               </span>
                             )}
-                            {method.requires_tensorflow && <Chip>{t("catalogue.tensorflow")}</Chip>}
+                            <RequirementChips entry={method} />
                             {method.needs_long_input && <Chip>{t("catalogue.longInput")}</Chip>}
                             {!method.packaged && <Chip>{t("catalogue.plugin")}</Chip>}
                           </div>
@@ -287,10 +296,8 @@ export function MethodSweepEditor({
   );
 }
 
-const CATEGORY_ORDER = ["speech_quality", "speech_intelligibility", "speech_reverberation", "ai_based", "unknown"];
-
 export function MetricPicker({ metrics, value, onChange }: { metrics: MetricInfo[]; value: string[]; onChange: (names: string[]) => void }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const toggle = (name: string) => onChange(value.includes(name) ? value.filter((entry) => entry !== name) : [...value, name]);
   return (
     <div className="space-y-5">
@@ -302,12 +309,11 @@ export function MetricPicker({ metrics, value, onChange }: { metrics: MetricInfo
           </button>
         )}
       </div>
-      {CATEGORY_ORDER.filter((category) => metrics.some((metric) => metric.category === category)).map((category) => (
-        <div key={category}>
-          <div className="eyebrow mb-1.5">{t(`metricCategories.${category}`)}</div>
+      {groupsInOrder(metrics, (metric) => metric.category, (metric) => metric.category_label).map((category) => (
+        <div key={category.key}>
+          <div className="eyebrow mb-1.5">{localized(category.label, locale)}</div>
           <div className="grid gap-2 md:grid-cols-2">
-            {metrics
-              .filter((metric) => metric.category === category)
+            {category.items
               .map((metric) => {
                 const selected = value.includes(metric.name);
                 return (

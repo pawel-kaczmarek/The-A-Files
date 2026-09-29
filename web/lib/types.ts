@@ -18,6 +18,36 @@ export type RunStatus = "queued" | "running" | "completed" | "failed" | "cancell
 
 // ---------------------------------------------------------------- catalogue
 
+/** A backend text in every interface language (English is the fallback). */
+export interface LocalizedText {
+  en: string;
+  pl: string;
+}
+
+export interface ReferenceInfo {
+  citation: string;
+  year: number | null;
+  doi: string | null;
+  url: string | null;
+  link: string | null;
+}
+
+/** Fields every method, metric and attack takes from its card (taf.models.card). */
+export interface CatalogueCard {
+  title: LocalizedText;
+  summary: LocalizedText;
+  details: LocalizedText;
+  abbreviation: string;
+  references: ReferenceInfo[];
+  requires: string[];
+  extra: string | null;
+  /** Whether the requirements are installed on the server. */
+  available: boolean;
+  reference: string | null;
+  year: number | null;
+  doi: string | null;
+}
+
 export interface MethodParameter {
   name: string;
   default: unknown;
@@ -26,39 +56,35 @@ export interface MethodParameter {
   is_key: boolean;
 }
 
-export interface MethodInfo {
+export interface MethodInfo extends CatalogueCard {
   name: string;
   class_name: string;
+  /** The method's own label, as recorded in result rows. */
   description: string;
-  abbreviation: string;
   packaged: boolean;
   family: string | null;
+  family_label: LocalizedText;
   purpose: "steganography" | "watermarking" | null;
-  reference: string | null;
-  year: number | null;
-  doi: string | null;
+  purpose_label: LocalizedText | null;
   strength_parameter: string | null;
   parameters: MethodParameter[];
   requires_tensorflow: boolean;
   needs_long_input: boolean;
 }
 
-export interface MetricInfo {
+export interface MetricInfo extends CatalogueCard {
   domain?: string | null;
-  interpretation?: string | null;
-  url?: string | null;
   name: string;
+  /** The metric's own label, as recorded in result rows. */
   label: string;
   class_name: string;
   category: string;
+  category_label: LocalizedText;
   packaged: boolean;
   requires_tensorflow: boolean;
   higher_is_better: boolean | null;
   components: string[];
-  abbreviation: string;
   scale: string | null;
-  reference: string | null;
-  year: number | null;
   intrusive: boolean;
 }
 
@@ -68,11 +94,12 @@ export interface SweepPreset {
   unit: string;
 }
 
-export interface AttackInfo {
+export interface AttackInfo extends CatalogueCard {
   name: string;
   class_name: string;
   description: string;
   family: string;
+  family_label: LocalizedText;
   parameters: { name: string; default: unknown }[];
   changes_length_or_rate: boolean;
   stochastic: boolean;
