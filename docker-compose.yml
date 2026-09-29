@@ -1,9 +1,14 @@
-# PostgreSQL for the research platform (taf.api + web/).
+# The A-Files research platform: PostgreSQL, the taf API and the web client.
 #
-#   docker compose up -d db
+#   docker compose up -d --build        # everything: http://localhost:3000 (web), :8000 (API)
+#   docker compose up -d db             # only PostgreSQL, for a local taf-api / npm run dev
+#
+# For a local API against the containerised database:
 #   export TAF_DATABASE_URL=postgresql+psycopg://taf:taf@localhost:5432/taf
 #
-# The API applies the database migrations on startup.
+# The API applies the database migrations on startup. Optional dependency groups
+# (TensorFlow, AudioSeal/WavMark) are chosen with TAF_EXTRAS at build time, e.g.
+#   TAF_EXTRAS=platform,neural docker compose up -d --build
 services:
   db:
     image: postgres:17
@@ -23,5 +28,46 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    build:
+      context: .
+      args:
+        EXTRAS: ${TAF_EXTRAS:-platform}
+    image: the-a-files-api
+    container_name: taf-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TAF_DATABASE_URL: postgresql+psycopg://taf:taf@db:5432/taf
+      TAF_DATA_DIR: /data
+      TAF_API_CORS_ORIGINS: ${TAF_API_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      TAF_MAX_CONCURRENT_RUNS: ${TAF_MAX_CONCURRENT_RUNS:-1}
+    ports:
+      - "8000:8000"
+    volumes:
+      # Prepared corpora, downloads and uploads.
+      - taf-data:/data
+      # Local folders to register as datasets (POST /api/datasets/local takes
+      # paths inside the container, e.g. /corpora/my-set):
+      # - ./my-corpora:/corpora:ro
+
+  web:
+    build:
+      context: web
+      args:
+        # Address of the API as seen from the browser, inlined at build time.
+        NEXT_PUBLIC_TAF_API_URL: ${TAF_PUBLIC_API_URL:-http://localhost:8000}
+    image: the-a-files-web
+    container_name: taf-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
 volumes:
   taf-postgres:
+  taf-data:

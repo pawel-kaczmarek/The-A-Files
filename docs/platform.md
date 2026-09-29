@@ -15,6 +15,19 @@ Migrations (Alembic) are applied when the API starts. `TAF_DATABASE_URL` overrid
 (`postgresql+psycopg://taf:taf@localhost:5432/taf`), `TAF_DATA_DIR` (default `~/.taf`) holds prepared corpora and
 uploads, and `TAF_MAX_CONCURRENT_RUNS` limits parallel runs.
 
+The complete platform also runs in containers from a repository checkout:
+
+```bash
+docker compose up -d --build     # web client on :3000, API on :8000, PostgreSQL on :5432
+```
+
+The API image (`Dockerfile`) includes FFmpeg for the codec attacks and keeps `TAF_DATA_DIR` in the `taf-data` volume.
+Build-time options: `TAF_EXTRAS` selects the optional dependency groups (default `platform`; e.g. `platform,neural`),
+and `TAF_PUBLIC_API_URL` is the API address as seen from the browser (default `http://localhost:8000`), which the web
+image inlines at build time; when it changes, set `TAF_API_CORS_ORIGINS` to the web client's origin. Folders to
+register with `POST /api/datasets/local` must be mounted into the `api` container (see `docker-compose.yml`) and
+referenced by their path inside it.
+
 | Purpose | Endpoints |
 | --- | --- |
 | Catalogue | `GET /api/catalog/{methods,metrics,attacks,designs,presets,corpora,datasets}` |

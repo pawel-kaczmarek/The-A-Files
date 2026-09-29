@@ -1,0 +1,11 @@
+# The API image needs only the package sources and their metadata.
+*
+!pyproject.toml
+!README.md
+!LICENSE
+!MANIFEST.in
+!src/
+
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info

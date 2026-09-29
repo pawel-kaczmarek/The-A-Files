@@ -108,6 +108,26 @@ jobs:
           name: python-distributions
           path: dist/
 
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build and start the platform
+        run: docker compose up -d --build --wait
+
+      - name: Smoke-test API and web client
+        run: |
+          curl -fsS http://localhost:8000/api/health
+          curl -fsS --max-time 120 http://localhost:8000/api/stats
+          curl -fsS -o /dev/null http://localhost:3000/dashboard
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
   publish:
     runs-on: ubuntu-latest
     needs: build
