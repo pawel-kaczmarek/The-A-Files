@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use } from "react";
 import { ExternalLink, FlaskConical } from "lucide-react";
 
+import { CatalogueDescription } from "@/components/catalogue-description";
 import { DataTable } from "@/components/charts/base";
 import { Chip, ErrorNotice, KeyValues, LoadingLine, PageHeader, Section } from "@/components/common";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,8 @@ export default function MethodPage({ params }: { params: Promise<{ name: string 
       />
       <div className="grid gap-6 lg:grid-cols-2">
         <Section title={t("common.details")}>
+          <CatalogueDescription kind="methods" name={method.name} fallback={method.description} expanded />
+          <div className="mt-5" />
           <KeyValues
             items={[
               [t("catalogue.family"), method.family ? t(`families.${method.family}`) : t("families.plugin")],

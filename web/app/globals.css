@@ -149,6 +149,19 @@
 }
 
 @layer components {
+  .catalogue-table {
+    @apply w-full min-w-[960px] table-fixed text-left text-sm;
+  }
+  .catalogue-table th {
+    @apply border-b bg-muted/30 px-4 py-2 text-left text-xs font-medium text-muted-foreground;
+  }
+  .catalogue-table td {
+    @apply px-4 py-4 align-top;
+    overflow-wrap: anywhere;
+  }
+  .catalogue-table tbody tr {
+    @apply border-b last:border-0 hover:bg-accent/40;
+  }
   /* A section title in the manner of a paper: small caps label above content. */
   .eyebrow {
     @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground;
