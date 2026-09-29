@@ -34,6 +34,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 FROM python:${PYTHON_VERSION}-slim
 
+LABEL org.opencontainers.image.source="https://github.com/pawel-kaczmarek/The-A-Files" \
+      org.opencontainers.image.description="The A-Files research platform API: audio steganography methods, attacks and metrics" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later"
+
 # FFmpeg runs the real encoders behind the codec attacks; libsndfile backs
 # soundfile for WAV, FLAC and OGG.
 RUN apt-get update \

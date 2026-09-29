@@ -29,6 +29,11 @@ RUN npm run build
 
 
 FROM node:${NODE_VERSION}-alpine
+
+LABEL org.opencontainers.image.source="https://github.com/pawel-kaczmarek/The-A-Files" \
+      org.opencontainers.image.description="The A-Files research platform web client" \
+      org.opencontainers.image.licenses="GPL-3.0-or-later"
+
 WORKDIR /app
 
 ENV NODE_ENV=production \

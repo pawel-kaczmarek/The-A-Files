@@ -1,13 +1,17 @@
 # The A-Files research platform: PostgreSQL, the taf API and the web client.
 #
-#   docker compose up -d --build        # everything: http://localhost:3000 (web), :8000 (API)
+#   docker compose up -d                # everything: http://localhost:3000 (web), :8000 (API)
+#   docker compose up -d --build        # the same, built from this checkout
 #   docker compose up -d db             # only PostgreSQL, for a local taf-api / npm run dev
+#
+# Without --build, the published images from ghcr.io are pulled; TAF_IMAGE_TAG
+# selects a release (default latest, "edge" follows master).
 #
 # For a local API against the containerised database:
 #   export TAF_DATABASE_URL=postgresql+psycopg://taf:taf@localhost:5432/taf
 #
 # The API applies the database migrations on startup. Optional dependency groups
-# (TensorFlow, AudioSeal/WavMark) are chosen with TAF_EXTRAS at build time, e.g.
+# (TensorFlow, AudioSeal/WavMark) are chosen with TAF_EXTRAS when building, e.g.
 #   TAF_EXTRAS=platform,neural docker compose up -d --build
 services:
   db:
@@ -33,7 +37,7 @@ services:
       context: .
       args:
         EXTRAS: ${TAF_EXTRAS:-platform}
-    image: the-a-files-api
+    image: ghcr.io/pawel-kaczmarek/the-a-files-api:${TAF_IMAGE_TAG:-latest}
     container_name: taf-api
     restart: unless-stopped
     depends_on:
@@ -59,7 +63,7 @@ services:
       args:
         # Address of the API as seen from the browser, inlined at build time.
         NEXT_PUBLIC_TAF_API_URL: ${TAF_PUBLIC_API_URL:-http://localhost:8000}
-    image: the-a-files-web
+    image: ghcr.io/pawel-kaczmarek/the-a-files-web:${TAF_IMAGE_TAG:-latest}
     container_name: taf-web
     restart: unless-stopped
     depends_on:

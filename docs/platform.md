@@ -15,13 +15,16 @@ Migrations (Alembic) are applied when the API starts. `TAF_DATABASE_URL` overrid
 (`postgresql+psycopg://taf:taf@localhost:5432/taf`), `TAF_DATA_DIR` (default `~/.taf`) holds prepared corpora and
 uploads, and `TAF_MAX_CONCURRENT_RUNS` limits parallel runs.
 
-The complete platform also runs in containers from a repository checkout:
+The complete platform also runs in containers. The images are published to the GitHub Container Registry
+(`ghcr.io/pawel-kaczmarek/the-a-files-api` and `the-a-files-web`, for `linux/amd64` and `linux/arm64`): release tags
+(`2.0.0`, `2.0`, `latest`) and `edge`, built from `master`.
 
 ```bash
-docker compose up -d --build     # web client on :3000, API on :8000, PostgreSQL on :5432
+docker compose up -d --no-build  # published images: web client on :3000, API on :8000, PostgreSQL on :5432
+docker compose up -d --build     # images built from the checkout
 ```
 
-The API image (`Dockerfile`) includes FFmpeg for the codec attacks and keeps `TAF_DATA_DIR` in the `taf-data` volume.
+`TAF_IMAGE_TAG` selects the published tag (default `latest`). The API image (`Dockerfile`) includes FFmpeg for the codec attacks and keeps `TAF_DATA_DIR` in the `taf-data` volume.
 Build-time options: `TAF_EXTRAS` selects the optional dependency groups (default `platform`; e.g. `platform,neural`),
 and `TAF_PUBLIC_API_URL` is the API address as seen from the browser (default `http://localhost:8000`), which the web
 image inlines at build time; when it changes, set `TAF_API_CORS_ORIGINS` to the web client's origin. Folders to

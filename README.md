@@ -61,15 +61,18 @@ BER, exact-message recovery, payload rate and processing time are reported separ
 
 ## Research UI
 
-From a repository checkout, the whole platform (PostgreSQL, API and web client) runs in Docker:
+The whole platform (PostgreSQL, API and web client) runs in Docker from the published images; only
+`docker-compose.yml` is needed:
 
 ```bash
-docker compose up -d --build
+curl -O https://raw.githubusercontent.com/pawel-kaczmarek/The-A-Files/master/docker-compose.yml
+docker compose up -d --no-build
 ```
 
 The web client is at **http://localhost:3000** and the API at **http://localhost:8000** (OpenAPI at `/docs`).
-Prepared corpora and uploads live in the `taf-data` volume. `TAF_EXTRAS=platform,neural` (or `platform,ai`)
-adds the optional neural baselines or TensorFlow to the API image.
+Prepared corpora and uploads live in the `taf-data` volume. `TAF_IMAGE_TAG` selects a release (default `latest`;
+`edge` follows `master`). In a repository checkout, `docker compose up -d --build` builds the images locally;
+`TAF_EXTRAS=platform,neural` (or `platform,ai`) then adds the optional neural baselines or TensorFlow to the API.
 
 For development, start only the database and run the API and web client locally:
 

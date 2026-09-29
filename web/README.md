@@ -36,7 +36,9 @@ npm run build  # production build; npx tsc --noEmit for a type check
 Set `NEXT_PUBLIC_TAF_API_URL` (see `.env.example`) if the API runs elsewhere.
 
 `docker compose up -d --build` in the repository root builds this client as a standalone Next.js server
-(`web/Dockerfile`) and serves it on port 3000 together with the API and database.
+(`web/Dockerfile`) and serves it on port 3000 together with the API and database. The published image
+(`ghcr.io/pawel-kaczmarek/the-a-files-web`) calls the API at `http://localhost:8000`; for another address,
+build it with `TAF_PUBLIC_API_URL`.
 
 To build while the development server is running, use a separate output directory:
 
