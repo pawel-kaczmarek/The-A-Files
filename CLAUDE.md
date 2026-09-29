@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-The A-Files is an audio steganography research toolkit for embedding secret data in audio signals, with robustness testing and signal quality metrics. The package name is `taf`, version `2.0.0`, licensed under GPLv3.
+The A-Files is an audio steganography research toolkit for embedding secret data in audio signals, with robustness testing and signal quality metrics. The package name is `taf`, version `2.0.1`, licensed under GPLv3.
 
 ## Commands
 
