@@ -286,7 +286,7 @@ class CorruptedWavFile(WavFile):
     def opus_compression(self, bitrate_kbps: int = 64) -> "CorruptedWavFile":
         return self.apply(CodecCompression(codec="opus", bitrate_kbps=bitrate_kbps))
 
-    def vorbis_compression(self, bitrate_kbps: int = 128) -> "CorruptedWavFile":
+    def vorbis_compression(self, bitrate_kbps: int = 64) -> "CorruptedWavFile":
         return self.apply(CodecCompression(codec="vorbis", bitrate_kbps=bitrate_kbps))
 
 

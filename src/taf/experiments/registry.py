@@ -183,7 +183,7 @@ def list_attacks() -> list[AttackSpec]:
 
     from taf.attacks.base import AttackCategory
     from taf.attacks.presets import sweep_presets
-    from taf.attacks.registry import ATTACK_FACTORIES, attack_card, attack_class, available_attacks
+    from taf.attacks.registry import ATTACK_FACTORIES, attack_card, attack_class, available_attacks, create
     from taf.models.card import ATTACK_FAMILIES, group_label, group_order
 
     sweeps = sweep_presets(_DEFAULT_SAMPLE_RATE)
@@ -191,10 +191,13 @@ def list_attacks() -> list[AttackSpec]:
     for name in available_attacks():
         cls = attack_class(name)
         card = attack_card(name)
+        # A shortcut may fix defaults of its own (``vorbis`` lowers the bitrate).
+        shortcut = create(name) if name in ATTACK_FACTORIES else None
         parameters = [
             AttackParameter(
                 name=item.name,
-                default=None if item.default is MISSING else item.default,
+                default=getattr(shortcut, item.name) if shortcut is not None
+                else None if item.default is MISSING else item.default,
             )
             for item in fields(cls)
             if not (name in ATTACK_FACTORIES and item.name == "codec")

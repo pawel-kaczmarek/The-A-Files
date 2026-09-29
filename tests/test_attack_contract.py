@@ -13,7 +13,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from taf.attacks.base import AttackError, AttackToolUnavailableError, Severity
+from taf.attacks.base import AttackToolUnavailableError, Severity
 from taf.attacks.registry import available_attacks, build
 from taf.experiments.registry import list_attacks
 
@@ -25,25 +25,7 @@ WITHOUT_SEVERITY = {
     "zero_padding": "added after the benchmark suites were fixed; levels would change their composition",
 }
 
-#: Specifications known to fail at 16 kHz, kept visible rather than skipped.
-#: libvorbis refuses 128 kbit/s and more for 16 kHz mono (96 kbit/s and less
-#: encode), so the shortcut's default and its two mildest levels cannot run on
-#: the packaged corpora. Strict: the test reports when the presets are fixed.
-KNOWN_FAILURES = {
-    "vorbis": "libvorbis rejects 128 kbit/s for 16 kHz mono",
-    "vorbis@mild": "libvorbis rejects 192 kbit/s for 16 kHz mono",
-    "vorbis@moderate": "libvorbis rejects 128 kbit/s for 16 kHz mono",
-}
-
 _SPECS = {spec.name: spec for spec in list_attacks()}
-
-
-def _param(spec: str):
-    if spec in KNOWN_FAILURES:
-        return pytest.param(
-            spec, marks=pytest.mark.xfail(reason=KNOWN_FAILURES[spec], raises=AttackError, strict=True)
-        )
-    return spec
 
 
 def _apply(spec: str, audio: np.ndarray):
@@ -58,7 +40,7 @@ def cover(speech_cover: np.ndarray) -> np.ndarray:
     return np.asarray(speech_cover[: 2 * SAMPLE_RATE], dtype=np.float64)
 
 
-@pytest.mark.parametrize("name", [_param(name) for name in available_attacks()])
+@pytest.mark.parametrize("name", available_attacks())
 def test_attack_runs_with_its_defaults_and_records_them(name: str, cover: np.ndarray):
     original = cover.copy()
     result = _apply(name, cover)
@@ -88,7 +70,7 @@ def test_attack_without_severity_is_an_acknowledged_exception(name: str):
 @pytest.mark.parametrize(
     "spec",
     [
-        _param(f"{name}@{severity.value}")
+        f"{name}@{severity.value}"
         for name in available_attacks()
         if _SPECS[name].has_severity
         for severity in Severity
@@ -124,4 +106,21 @@ def test_an_attack_can_declare_its_own_severity_levels(monkeypatch):
     monkeypatch.setattr(registry, "attack_classes", lambda: {**registry.ATTACK_CLASSES, "toy_levels": ToyGain})
     assert presets.severity_parameters("toy_levels", Severity.STRONG, SAMPLE_RATE) == {"gain_db": -6.0}
     assert registry.build("toy_levels@strong", SAMPLE_RATE).gain_db == -6.0
+
+
+@pytest.mark.parametrize("rate", [8000, 11025, 16000, 22050, 32000, 44100])
+def test_vorbis_ladders_encode_at_their_rate(rate: int):
+    """libvorbis rejects bitrates outside a rate-dependent range instead of
+    clamping them; every level and sweep value must be one it accepts."""
+    from taf.attacks.presets import severity_parameters, sweep_presets
+
+    bitrates = {severity_parameters("vorbis", level, rate)["bitrate_kbps"] for level in Severity}
+    bitrates |= set(sweep_presets(rate)["vorbis"]["values"])
+    tone = 0.3 * np.sin(2 * np.pi * 440.0 * np.arange(rate // 4) / rate)
+    for bitrate in sorted(bitrates):
+        try:
+            result = build(f"vorbis:bitrate_kbps={bitrate}").apply(tone, rate)
+        except AttackToolUnavailableError as error:
+            pytest.skip(str(error))
+        assert np.all(np.isfinite(result.audio)), bitrate
 

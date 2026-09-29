@@ -82,7 +82,8 @@ ATTACK_FACTORIES: dict[str, Callable[..., Attack]] = {
     "mp3": lambda **kwargs: CodecCompression(codec="mp3", **kwargs),
     "aac": lambda **kwargs: CodecCompression(codec="aac", **kwargs),
     "opus": lambda **kwargs: CodecCompression(codec="opus", **kwargs),
-    "vorbis": lambda **kwargs: CodecCompression(codec="vorbis", **kwargs),
+    # libvorbis rejects 128 kbit/s below 32 kHz; 64 kbit/s encodes at 16-48 kHz.
+    "vorbis": lambda **kwargs: CodecCompression(codec="vorbis", **{"bitrate_kbps": 64, **kwargs}),
 }
 
 #: Cards of the convenience names, which have no class of their own.

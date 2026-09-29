@@ -85,8 +85,33 @@ _CODEC_BITRATE_KBPS = {
     "mp3": {Severity.MILD: 256, Severity.MODERATE: 128, Severity.STRONG: 96, Severity.EXTREME: 64},
     "aac": {Severity.MILD: 192, Severity.MODERATE: 128, Severity.STRONG: 96, Severity.EXTREME: 64},
     "opus": {Severity.MILD: 128, Severity.MODERATE: 96, Severity.STRONG: 64, Severity.EXTREME: 32},
-    "vorbis": {Severity.MILD: 192, Severity.MODERATE: 128, Severity.STRONG: 96, Severity.EXTREME: 64},
 }
+
+#: Vorbis ladders by sampling rate: (lowest rate, severity levels, sweep).
+#: libvorbis's managed-bitrate mode accepts only a range of bitrates that
+#: depends on the sampling rate and rejects anything outside it, rather than
+#: clamping. The ceilings below were measured for mono with libvorbis in
+#: FFmpeg 7.0: 40 kbit/s at 8 kHz, 48 at 11.025-12 kHz, 96 at 16 kHz, 80 at
+#: 22.05-24 kHz, 160 at 32 kHz and 192 at 44.1-48 kHz (256 is rejected even
+#: there). A fixed 192/128 kbit/s ladder therefore could not run on the
+#: packaged 16 kHz corpora at all. Each row keeps four distinct, ordered
+#: levels starting at the highest bitrate the encoder accepts at that rate.
+_VORBIS_BY_RATE: tuple[tuple[int, tuple[int, int, int, int], tuple[int, ...]], ...] = (
+    (44100, (192, 128, 96, 64), (192, 160, 128, 96, 64)),
+    (32000, (160, 128, 96, 64), (160, 128, 96, 64, 48)),
+    (22050, (80, 64, 48, 32), (80, 64, 48, 40, 32)),
+    (16000, (96, 64, 48, 32), (96, 80, 64, 48, 32)),
+    (11025, (48, 40, 32, 24), (48, 40, 32, 24, 16)),
+    (0, (40, 32, 24, 16), (40, 32, 24, 16, 12)),
+)
+
+
+def _vorbis_ladders(rate: int) -> tuple[dict[Severity, int], list[int]]:
+    """Vorbis severity levels and sweep ladder valid at ``rate``."""
+    for lowest, levels, sweep in _VORBIS_BY_RATE:
+        if rate >= lowest:
+            return dict(zip(Severity, levels)), list(sweep)
+    raise AssertionError("the last row covers every rate")
 
 _CROP_FRACTION = {
     Severity.MILD: 0.001,
@@ -252,6 +277,8 @@ def severity_parameters(
         return {"snr_db": _NOISE_SNR_DB[severity]}
     if name == "impulse_noise":
         return {"snr_db": _NOISE_SNR_DB[severity], "density": _DROPOUT_FRACTION[severity]}
+    if name == "vorbis":
+        return {"bitrate_kbps": _vorbis_ladders(rate)[0][severity]}
     if name in _CODEC_BITRATE_KBPS:
         return {"bitrate_kbps": _CODEC_BITRATE_KBPS[name][severity]}
     if name == "codec":
@@ -474,7 +501,7 @@ def sweep_presets(sample_rate: int | None = None) -> dict[str, dict[str, Any]]:
         "mp3": {"parameter": "bitrate_kbps", "values": [320, 256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
         "aac": {"parameter": "bitrate_kbps", "values": [256, 192, 128, 96, 64, 48, 32], "unit": "kbit/s"},
         "opus": {"parameter": "bitrate_kbps", "values": [128, 96, 64, 48, 32, 24, 16, 12], "unit": "kbit/s"},
-        "vorbis": {"parameter": "bitrate_kbps", "values": [256, 192, 128, 96, 64], "unit": "kbit/s"},
+        "vorbis": {"parameter": "bitrate_kbps", "values": _vorbis_ladders(rate)[1], "unit": "kbit/s"},
         "low_pass": {
             "parameter": "cutoff_hz",
             "values": [round(nyquist * fraction) for fraction in (0.9, 0.75, 0.6, 0.5, 0.4, 0.3, 0.2)],

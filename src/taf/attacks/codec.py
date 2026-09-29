@@ -43,7 +43,7 @@ CODEC_SPECS: dict[str, dict[str, Any]] = {
     "mp3": {"suffix": "mp3", "encoder": "libmp3lame", "bitrates_kbps": (320, 192, 128, 96, 64)},
     "aac": {"suffix": "m4a", "encoder": "aac", "bitrates_kbps": (256, 192, 128, 96, 64)},
     "opus": {"suffix": "opus", "encoder": "libopus", "bitrates_kbps": (128, 96, 64, 32)},
-    "vorbis": {"suffix": "ogg", "encoder": "libvorbis", "bitrates_kbps": (192, 128, 96, 64)},
+    "vorbis": {"suffix": "ogg", "encoder": "libvorbis", "bitrates_kbps": (192, 128, 96, 64, 48, 32)},
 }
 
 
@@ -258,7 +258,7 @@ def opus(bitrate_kbps: int = 64, **kwargs: Any) -> CodecCompression:
     return CodecCompression(codec="opus", bitrate_kbps=bitrate_kbps, **kwargs)
 
 
-def vorbis(bitrate_kbps: int = 128, **kwargs: Any) -> CodecCompression:
+def vorbis(bitrate_kbps: int = 64, **kwargs: Any) -> CodecCompression:
     return CodecCompression(codec="vorbis", bitrate_kbps=bitrate_kbps, **kwargs)
 
 

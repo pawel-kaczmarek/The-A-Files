@@ -80,7 +80,7 @@ cutoffs, resampling targets) move with the sampling rate.
 | `codec` | bitrate_kbps=256 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
 | `mp3` | bitrate_kbps=256 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
 | `opus` | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 | bitrate_kbps=32 |
-| `vorbis` | bitrate_kbps=192 | bitrate_kbps=128 | bitrate_kbps=96 | bitrate_kbps=64 |
+| `vorbis` | bitrate_kbps=96 | bitrate_kbps=64 | bitrate_kbps=48 | bitrate_kbps=32 |
 | `band_pass` | low_hz=20.0, high_hz=7200.0 | low_hz=100.0, high_hz=4000.0 | low_hz=300.0, high_hz=2400.0 | low_hz=1000.0, high_hz=1200.0 |
 | `high_pass` | cutoff_hz=20.0 | cutoff_hz=100.0 | cutoff_hz=300.0 | cutoff_hz=1000.0 |
 | `low_pass` | cutoff_hz=7200.0 | cutoff_hz=4000.0 | cutoff_hz=2400.0 | cutoff_hz=1200.0 |
@@ -115,7 +115,10 @@ attributed to any particular publication.
   comparable to the signal, included to locate where a method finally fails.
 - **Bitrates.** The ladder spans transparent (256/192 kbps) to the point where
   coding artefacts are plainly audible (64/32 kbps), which is the range in
-  which distributed audio actually exists.
+  which distributed audio actually exists. Vorbis is the exception: libvorbis
+  rejects bitrates outside a range that depends on the sampling rate (for
+  16 kHz mono nothing above 96 kbps), so its levels and sweep start at the
+  highest bitrate the encoder accepts at the source rate.
 - **Filter cutoffs as a fraction of Nyquist.** A cutoff fixed in Hertz is
   wrong at some sampling rate: an 18 kHz low-pass does nothing to 16 kHz
   speech. Expressing it relative to Nyquist keeps the attack meaningful at any
